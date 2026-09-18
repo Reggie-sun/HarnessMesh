@@ -1,0 +1,174 @@
+{
+  "observed_on": "2026-09-19",
+  "method": "git clone --depth 1 plus public GitHub repository API; no credentials",
+  "repos": [
+    {
+      "repo": "musistudio/claude-code-router",
+      "path": "/tmp/agent-router-research-20260919-emh1xeij/musistudio__claude-code-router",
+      "clone_exit": 0,
+      "sha": "a034b0c51cdd1b5628bbff545821f5540d30c6c5",
+      "full_name": "musistudio/claude-code-router",
+      "stargazers_count": 37316,
+      "forks_count": 3135,
+      "open_issues_count": 1130,
+      "pushed_at": "2026-09-18T02:27:33Z",
+      "updated_at": "2026-09-18T17:30:39Z",
+      "archived": false,
+      "default_branch": "main",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      }
+    },
+    {
+      "repo": "wshobson/agents",
+      "path": "/tmp/agent-router-research-20260919-emh1xeij/wshobson__agents",
+      "clone_exit": 0,
+      "sha": "4236bb91f8395b0435f1d8b8baf9e8e4c69a8620",
+      "full_name": "wshobson/agents",
+      "stargazers_count": 39776,
+      "forks_count": 4241,
+      "open_issues_count": 10,
+      "pushed_at": "2026-09-14T01:07:51Z",
+      "updated_at": "2026-09-18T16:09:56Z",
+      "archived": false,
+      "default_branch": "main",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      }
+    },
+    {
+      "repo": "shinpr/sub-agents-skills",
+      "path": "/tmp/agent-router-research-20260919-emh1xeij/shinpr__sub-agents-skills",
+      "clone_exit": 0,
+      "sha": "84e1d4b311dd1f87b71687b62cb1d97744393b80",
+      "full_name": "shinpr/sub-agents-skills",
+      "stargazers_count": 87,
+      "forks_count": 16,
+      "open_issues_count": 1,
+      "pushed_at": "2026-09-06T08:59:42Z",
+      "updated_at": "2026-09-18T15:06:46Z",
+      "archived": false,
+      "default_branch": "main",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      }
+    },
+    {
+      "repo": "zephel01/CodeRouter",
+      "path": "/tmp/agent-router-research-20260919-emh1xeij/zephel01__CodeRouter",
+      "clone_exit": 0,
+      "sha": "65ae72059ad465cbd5d58f1e774708d35af52f67",
+      "full_name": "zephel01/CodeRouter",
+      "stargazers_count": 49,
+      "forks_count": 2,
+      "open_issues_count": 6,
+      "pushed_at": "2026-08-21T19:30:15Z",
+      "updated_at": "2026-09-16T08:00:30Z",
+      "archived": false,
+      "default_branch": "main",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      }
+    },
+    {
+      "repo": "logicrw/agpair",
+      "path": "/tmp/agent-router-research-20260919-emh1xeij/logicrw__agpair",
+      "clone_exit": 0,
+      "sha": "755d4b2e4d9a14871dc66d59ba6fd4bc4a3afa98",
+      "full_name": "logicrw/agpair",
+      "stargazers_count": 48,
+      "forks_count": 0,
+      "open_issues_count": 0,
+      "pushed_at": "2026-06-29T14:14:48Z",
+      "updated_at": "2026-06-30T06:52:32Z",
+      "archived": false,
+      "default_branch": "main",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      }
+    },
+    {
+      "repo": "madebywild/agent-harness",
+      "path": "/tmp/agent-router-research-20260919-emh1xeij/madebywild__agent-harness",
+      "clone_exit": 0,
+      "sha": "2ecf44f97ab6ffd76f5c1a58ac57b930e2ccfa17",
+      "full_name": "madebywild/agent-harness",
+      "stargazers_count": 13,
+      "forks_count": 0,
+      "open_issues_count": 3,
+      "pushed_at": "2026-09-01T20:40:17Z",
+      "updated_at": "2026-08-29T23:49:54Z",
+      "archived": false,
+      "default_branch": "main",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      }
+    },
+    {
+      "repo": "Code-Router/CodeRouter",
+      "path": "/tmp/agent-router-research-20260919-emh1xeij/Code-Router__CodeRouter",
+      "clone_exit": 0,
+      "sha": "3cb23b8a292f399a86f861742c9d77a59a9f23b5",
+      "full_name": "Code-Router/CodeRouter",
+      "stargazers_count": 2,
+      "forks_count": 1,
+      "open_issues_count": 1,
+      "pushed_at": "2026-07-11T11:36:12Z",
+      "updated_at": "2026-08-21T09:55:33Z",
+      "archived": false,
+      "default_branch": "main",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      }
+    },
+    {
+      "repo": "zephel01/coderouter-plugin-agents",
+      "path": "/tmp/agent-router-research-20260919-emh1xeij/zephel01__coderouter-plugin-agents",
+      "clone_exit": 0,
+      "sha": "b5797fd8457337831827b4322200b50d019e008a",
+      "full_name": "zephel01/coderouter-plugin-agents",
+      "stargazers_count": 0,
+      "forks_count": 0,
+      "open_issues_count": 0,
+      "pushed_at": "2026-07-11T16:10:54Z",
+      "updated_at": "2026-07-11T16:10:58Z",
+      "archived": false,
+      "default_branch": "main",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      }
+    }
+  ]
+}
