@@ -55,18 +55,21 @@ def post(broker, payload=None, path='/v1/messages', token=None):
         return error.code, error.read()
 
 
-def test_broker_injects_only_parent_secret_and_does_not_rewrite_identity():
+def test_broker_injects_parent_secret_and_remaining_provider_timeout():
     calls = []
 
     def upstream(path, headers, payload):
         calls.append((path, headers, payload))
         return 200, {}, response('MiniMax-M3')
 
-    with Broker(profile('worker'), 'SECRET-SENTINEL', request_limit=1, wall_seconds=5,
+    with Broker(profile('worker'), 'SECRET-SENTINEL', request_limit=1, wall_seconds=1200,
                 upstream=upstream) as broker:
         status, data = post(broker)
         assert status == 502 and b'ROUTE_MISMATCH' in data
         assert calls[0][1]['x-api-key'] == 'SECRET-SENTINEL'
+        assert 1199 <= int(calls[0][1]['x-stainless-timeout']) <= 1200
+        assert set(calls[0][1]) == {'x-api-key', 'content-type', 'anthropic-version', 'accept',
+                                    'x-stainless-timeout'}
         assert broker.capability not in str(calls)
         assert 'SECRET-SENTINEL' not in json.dumps(broker.observations)
 

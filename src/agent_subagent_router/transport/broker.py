@@ -4,6 +4,7 @@ import hmac
 import http.client
 import http.server
 import json
+import math
 from pathlib import Path
 import secrets
 import socket
@@ -186,8 +187,10 @@ class Broker:
                     with broker._lock:
                         if not broker._active or time.monotonic() >= broker._deadline:
                             raise RouterError('CAPABILITY_REVOKED')
+                    remaining_seconds = max(1, math.ceil(broker._deadline-time.monotonic()))
                     headers = {'x-api-key': broker._credential, 'content-type': 'application/json',
-                               'anthropic-version': '2023-06-01', 'accept': 'text/event-stream'}
+                               'anthropic-version': '2023-06-01', 'accept': 'text/event-stream',
+                               'x-stainless-timeout': str(remaining_seconds)}
                     # Beta features are explicit profile policy, never arbitrary forwarded headers.
                     status, upstream_headers, data = broker._upstream(self.path, headers, raw)
                     observation['http_status'] = status
