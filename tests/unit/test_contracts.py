@@ -25,6 +25,19 @@ def test_task_round_trip_and_explicit_route():
         TaskContract.from_dict(data)
 
 
+def test_kimi_idle_budget_cannot_exceed_pinned_runtime_limit():
+    data = task_dict()
+    data['budgets'] = data['budgets'] | {'wall_seconds': 1801, 'idle_seconds': 1801}
+    with pytest.raises(RouterError, match='kimi idle budget exceeds pinned runtime limit'):
+        TaskContract.from_dict(data)
+
+    data['budgets'] = data['budgets'] | {'wall_seconds': 1800, 'idle_seconds': 1800}
+    assert TaskContract.from_dict(data).budgets.idle_seconds == 1800
+    data['backend'] = 'gemini'
+    data['budgets'] = data['budgets'] | {'wall_seconds': 3600, 'idle_seconds': 3600}
+    assert TaskContract.from_dict(data).budgets.idle_seconds == 3600
+
+
 @pytest.mark.parametrize('key,value', [('wall_seconds', 0), ('wall_seconds', math.inf),
                                     ('idle_seconds', math.nan), ('request_limit', True),
                                     ('output_bytes', -1)])

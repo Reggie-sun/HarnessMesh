@@ -117,6 +117,8 @@ class TaskContract:
             raise RouterError('INVALID_CONTRACT', 'explicit active document selection required')
         if not isinstance(self.selected_refs, list):
             raise RouterError('INVALID_CONTRACT', 'selected_refs must be a list')
+        if self.backend == 'kimi' and self.budgets.idle_seconds > 1800:
+            raise RouterError('INVALID_CONTRACT', 'kimi idle budget exceeds pinned runtime limit')
         if bool(self.selected_refs) != (self.active_documents == 'accepted_refs'):
             raise RouterError('INVALID_CONTRACT', 'active documents not bound')
         for ref in self.selected_refs:
