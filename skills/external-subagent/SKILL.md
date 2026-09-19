@@ -19,7 +19,9 @@ description: Route standing-authorized Kimi or an explicitly selected external b
 
 ## Dual Review
 
-Non-trivial final review时，Kimi使用`reviewer` role和read-only permissions，读取与Codex native reviewer相同的final scope、accepted contracts、exact diff artifact/hash与verification evidence。Kimi必须在canonical五字段report的`findings`中直接包含且只包含一个`Verdict: accept`、`Verdict: accept with concerns`或`Verdict: reject`条目，并列出blocking issues与evidence；不得添加protocol不支持的top-level field，缺少合法verdict时fail closed。Parent只负责验证并比较两侧结论，不得代写Kimi verdict。任一侧存在blocking issue或事实冲突时，parent必须修复或补证，并在新的final state上重新运行两侧review；不得让模型互相迁就、用多数票或把`PARSED`当作acceptance。
+Non-trivial final review时，Kimi使用`reviewer` role、read-only permissions与`deep` profile，读取与Codex native reviewer完全相同的immutable `review_snapshot_id`、commit/tree、exact staged diff、accepted spec/plan、Harness定义和verification evidence。Kimi prompt与snapshot不得包含Codex review、peer findings、comparison record或parent adjudication。
+
+Kimi只在canonical五字段report的`findings`中输出findings；每项包含stable ID、`blocking_candidate`或`non_blocking` severity、trigger、impact、snapshot evidence与建议验证。不得输出拥有acceptance语义的verdict，不得修改代码、派生subagent、自行降低severity或因peer PASS改变结论。`PARSED`只证明报告协议有效。Parent将findings纳入adjudication ledger；任何修复或review input变化都会产生新snapshot并重跑Codex与Kimi两侧。
 
 ## Writer
 
