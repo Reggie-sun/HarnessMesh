@@ -103,3 +103,5 @@ Research checkpoint 的 parent 检查覆盖五份文档的 local links/whitespac
 ### Design Approval Update
 
 用户在上述 research checkpoint 之后回复“批准”，对应聊天中明确提交的 **A：模块组合**及第一段总体 architecture/authority boundary。该批准不覆盖尚未展示的细节，不是 written Spec acceptance；不授予 implementation、plan 或 push/release 权限。继续讨论的下一段是 Project Contract Resolver 与 runtime-native projection 的输入、输出、冲突处理和验证边界；formal Spec 尚未生成。
+
+用户随后批准第二段 **Project Contract Resolver → runtime-native projection**：constitution/task/runtime 三层分离；parent 绑定 accepted refs；封存来源/hash/mode/权限依据；最小输入依赖；原生表达与完整 selected Skill resources；unsupported required capability fail closed；相同固定输入生成相同 projection 内容，并将 invocation 信息另行封装。该批准仍不是 final Spec acceptance。下一段设计讨论覆盖执行证据、credential/containment、unknown recovery、single-file candidate apply 及验证边界；此段批准后进入 written Spec、Self-Review 和 exact-snapshot dual review。
