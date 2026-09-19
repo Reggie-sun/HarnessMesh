@@ -99,3 +99,7 @@ Research probes 已有 AnyIO 三例 PASS、wshobson 两个可复现 emitter 缺�
 Research checkpoint 的 parent 检查覆盖五份文档的 local links/whitespace，以及 67 个去重的 pinned GitHub source links 对应的 clone Git objects，均可解析；没有以链接存在代替结论正确性。没有专用 session-capture skill；本 research 目录就是此次研究的 durable artifact，未创建重复的运行状态 owner。
 
 下一流程动作是提交 A/B/C 取舍与第一段 architecture/authority design 供用户批准；不写 plan，不实现。按已读 Skill 的 “get user approval after each section”，设计段落批准后继续其余设计讨论，再写 Spec。未来完整 Spec 经 self-review 后封存 exact SHA 与共同 evidence snapshot，双侧互不可见；任何修改都重跑双方，parent 逐项裁决后才请求最终用户批准该 SHA。本 checkpoint 不是 accepted Spec，也不是最终 written-spec approval gate。
+
+### Design Approval Update
+
+用户在上述 research checkpoint 之后回复“批准”，对应聊天中明确提交的 **A：模块组合**及第一段总体 architecture/authority boundary。该批准不覆盖尚未展示的细节，不是 written Spec acceptance；不授予 implementation、plan 或 push/release 权限。继续讨论的下一段是 Project Contract Resolver 与 runtime-native projection 的输入、输出、冲突处理和验证边界；formal Spec 尚未生成。
