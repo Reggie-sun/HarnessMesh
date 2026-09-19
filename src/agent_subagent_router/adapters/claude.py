@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import math
 from pathlib import Path
 import subprocess
 
@@ -38,6 +39,8 @@ def build_invocation(runtime: Runtime, profile, directory: Path, broker_url: str
                         'autoMemoryEnabled': False, 'alwaysThinkingEnabled': True,
                         'effortLevel': profile.effort}))
     settings.chmod(0o600)
+    wall_timeout_ms = str(max(1, math.ceil(budgets.wall_seconds * 1000)))
+    idle_timeout_ms = str(max(1, math.ceil(budgets.idle_seconds * 1000)))
     env = {'PATH': '/usr/bin:/bin', 'HOME': str(directory/'home'),
            'TMPDIR': str(directory/'tmp'), 'LANG': 'C.UTF-8',
            'CLAUDE_CONFIG_DIR': str(directory/'config'),
@@ -50,6 +53,9 @@ def build_invocation(runtime: Runtime, profile, directory: Path, broker_url: str
            'CLAUDE_CODE_DISABLE_AUTO_MEMORY': '1', 'CLAUDE_CODE_DISABLE_CLAUDE_MDS': '1',
            'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC': '1', 'DISABLE_AUTOUPDATER': '1',
            'DISABLE_TELEMETRY': '1', 'DISABLE_ERROR_REPORTING': '1',
+           'API_TIMEOUT_MS': wall_timeout_ms,
+           'CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS': idle_timeout_ms,
+           'CLAUDE_STREAM_IDLE_TIMEOUT_MS': idle_timeout_ms,
            'MAX_THINKING_TOKENS': '8192', 'CLAUDE_CODE_MAX_RETRIES': '0'}
     for tier in ('OPUS', 'SONNET', 'HAIKU', 'FABLE'):
         env[f'ANTHROPIC_DEFAULT_{tier}_MODEL'] = profile.client_model
