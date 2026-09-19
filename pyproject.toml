@@ -19,7 +19,8 @@ where = ["src"]
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "--strict-markers"
-markers = ["native: installed CLI against a local fake upstream only"]
+markers = ["native: installed CLI against a local fake upstream only",
+           "containment: synthetic adversarial probes in pinned Docker image"]
 
 [tool.ruff]
 line-length = 100

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "ai-owner",
+    "project": "AI-VIDEO",
+    "role": "explorer",
+    "paths": ["src/ai_video/production/models.py", "src/ai_video/production/project.py", "src/ai_video/production/validation.py", "src/ai_video/production/state_commit.py", "tests/test_production_state_commit_structure.py"],
+    "refs": ["docs/agent-primary-contract-matrix.md", ".agent/harness/policy.yaml", "docs/v0.2-runtime-baseline.md", "docs/v0.2-agentic-production-roadmap.md"],
+    "goal": "Map schema, strict loader, validation and durable write ownership. Read models.py around 1993-2021, project.py around 1538-1625, validation.py around 91-125 and 234-280, state_commit.py around 270-361 and the structure test. Give at most eight concise findings with exact evidence refs from every selected code/test file. Challenge whether a service can be reused unchanged. Inspect only this supplied source snapshot; no scripts or media/Provider actions.",
+    "rubric": ["ProductionProject/LoadedProductionProject carry schema, not activation", "load_production_project performs strict project and snapshot loading", "validation functions own strategy/reference validation", "ProductionStateCommitter is the durable facade with private mixin owners", "No inference that loader/test success proves activation or media acceptance"]
+  },
+  {
+    "id": "ai-evidence",
+    "project": "AI-VIDEO",
+    "role": "test-investigator",
+    "paths": ["tests/test_s02_prospective_review.py", "docs/record_for_agent/2026-09-10-jieshi-s02-first-frame-tool-block.md", "docs/record_for_agent/2026-09-11-s02-prospective-correctness.md"],
+    "refs": ["docs/agent-primary-contract-matrix.md", ".agent/harness/policy.yaml", "docs/v0.2-runtime-baseline.md", "docs/v0.2-agentic-production-roadmap.md"],
+    "goal": "Read the selected S02 test and two records; distinguish exact replay/reviewability evidence from human media acceptance. Give at most eight concise findings and cite every selected file. State historical FAIL versus newer EVIDENCE_GAP/NOT_EVALUATED, no Provider/state effect, and what remains unproven. Do not access runs, media, additional files, or execute scripts. Historical test counts are not current test results.",
+    "rubric": ["Standard loader/committer read path and canonical exact bindings", "Historical FAIL remains distinct from newer EVIDENCE_GAP/NOT_EVALUATED", "Shadow creates no evaluator, state write or Provider effect", "Exact replay is not 1.0x human holistic media acceptance", "No claim of complete audio/P4/S03 approval or fresh live proof"]
+  },
+  {
+    "id": "jizhang-rules",
+    "project": "jizhang",
+    "role": "explorer",
+    "paths": ["server/src/domain/rules.ts", "server/src/integrations/actual/bootstrap.ts", "server/tests/rules.test.ts", "server/tests/actual-transfer-semantics.test.ts"],
+    "refs": ["README.md"],
+    "goal": "Map 千川充值 and 保证金 from domain classification to Actual bootstrap and fake tests. Explain ASSET_TRANSFER, off-budget destinations and suppressed category routing; contrast ambiguous 千川 25.6 and purchase payment. Cite exact Read evidence from all four selected files, at most eight findings. Read-only source inspection; no Actual/network/database/config/media actions or execution.",
+    "rubric": ["AD_RECHARGE and DEPOSIT use ASSET_TRANSFER", "千川预充值 and 平台保证金 are off-budget", "resolveCategoryPath returns null for recharge/deposit", "Fake tests cover paired transfers and exclude spending/net", "Ambiguous 千川 25.6 remains OTHER/UNKNOWN; purchase stays expense", "No claim that fake tests prove real Actual service/config"]
+  },
+  {
+    "id": "jizhang-transfer",
+    "project": "jizhang",
+    "role": "reviewer",
+    "paths": ["server/src/routes/transactions.ts", "server/src/integrations/actual/fake.ts", "server/src/integrations/actual/bootstrap.ts", "server/tests/actual-transfer-semantics.test.ts"],
+    "refs": ["README.md"],
+    "goal": "Review fake Actual transfer semantics and the confirm transfer branch (transactions.ts around 290-345). Explain source default, platform/destination preconditions, paired signs/linking, category rejection and spending/cash-flow semantics. Cite every selected file and give at most eight findings. Explicitly flag the missing-platform branch limitation rather than assuming it is safe. Do not infer operational equivalence to real Actual or execute code/network/database actions.",
+    "rubric": ["TRANSFER/ASSET_TRANSFER plus platform takes transfer branch", "Missing source defaults to 公司银行卡; missing destination mapping errors", "Missing platform falls through the non-transfer branch and is not proven safe", "Fake adapter rejects categories and creates linked opposite signs", "Transfer excluded from spending/net; cash flow uses on-budget signed movement", "Fake source is not live Actual verification"]
+  }
+]

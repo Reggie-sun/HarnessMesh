@@ -1,0 +1,19 @@
+{
+  "runtime": {
+    "executable": "/home/reggie/.local/share/agent-subagent-router/runtimes/claude-2.1.277/node_modules/@anthropic-ai/claude-code-linux-x64/claude",
+    "version": "2.1.277",
+    "sha256": "722210f05ba494d8f6df69423c4d4f2960900f7a007d0532851c7a36e375cab7"
+  },
+  "containment": {
+    "primitive": "bubblewrap",
+    "qualified": false,
+    "project_access": false,
+    "classification": "BLOCKED_CAPABILITY",
+    "probe_exit": 1,
+    "reason": "namespace_unavailable",
+    "diagnostic": "bwrap: setting up uid map: Permission denied\n"
+  },
+  "project_routes": "BLOCKED_CAPABILITY",
+  "writer": "WRITER_NOT_QUALIFIED",
+  "second_backend": "NOT_QUALIFIED"
+}

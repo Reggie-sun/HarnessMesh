@@ -1,0 +1,97 @@
+{
+  "runtime_sha256": "59c6cbc99c314ae0612dea005998ea96d69fb3c208b90777f4db3593fb78ae6d",
+  "results": [
+    {
+      "profile": "worker",
+      "exit": 0,
+      "stderr": "",
+      "terminal": [
+        {
+          "type": "system",
+          "subtype": "init",
+          "tools": [],
+          "mcp_servers": [],
+          "model": "k3-256k",
+          "permissionMode": "dontAsk",
+          "skills": [
+            "update-config",
+            "debug",
+            "simplify",
+            "batch",
+            "loop",
+            "claude-api"
+          ],
+          "plugins": []
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "is_error": false
+        }
+      ],
+      "observations": [
+        {
+          "path": "/v1/messages?beta=true",
+          "model": "k3-256k",
+          "thinking": {
+            "budget_tokens": 8192,
+            "type": "enabled"
+          },
+          "output_config": {
+            "effort": "high"
+          },
+          "tools": [],
+          "request_bytes": 12870,
+          "contains_home_rules": false
+        }
+      ],
+      "wall_seconds": 0.553
+    },
+    {
+      "profile": "deep",
+      "exit": 0,
+      "stderr": "",
+      "terminal": [
+        {
+          "type": "system",
+          "subtype": "init",
+          "tools": [],
+          "mcp_servers": [],
+          "model": "k3[1m]",
+          "permissionMode": "dontAsk",
+          "skills": [
+            "update-config",
+            "debug",
+            "simplify",
+            "batch",
+            "loop",
+            "claude-api"
+          ],
+          "plugins": []
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "is_error": false
+        }
+      ],
+      "observations": [
+        {
+          "path": "/v1/messages?beta=true",
+          "model": "k3",
+          "thinking": {
+            "budget_tokens": 8192,
+            "type": "enabled"
+          },
+          "output_config": {
+            "effort": "high"
+          },
+          "tools": [],
+          "request_bytes": 12864,
+          "contains_home_rules": false
+        }
+      ],
+      "wall_seconds": 0.558
+    }
+  ]
+}

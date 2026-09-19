@@ -1,0 +1,155 @@
+[
+  {
+    "id": "MM-01",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "cli_exit": 0,
+      "status": "DONE_WITH_CONCERNS",
+      "questions": [
+        "Which owner?"
+      ],
+      "concerns": [
+        "uncertain"
+      ]
+    },
+    "expected": "PROTOCOL_CONTRADICTION",
+    "input_sha256": "053527a1b115bd98f4089e3f09dce6c4e032ba1656f811eda63efd8d3157b265"
+  },
+  {
+    "id": "MM-02",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "cli_exit": 0,
+      "transport_exit": 1,
+      "termination_reason": "dialogue_protocol_error"
+    },
+    "expected": "PROTOCOL_ERROR",
+    "input_sha256": "649b06f6d01773d887ce7366a456ef68a942e13d50031b52b4940f804e47c50c"
+  },
+  {
+    "id": "MM-03",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "cli_exit": 0,
+      "error": "error_max_structured_output_retries"
+    },
+    "expected": "STRUCTURED_OUTPUT_EXHAUSTED",
+    "input_sha256": "ba5199040819ca63b0a5a5a3158dc7693b9f260eb976beb5b91fc1302819f296"
+  },
+  {
+    "id": "MM-04",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "cli_exit": 0,
+      "status": "DONE",
+      "required_evidence": [
+        "schema.py",
+        "writer.py",
+        "validator.py"
+      ],
+      "observed_evidence": [
+        "service.py"
+      ]
+    },
+    "expected": "EVIDENCE_INCOMPLETE",
+    "input_sha256": "89690b621190ad701bcb7183b47b159686bae1a05ef318e2e11818f4bce3a4d4"
+  },
+  {
+    "id": "MM-05",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "cli_exit": 0,
+      "attempted_tools": [
+        "Bash"
+      ],
+      "denied_tools": [
+        "Bash"
+      ]
+    },
+    "expected": "TOOL_POLICY_VIOLATION",
+    "input_sha256": "5df0f35101b95fb5c8a7ade46458e7adf856afd30f8ef3b9a7b75bc3806bfc5f"
+  },
+  {
+    "id": "MM-06",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "cli_exit": 0,
+      "required_evidence": [
+        "owner.py"
+      ],
+      "observed_evidence": []
+    },
+    "expected": "EVIDENCE_INCOMPLETE",
+    "input_sha256": "0078a88d3e707b26de69edf131941adfe6cddb8d316ffbbaf608ffb79ff5c187"
+  },
+  {
+    "id": "MM-07",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "heartbeats": 8,
+      "terminal": false,
+      "observed_evidence": []
+    },
+    "expected": "TERMINAL_MISSING",
+    "input_sha256": "80d0f98a8555c8fc0c0d8d110d1fc5556149f319c1eed09b1993030bf47de4f7"
+  },
+  {
+    "id": "MM-08",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "status": "BLOCKED",
+      "retry_requested": true,
+      "artifacts_inspected": false
+    },
+    "expected": "FOLLOWUP_REQUIRES_PARENT",
+    "input_sha256": "313e204aafa315ccd656a51d2512e6736d53bbe4039efe1921e4d5008a155d47"
+  },
+  {
+    "id": "MM-09",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "status": "DONE",
+      "state_file": "null"
+    },
+    "expected": "LEGACY_REPRESENTATION_AMBIGUOUS",
+    "input_sha256": "f36846dddcc90f7662150f18d41414e673838348d260d9a20939b7753c6bf865"
+  },
+  {
+    "id": "MM-10",
+    "provenance": "synthetic",
+    "source_locator": "docs/baseline/research/minimax-regression-corpus.md#cases",
+    "original_invocation_id": null,
+    "input": {
+      "status": "DONE",
+      "required_evidence": [
+        "owner.py"
+      ],
+      "observed_evidence": [],
+      "structured_output": {
+        "findings": [
+          "claimed success"
+        ]
+      }
+    },
+    "expected": "EVIDENCE_INCOMPLETE",
+    "input_sha256": "22790c699e42e5c26025e267897f766ec3b2a618438edebee2e63027f41202e8"
+  }
+]
