@@ -1,5 +1,9 @@
+from dataclasses import replace
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
+import threading
+import time
 
 import pytest
 
@@ -60,3 +64,50 @@ def test_real_cli_wire_profile_and_isolation(tmp_path, monkeypatch, name):
     init = next(json.loads(line) for line in result.stdout.splitlines()
                 if json.loads(line).get('subtype') == 'init')
     assert init['tools'] == [] and init['mcp_servers'] == [] and init['plugins'] == []
+
+
+@pytest.mark.native
+def test_api_timeout_env_controls_pinned_runtime_deadline(tmp_path):
+    runtime = Runtime(str(NATIVE), '2.1.277', hash_bytes(NATIVE.read_bytes()))
+    route = profile('deep')
+    results = {}
+
+    for name, timeout_ms in (('short', 1000), ('long', 5000)):
+        response = fake_stream(route.wire_model)
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers['Content-Length']))
+                time.sleep(3)
+                try:
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'text/event-stream')
+                    self.send_header('Content-Length', str(len(response)))
+                    self.end_headers()
+                    self.wfile.write(response)
+                except (BrokenPipeError, ConnectionError, OSError):
+                    pass
+
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        server.daemon_threads = True
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        budgets = Budgets(10, 10, 1, 200000, 200000)
+        invocation = build_invocation(runtime, route, tmp_path/name,
+            f'http://127.0.0.1:{server.server_port}', 'synthetic-capability',
+            b'Return a small JSON report.', budgets)
+        env = dict(invocation.env)
+        env['API_TIMEOUT_MS'] = str(timeout_ms)
+        results[name] = supervise(replace(invocation, env=env))
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=1)
+
+    assert results['short'].exit_code == 1
+    assert b'Request timed out' in results['short'].stdout + results['short'].stderr
+    assert results['short'].duration_seconds < 2.5
+    assert results['long'].exit_code == 0
+    assert results['long'].duration_seconds >= 3

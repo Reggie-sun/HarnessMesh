@@ -39,6 +39,8 @@ def build_invocation(runtime: Runtime, profile, directory: Path, broker_url: str
                         'autoMemoryEnabled': False, 'alwaysThinkingEnabled': True,
                         'effortLevel': profile.effort}))
     settings.chmod(0o600)
+    # Claude Code otherwise caps a single API attempt and stream inactivity at
+    # its own shorter defaults, before the router's explicit task budgets.
     wall_timeout_ms = str(max(1, math.ceil(budgets.wall_seconds * 1000)))
     idle_timeout_ms = str(max(1, math.ceil(budgets.idle_seconds * 1000)))
     env = {'PATH': '/usr/bin:/bin', 'HOME': str(directory/'home'),
