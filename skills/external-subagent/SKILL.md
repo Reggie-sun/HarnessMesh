@@ -15,13 +15,15 @@ description: Route standing-authorized Kimi or an explicitly selected external b
 2. Parent 编写 task JSON：显式 backend/profile、role、cwd、read/write paths、exact accepted refs、required evidence 与 finite budgets。没有 active docs 明确 `not_applicable`；Skill 重名用 exact path；dirty target 按用户 ownership 规则处理。
 3. `subagent inspect --cwd <repo> --task <task.json>` 封存 inputs/route/runtime/image，不联网、不执行项目 scripts。
 4. `subagent run --contract <manifest.json> --backend kimi --profile <selected-profile> --live --credential-ref <private-reference.json> --qualification <matching-canonical-route-id>`；`<selected-profile>`必须与sealed contract一致，且`worker`/`deep`使用各自matching qualification。Gemini用`--backend gemini --profile worker`，不传Kimi qualification；使用已有private OAuth reference，账号不合格即阻断，不登录/onboarding。
-5. `subagent receipt <invocation-id>` 检查 process、protocol、upstream identity、artifacts 和实际 Read evidence。`PARSED` 不等于 KEEP；native independent review 和项目 Harness 由 parent 负责。
+5. `subagent receipt <invocation-id>` 检查 process、protocol、upstream identity、artifacts 和实际 Read evidence。`PARSED` 不等于 KEEP；项目 Harness、finding adjudication 与 completion 由 Parent 负责。
 
-## Dual Review
+## Triggered Implementation Review
 
-Non-trivial final review时，Kimi使用`reviewer` role、read-only permissions与`deep` profile，读取与Codex native reviewer完全相同的immutable `review_snapshot_id`、commit/tree、exact staged diff、accepted spec/plan、Harness定义和verification evidence。Kimi prompt与snapshot不得包含Codex review、peer findings、comparison record或parent adjudication。
+本 Skill 不因 Spec、Plan、diff 或 artifact 存在而自行触发 review，也不为 Spec/Plan 默认调用 Kimi。Parent 只有在 repository canonical Spec §9 的 Implementation Review Risk Gate 得出 `KIMI_REVIEW_REQUIRED` 后，才使用本节 mechanics。
 
-Kimi只在canonical五字段report的`findings`中输出findings；每项包含stable ID、`blocking_candidate`或`non_blocking` severity、trigger、impact、snapshot evidence与建议验证。不得输出拥有acceptance语义的verdict，不得修改代码、派生subagent、自行降低severity或因peer PASS改变结论。`PARSED`只证明报告协议有效。Parent将findings纳入adjudication ledger；任何修复或review input变化都会产生新snapshot并重跑Codex与Kimi两侧。
+Kimi 使用 `reviewer` role 与 read-only permissions，读取 exact final candidate snapshot、applicable accepted Spec/Plan identity、相关 project contract、changed paths/source context、tests/Harness evidence、constraints 与 acceptance criteria。Profile 由 canonical Spec §9 与 route policy 按实际 risk/context 选择；高风险 architecture/authority/security 等 review 使用 `deep` / max，只有实际 review package 需要时才使用 1M context。初次 review 不包含 Parent 预判；re-review 只增加 previous unresolved findings、Parent resolution、correction evidence 与受影响 contract。Kimi 不得修改 source、Spec、Plan、tests、Harness 或 candidate，不得派生 subagent、commit/push、改变 acceptance criteria 或宣布 completion。
+
+Kimi 只在 canonical 五字段 report 的 `findings` 中输出 findings；每项包含 stable ID、`blocking_candidate` 或 `non_blocking` severity、exact concern、affected path/symbol、violated contract/invariant、concrete snapshot evidence 与 expected correction。`PARSED`、exit 0、空 findings 或 LGTM 只描述 transport/report outcome，不是 acceptance。Parent 按 canonical Spec §9 adjudicate；本 Skill 不自动 retry、不启动第四轮、不拥有 round budget 或 KEEP/REVERT。Semantic fix 需要 Parent 封存新 snapshot 并显式发起适用的 targeted/full re-review。
 
 ## Writer
 

@@ -6,18 +6,18 @@
 
 ## Contracts
 
-Accepted baseline 位于 `docs/baseline/`；当前 implementation 与 qualification 状态由 `docs/implementation-status.md` 记录。Source snapshot、sealed route、有限预算、无 fallback、credential 隔离与 upstream identity 必须 fail closed。Worker 没有 KEEP、commit、push 或 nested delegation 权限。
+Canonical architecture contract 位于 `docs/superpowers/specs/2026-09-19-harnessmesh-architecture-design.md`，其 exact accepted bytes 由 `docs/records/architecture-spec-acceptance.md` 绑定。`docs/baseline/` 仅是历史设计输入；当前 implementation 与 qualification 状态由 `docs/implementation-status.md` 记录。Source snapshot、sealed route、有限预算、无 fallback、credential 隔离与 upstream identity 必须 fail closed。Worker 没有 KEEP、commit、push 或 nested delegation 权限。
 
 ## Verification
 
 默认测试不得调用真实 Provider。`python -m pytest -q` 为 offline suite；native conformance 由显式 `--native-conformance` 开启，仅调用本地 fake upstream。Live 必须显式命令、credential reference、sealed budget，且受 qualification gate 限制。没有 OS containment qualification 不允许项目数据或工具准入。
 
-## Final Review
+## Implementation Review Gate
 
-本repo的control-plane、security、permissions、qualification或public contract change，final parent在runtime可选时使用Astra / Extra High；native reviewer MUST 使用read-only `reviewer_xhigh`，Kimi reviewer MUST 使用read-only `deep` / max，只有sealed evidence确需时才使用1M上下文。两侧必须审查同一immutable `review_snapshot_id`且互不读取review结果。Codex重点检查architecture、correctness、regression、spec一致性与Harness；Kimi重点检查adversarial paths、edge cases、authority violations、evidence gaps、unsupported assumptions与failure paths。两侧都可报告任何blocking candidate。
+Spec 由 `superpowers:brainstorming` Self-Review 与 User Review Gate 接受；Plan 仅在 `superpowers:writing-plans` Routing Gate 触发时创建并由其 Self-Review 接受。两者均不默认调用 Kimi 或额外 Codex reviewer。
 
-Reviewer只产生findings，不拥有acceptance truth，并且MUST NOT修改代码、派生subagent、自行降低blocker severity或因另一reviewer PASS而改变结论。Parent依据 `/home/reggie/.codex/SUBAGENTS.md` 的adjudication state machine关闭findings；任何修复或review input变化产生新snapshot并重跑两侧。
+Implementation 先通过 project-native tests/Harness，再由 Parent 在 stable checkpoint 按 canonical Spec §9 的 Risk Gate 判断。未触发时采用 normal Codex verification；触发时只增加一名通过 qualified HarnessMesh route 调用的 read-only Kimi adversarial reviewer，由 Codex Parent 调查、修复并裁决 findings。Kimi 不拥有 KEEP、REVERT、completion 或 acceptance，也不得修改 source、Spec、Plan、tests 或 Harness。Review package、targeted/full re-review、三轮默认上限与 escalation 完全由 canonical Spec §9 管理；本文件不复制 trigger catalog 或形成第二 owner。
 
 ## Completion
 
-区分 implemented、offline verified、native conformance 与 live qualified。禁止将 reviewer verdict、`PARSED`、exit 0 或 fake evidence 写成 acceptance。只有同一immutable snapshot上的两侧review完成、parent adjudication达到`unresolved_blocking_findings == 0`且project Harness通过，才具备completion eligibility。只提交本任务 files，不 push，不建立 remote，不创建 worktree。仓库无专用 capture skill；持久实施证据记录在 `docs/records/`。
+区分 implemented、offline verified、native conformance 与 live qualified。禁止将 reviewer verdict、`PARSED`、exit 0、tests PASS 或 fake evidence 写成 acceptance。未触发 Kimi review 时，project-native verification 与 normal Codex completion rules 必须满足；触发时还必须完成 canonical Spec §9 要求的 Kimi review、Parent evidence adjudication、confirmed-blocker 修复与适用 verification，且没有 unresolved blocker。只提交本任务 files，不 push，不建立 remote，不创建 worktree。仓库无专用 capture skill；持久实施证据记录在 `docs/records/`。
