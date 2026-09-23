@@ -6,7 +6,7 @@
 
 ## Contracts
 
-Canonical architecture contract 位于 `docs/superpowers/specs/2026-09-19-harnessmesh-architecture-design.md`，其 exact accepted bytes 由 `docs/records/architecture-spec-acceptance.md` 绑定。`docs/baseline/` 仅是历史设计输入；当前 implementation 与 qualification 状态由 `docs/implementation-status.md` 记录。Source snapshot、sealed route、有限预算、无 fallback、credential 隔离与 upstream identity 必须 fail closed。Worker 没有 KEEP、commit、push 或 nested delegation 权限。
+Canonical architecture contract 位于 `docs/superpowers/specs/2026-09-23-harnessmesh-rare-review-design.md`，其 exact accepted bytes 由 `docs/records/architecture-spec-acceptance.md` 绑定。`docs/baseline/` 仅是历史设计输入；当前 implementation 与 qualification 状态由 `docs/implementation-status.md` 记录。Source snapshot、sealed route、有限预算、无 fallback、credential 隔离与 upstream identity 必须 fail closed。Worker 没有 KEEP、commit、push 或 nested delegation 权限。
 
 ## Verification
 
