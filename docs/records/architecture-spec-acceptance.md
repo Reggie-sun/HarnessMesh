@@ -2,11 +2,13 @@
 
 ## Status
 
-`ACCEPTED_SPEC`
+`ACCEPTED_SPEC_WITH_USER_DIRECTED_Q2_AMENDMENT`
 
-用户在收到新 written Spec 的 exact path 与 SHA-256 后，于 2026-09-23 明确答复“批准”。本记录将该批准仅绑定到下列 canonical path 的 exact bytes；路径内容发生任何 byte change 后，本批准不再覆盖新版本，必须按 Spec 的 `V3` 与 `G1` 重新完成 Self-Review 和 User Review Gate。
+2026-09-26 用户在获知本地 Deep entitlement 的 24 小时自动过期规则后，明确要求“开子代理把这个路由策略去掉不要有限制”。当前 Q2 据此作一处窄修订：取消 observation age 的上限，保留有效非未来时间戳、account/credential/context 证明和依赖失效条件。此次执行授权直接来自当前指令；不伪称用户重新逐字批准了整份 Spec 的新 SHA。修订后的 SHA-256 为 `a3c216c077608767e1ac7ac7d03869e8d90f49256469691e8206c71edbf3566c`，实施证据见 [entitlement-age-limit-removal.md](entitlement-age-limit-removal.md)。
 
-## Accepted Artifact
+用户在收到新 written Spec 的 exact path 与 SHA-256 后，于 2026-09-23 明确答复“批准”。该历史批准只绑定下列 exact bytes，不覆盖上方修订；上方修订依赖另行明确的用户变更指令。其余未来 semantic revision 仍按 Spec 的 `V3` 与 `G1` 执行。
+
+## Original Accepted Artifact
 
 - Canonical Spec path: `docs/superpowers/specs/2026-09-23-harnessmesh-rare-review-design.md`
 - SHA-256: `ff18503d3099f16d18947cc56a983b942aed6567dd61573beed24a3634fe8d5c`

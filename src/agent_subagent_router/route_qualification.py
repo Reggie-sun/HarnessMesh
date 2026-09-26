@@ -42,11 +42,11 @@ def validate_entitlement(entitlement):
                  and entitlement['source'] == 'https://www.kimi.com/code/console'
                  and entitlement['credential_match'] is True
                  and entitlement['tier'] in ('Pro', 'Max', 'Allegretto', 'Allegro', 'Vivace')
-                 and entitlement['entitled_context_tokens'] >= 1048576 and 0 <= age <= 86400)
+                 and entitlement['entitled_context_tokens'] >= 1048576 and age >= 0)
     except (KeyError, TypeError, ValueError, AttributeError):
         valid = False
     if not valid:
-        raise RouterError('ENTITLEMENT_UNVERIFIED', 'fresh parent-observed account evidence required')
+        raise RouterError('ENTITLEMENT_UNVERIFIED', 'valid parent-observed account evidence required')
 
 
 def read_qualification(store, identifier):

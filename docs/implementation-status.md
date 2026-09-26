@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Entitlement Age Policy — 2026-09-26
+
+按用户明确指令，Deep account entitlement observation 不再因超过 24 小时自动失效；历史观察日期保持原样。有效非未来时间戳、证据类型/来源、credential match、tier、1M entitlement 与 qualification 的依赖身份校验仍适用。该变化不证明远端当前订阅有效或已消费 1M context。离线验证和安装绑定见 [record](records/entitlement-age-limit-removal.md)。
+
 ## Authorization And Baseline
 
 2026-09-19 用户明确要求“实现plan从M1到结束不要问我自己做决定”，授权实施本次读取的 M0 文档。原始文档只读冻结于 `baseline/`，其 PROPOSED 是历史状态；此处记录本轮 acceptance，不改写原始研究证据。
