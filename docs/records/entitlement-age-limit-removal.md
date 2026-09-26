@@ -13,9 +13,9 @@ Q2 的旧 24h 条款按当前用户明确变更指令同步；历史整份 Spec 
 ## Verification
 
 - 新增 validator 和真实 `verify_smoke` 调用路径测试：旧观察（7 天、10 年）可用；未来、无效、无时区日期及缺失/错误资格字段仍被拒绝。
-- Focused：19 passed。完整 offline：212 passed、12 skipped；skipped 不计为 native/live conformance。
+- RED：3 条旧观察/项目准入用例失败、16 条其余校验通过；GREEN focused：19 passed。随后补入缺失 observed_at 用例，最终完整 offline：213 passed、12 skipped；skipped 不计为 native/live conformance。
 - Parent 重新读取原 qualification `4f2d5dc8-4234-4665-b382-e82f1ad6cc00` 的 account evidence，源码 validator 离线通过。原 bytes 不变，SHA-256 为 `1d5fcc89abfe8e1d48df2c8b97bf7f0da2d1b726fe7fd51c88d9261a430e6b1c`；未刷新日期或读取 credential。
-- Installed CLI 初检绑定不可变旧 snapshot，源码修改本身不会自动生效；安装结果将在下方记录。
+- Installed CLI 初检绑定不可变旧 snapshot，源码修改本身不会自动生效。Parent 以既有 `installation.py` 安装 clean source commit `f38b993a7345e16628e34f653d68266d7ab83150`，package identity 为 `46c8ba942dba87858fbe742b567cfc2700a3f4780715d69cad00fe838a953a9d`，`source_dirty_at_install=false`。实际 `/home/reggie/.local/bin/subagent --help` exit 0，已安装 entry/Skill integrity 校验通过，安装包中的 validator 对同一旧 account evidence 离线通过且原 bytes 不变。
 
 ## Parent Risk Decision
 
