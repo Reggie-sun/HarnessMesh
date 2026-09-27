@@ -59,7 +59,8 @@ class DockerSandbox:
                 source: Path | None = None, broker_socket: Path | None = None,
                 candidate_directory: Path | None = None,
                 cancel: threading.Event | None = None,
-                on_stop: Callable[[], None] | None = None) -> ProcessResult:
+                on_stop: Callable[[], None] | None = None,
+                last_activity: Callable[[], float] | None = None) -> ProcessResult:
         self.verify()
         _validate_execution(argv, env, stdin, budgets, source, broker_socket)
         if candidate_directory is not None:
@@ -87,7 +88,8 @@ class DockerSandbox:
             with tempfile.TemporaryDirectory(prefix='router-docker-config-') as config:
                 invocation = Invocation((*_docker_prefix(config), 'start', '-ai', container_id), Path('/'),
                                         {'PATH': '/usr/bin:/bin'}, envelope, budgets)
-                return supervise(invocation, cancel=cancel, on_stop=revoke_once)
+                return supervise(invocation, cancel=cancel, on_stop=revoke_once,
+                                 last_activity=last_activity)
         finally:
             try:
                 revoke_once()

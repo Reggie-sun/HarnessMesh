@@ -25,7 +25,7 @@ def _identifier(value):
     return isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_.:-]{1,160}', value)
 
 
-def validate_response(profile, headers: dict, body: bytes) -> dict:
+def validate_response(profile, headers: dict, body: bytes, *, allow_tools=True) -> dict:
     is_stream = 'text/event-stream' in headers.get('content-type', '')
     if is_stream:
         starts = []
@@ -44,6 +44,9 @@ def validate_response(profile, headers: dict, body: bytes) -> dict:
                 raise RouterError('IDENTITY_UNVERIFIED', 'content precedes identity')
             if event.get('type') == 'error':
                 raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+            if (not allow_tools and event.get('type') == 'content_block_start'
+                    and event.get('content_block', {}).get('type') in ('tool_use', 'server_tool_use')):
+                raise RouterError('TOOL_POLICY_VIOLATION', 'reporting request cannot call tools')
             if event.get('type') == 'message_stop':
                 stopped = True
             if event.get('type') == 'message_delta' and isinstance(event.get('usage'), dict):
@@ -59,6 +62,9 @@ def validate_response(profile, headers: dict, body: bytes) -> dict:
         raise RouterError('IDENTITY_UNVERIFIED', 'response model absent')
     if message['model'] != profile.wire_model:
         raise RouterError('ROUTE_MISMATCH', 'upstream response model')
+    if (not allow_tools and any(block.get('type') in ('tool_use', 'server_tool_use')
+                               for block in message.get('content', []))):
+        raise RouterError('TOOL_POLICY_VIOLATION', 'reporting request cannot call tools')
     request_id = headers.get('request-id') or headers.get('x-request-id') or message.get('id')
     if not _identifier(request_id) or not _identifier(message.get('id')):
         raise RouterError('IDENTITY_UNVERIFIED', 'response association absent')

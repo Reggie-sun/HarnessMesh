@@ -55,7 +55,7 @@ def execute_writer(manifest, runtime, sandbox, store, run, facts, credential, *,
         prompt['candidate'] = {'execution_path': '/candidate/owned', 'source_path': record['source_path']}
         with Broker(route, credential, request_limit=task.budgets.request_limit,
                     wall_seconds=task.budgets.wall_seconds, upstream=upstream, allowed_tools=TOOLS,
-                    socket_path=root/'broker.sock',
+                    socket_path=root/'broker.sock', report_budget=True,
                     on_observation=lambda observed: store.observe(run, {'route': observed})) as broker:
             argv, env = project_command(runtime, route, root/'runtime', broker.capability, task.budgets)
             argv = list(argv)
@@ -63,7 +63,7 @@ def execute_writer(manifest, runtime, sandbox, store, run, facts, credential, *,
             argv += ['Read(//candidate/owned)', 'Edit(//candidate/owned)']
             process = sandbox.execute(tuple(argv), env, canonical_bytes(prompt), task.budgets,
                 source=root/'projection', broker_socket=root/'broker.sock', candidate_directory=overlay,
-                cancel=cancel, on_stop=broker.revoke)
+                cancel=cancel, on_stop=broker.revoke, last_activity=broker.last_activity)
         secrets = (credential.encode(), broker.capability.encode())
         artifacts = [store.artifact(run, 'stdout.jsonl', b'[QUARANTINED]' if process.truncated else process.stdout, secrets=secrets),
                      store.artifact(run, 'stderr.txt', b'[QUARANTINED]' if process.truncated else process.stderr, secrets=secrets),

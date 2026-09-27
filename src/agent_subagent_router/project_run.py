@@ -51,12 +51,13 @@ def execute_project(manifest, runtime, sandbox, store, run, facts, credential,
             raise RouterError('CONTRACT_TOO_LARGE')
         with Broker(route, credential, request_limit=task.budgets.request_limit,
                     wall_seconds=task.budgets.wall_seconds, upstream=upstream,
-                    allowed_tools=TOOLS, socket_path=root/'broker.sock',
+                    allowed_tools=TOOLS, socket_path=root/'broker.sock', report_budget=True,
                     on_observation=lambda observed: store.observe(run, {'route': observed})) as broker:
             argv, env = project_command(runtime, route, root/'runtime', broker.capability, task.budgets)
             process = sandbox.execute(argv, env, prompt, task.budgets,
                                       source=root/'projection', broker_socket=root/'broker.sock',
-                                      cancel=cancel, on_stop=broker.revoke)
+                                      cancel=cancel, on_stop=broker.revoke,
+                                      last_activity=broker.last_activity)
         secrets = (credential.encode(), broker.capability.encode())
         artifacts = [store.artifact(run, 'execution-view.json', canonical_bytes(projection),
                                    media_type='application/json'),

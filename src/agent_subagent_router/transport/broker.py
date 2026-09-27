@@ -16,6 +16,7 @@ import uuid
 
 from ..contracts import RouterError, canonical_bytes, strict_json
 from ..receipts import redact
+from .budget import reporting_request
 from .identity import validate_request, validate_response
 
 
@@ -48,12 +49,13 @@ class _TCPServer(_BoundedHandlers, http.server.ThreadingHTTPServer):
 
 class KimiUpstream:
     """No redirects, environment proxies, arbitrary host/path or SDK retries."""
-    def __init__(self, timeout: float, response_limit: int = 16*1024*1024):
+    def __init__(self, timeout: float, response_limit: int = 16*1024*1024, *, on_activity=None):
         self.timeout = timeout
         self.response_limit = response_limit
         self._connection = None
         self._lock = threading.Lock()
         self._closed = threading.Event()
+        self._on_activity = on_activity
 
     def __call__(self, path, headers, body):
         if path not in ('/v1/messages', '/v1/messages?beta=true'):
@@ -72,12 +74,23 @@ class KimiUpstream:
                 raise RouterError('CAPABILITY_REVOKED')
             connection.request('POST', '/coding'+path, body=body, headers=headers)
             response = connection.getresponse()
-            data = response.read(self.response_limit+1)
-            if len(data) > self.response_limit:
-                raise RouterError('UPSTREAM_OUTPUT_LIMIT')
+            if self._on_activity:
+                self._on_activity(0)  # Actual response headers, not a synthetic heartbeat.
+            data = bytearray()
+            while True:
+                if self._closed.is_set():
+                    raise RouterError('CAPABILITY_REVOKED')
+                chunk = response.read1(min(65536, self.response_limit+1-len(data)))
+                if not chunk:
+                    break
+                if self._on_activity:
+                    self._on_activity(len(chunk))
+                data.extend(chunk)
+                if len(data) > self.response_limit:
+                    raise RouterError('UPSTREAM_OUTPUT_LIMIT')
             kept = {name: value for name, value in response.getheaders()
                     if name.lower() in ('content-type', 'request-id', 'x-request-id')}
-            return response.status, {k.lower(): v for k, v in kept.items()}, data
+            return response.status, {k.lower(): v for k, v in kept.items()}, bytes(data)
         finally:
             connection.close()
             with self._lock:
@@ -97,7 +110,8 @@ class KimiUpstream:
 
 class Broker:
     def __init__(self, profile, credential: str, *, request_limit: int, wall_seconds: float,
-                 upstream=None, allowed_tools=(), on_observation=None, socket_path=None):
+                 upstream=None, allowed_tools=(), on_observation=None, socket_path=None,
+                 report_budget=False):
         if request_limit < 1 or wall_seconds <= 0:
             raise RouterError('INVALID_BUDGET')
         self.profile = profile
@@ -105,12 +119,14 @@ class Broker:
         self.capability = secrets.token_urlsafe(32)
         self._limit = request_limit
         self._deadline = time.monotonic()+wall_seconds
-        self._upstream = upstream if upstream is not None else KimiUpstream(wall_seconds)
         self._proof = 'synthetic_upstream' if upstream is not None else 'authenticated_endpoint_declaration'
         self.allowed_tools = tuple(allowed_tools)
         self._active = True
         self._inflight = False
         self._lock = threading.Lock()
+        self._last_activity = time.monotonic()
+        self._upstream = upstream if upstream is not None else KimiUpstream(
+            wall_seconds, on_activity=self._record_activity)
         self._observations = []
         self._frozen_observations = None
         self._publication_lock = threading.RLock()
@@ -172,7 +188,23 @@ class Broker:
                     if broker._inflight or len(broker._observations) >= broker._limit:
                         self.reply(429, b'{"error":"REQUEST_BUDGET_EXHAUSTED"}')
                         return
+                    client_hash = hashlib.sha256(raw).hexdigest()
+                    phase = None
+                    if report_budget:
+                        try:
+                            body, phase = reporting_request(body,
+                                remaining_seconds=broker._deadline-time.monotonic(),
+                                requests_remaining=broker._limit-len(broker._observations),
+                                wall_seconds=wall_seconds)
+                        except RouterError as exc:
+                            self.reply(400, canonical_bytes({'error': exc.code}))
+                            return
+                        raw = canonical_bytes(body)
+                        if len(raw) > 8*1024*1024:
+                            self.reply(400, b'{"error":"INVALID_BODY"}')
+                            return
                     broker._inflight = True
+                    broker._last_activity = admitted_at = time.monotonic()
                     broker._idle.clear()
                     observation = {'attempt_id': str(uuid.uuid4()),
                                    'request_number': len(broker._observations)+1,
@@ -181,6 +213,8 @@ class Broker:
                                    'effort': body['output_config']['effort'],
                                    'request_sha256': hashlib.sha256(raw).hexdigest(),
                                    'classification': 'OUTCOME_UNKNOWN'}
+                    if phase is not None:
+                        observation.update(budget_phase=phase, client_request_sha256=client_hash)
                     broker._observations.append(observation)
                 try:
                     broker._publish()
@@ -213,7 +247,8 @@ class Broker:
                         raise RouterError('CREDENTIAL_OR_ENTITLEMENT_REJECTED')
                     if status != 200:
                         raise RouterError('UPSTREAM_HTTP_ERROR')
-                    observation.update(validate_response(broker.profile, upstream_headers, data))
+                    observation.update(validate_response(broker.profile, upstream_headers, data,
+                                                         allow_tools=phase != 'FINAL_REPORT'))
                     observation['proof'] = broker._proof
                     with broker._lock:
                         active = broker._active and time.monotonic() < broker._deadline
@@ -228,6 +263,7 @@ class Broker:
                     self.reply(502, b'{"error":"OUTCOME_UNKNOWN"}')
                 finally:
                     with broker._lock:
+                        observation['duration_seconds'] = time.monotonic()-admitted_at
                         broker._inflight = False
                     try:
                         broker._publish()
@@ -249,6 +285,20 @@ class Broker:
         self._thread = threading.Thread(target=self._server.serve_forever,
                                         kwargs={'poll_interval': .025}, daemon=True)
         self.rejections = []
+
+    def _record_activity(self, received_bytes):
+        with self._lock:
+            if self._active:
+                self._last_activity = time.monotonic()
+                if self._observations:
+                    observed = self._observations[-1]
+                    observed['upstream_bytes_received'] = (
+                        observed.get('upstream_bytes_received', 0) + received_bytes)
+
+    def last_activity(self):
+        """Trusted observed transport I/O; does not claim model reasoning progress."""
+        with self._lock:
+            return self._last_activity
 
     def _record_rejection(self, code):
         with self._lock:

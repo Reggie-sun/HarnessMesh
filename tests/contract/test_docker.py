@@ -70,7 +70,7 @@ def test_execute_revokes_before_removing_only_the_created_container(monkeypatch)
     monkeypatch.setattr(docker, '_docker_binary', lambda: '/usr/bin/docker')
     events = []
 
-    def supervised(invocation, *, cancel, on_stop):
+    def supervised(invocation, *, cancel, on_stop, last_activity):
         assert 'HOST-SECRET' not in ' '.join(invocation.argv)
         assert '--host=unix:///var/run/docker.sock' in invocation.argv
         assert '--config' in invocation.argv

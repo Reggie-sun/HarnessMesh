@@ -43,8 +43,9 @@ def _signal_group(pid: int, sig: int) -> bool:
 
 
 def supervise(invocation: Invocation, *, cancel: threading.Event | None = None,
-              on_stop: Callable[[], None] | None = None) -> ProcessResult:
-    start = last_activity = time.monotonic()
+              on_stop: Callable[[], None] | None = None,
+              last_activity: Callable[[], float] | None = None) -> ProcessResult:
+    start = last_io = time.monotonic()
     try:
         child = subprocess.Popen(invocation.argv, cwd=invocation.cwd, env=invocation.env,
                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -87,13 +88,15 @@ def supervise(invocation: Invocation, *, cancel: threading.Event | None = None,
         while selector.get_map() or child.poll() is None:
             now = time.monotonic()
             if not stopped:
+                if last_activity is not None:
+                    last_io = max(last_io, min(now, last_activity()))
                 if cancel is not None and cancel.is_set():
                     reason = 'cancelled'
                     stop()
                 elif now-start >= invocation.budgets.wall_seconds:
                     reason = 'timeout'
                     stop()
-                elif now-last_activity >= invocation.budgets.idle_seconds:
+                elif now-last_io >= invocation.budgets.idle_seconds:
                     reason = 'idle_timeout'
                     stop()
                 elif child.poll() is not None:
@@ -123,7 +126,7 @@ def supervise(invocation: Invocation, *, cancel: threading.Event | None = None,
                     selector.unregister(stream)
                     stream.close()
                     continue
-                last_activity = time.monotonic()
+                last_io = time.monotonic()
                 observed[name] += len(chunk)
                 remaining = invocation.budgets.output_bytes - sum(map(len, buffers.values()))
                 buffers[name].extend(chunk[:max(remaining, 0)])

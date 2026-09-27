@@ -30,6 +30,7 @@ def project_prompt(manifest, projection):
         'role': task['role'], 'goal': task['goal'],
         'source_map': projection['source_map'],
         'required_evidence': task['expected_evidence'],
+        'budgets': task['budgets'],
         'report_schema': {
             'findings': ['claim with its supporting source lines'],
             'proposed_changes': [],
@@ -39,6 +40,8 @@ def project_prompt(manifest, projection):
             'uncertainties': [], 'questions': []},
         'instructions': (
             'Read the selected source files using Read. All paths are relative to /work. '
+            'Batch independent necessary Reads and prioritize required_evidence. '
+            'Observe HarnessMesh budget notices; FINAL_REPORT ends tool exploration. '
             'Return exactly one JSON object without markdown: findings (strings), '
             'proposed_changes (objects), evidence_refs (objects with original absolute path, '
             'sha256 from source_map, start_line and end_line), uncertainties (strings), '

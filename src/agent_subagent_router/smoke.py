@@ -73,7 +73,8 @@ def run_smoke(runtime, name: str, store: ReceiptStore, credential_ref: dict | No
                     on_observation=lambda facts: store.observe(run, {'route': facts})) as broker:
             invocation = build_invocation(runtime, route, Path(temporary)/'runtime',
                                           broker.url, broker.capability, SMOKE_PROMPT, budget)
-            process = supervise(invocation, cancel=cancel, on_stop=broker.revoke)
+            process = supervise(invocation, cancel=cancel, on_stop=broker.revoke,
+                                last_activity=broker.last_activity)
         # Broker is revoked, drained/frozen, and cannot publish after finalization.
         secrets = (credential.encode(), broker.capability.encode())
         stdout = b'[QUARANTINED: output limit]' if process.truncated else process.stdout

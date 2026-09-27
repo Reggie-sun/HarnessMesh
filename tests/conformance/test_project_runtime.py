@@ -100,6 +100,11 @@ def test_sealed_project_invocation_binds_native_read_report_and_receipt(tmp_path
     calls = []
     def upstream(path, headers, body):
         calls.append(body)
+        wire = json.loads(body)
+        assert ('FINAL_REPORT' if len(calls) == 2 else 'EXPLORE') in (
+            wire['messages'][-1]['content'][-1]['text'])
+        if len(calls) == 2:
+            assert wire['tools'] == []
         blocks = [{'type': 'tool_use', 'id': 'read_1', 'name': 'Read',
                    'input': {'file_path': '/work/a.py'}}] if len(calls) == 1 else [
                    {'type': 'text', 'text': json.dumps(report)}]

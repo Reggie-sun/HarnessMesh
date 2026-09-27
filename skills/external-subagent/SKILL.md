@@ -25,6 +25,14 @@ Kimi task 的 `budgets.output_bytes` 限制整条 Claude `stream-json` stdout �
 
 `PROCESS_OUTPUT_LIMIT` 后先检查 receipt 中原始 observed bytes、request count、sealed scope 与预算，再决定是否新建一次有限 attempt；不得自动重试。截断的输出继续隔离，不能将没有 terminal 的 partial findings 当成已完成 review。
 
+### Time And Reporting Budget
+
+`idle_seconds` 由 supervisor 同时观察 runtime stdout/stderr 和 broker 实际上游接收活动；不是“模型必须在此时间内交出整个答案”。Broker 仍在完整响应验证身份后才交付内容，CLI 自身的等待上限服从 wall budget。完全停滞仍触发 idle timeout；持续 progress/ping 也不能延长总 wall deadline。
+
+项目调用每次 wire request 都附带剩余 wall/request 数量；最后一次可用请求或进入预留收尾时间后为 `FINAL_REPORT`，该次不再提供工具，若上游仍要求工具则拒绝。预算提示由 broker 根据 sealed limits 计算，不修改 model/effort、追加请求或重试。模型必须报告缺失证据，不得编造完成；必需 Read/report 校验保持不变，收尾不保证 acceptance 或必然按时返回。
+
+Parent 的 review package 应聚焦实际风险和 changed boundaries；`expected_evidence` 只列确实必须实际读取的材料，不将所有背景和 Harness stdout 全部变成必读。鼓励批量独立 Reads、避免重复读取；预算不够时缩小一次任务的职责或明确记录未完成检查，不能删掉必要验证来换取通过。失败后先区分 `process.reason` 的 wall/idle 与未完成 wire observation；不要机械加大 timeout 或重新运行同一大包。
+
 ## Triggered Implementation Review
 
 本 Skill 不因 Spec、Plan、diff 或 artifact 存在而自行触发 review，也不为 Spec/Plan 默认调用 Kimi。Parent 只有在 repository canonical Spec §9 的 Implementation Review Risk Gate 得出 `KIMI_REVIEW_REQUIRED` 后，才使用本节 mechanics。
