@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Kimi Output Budget — 2026-09-27
+
+修复项目调查反复以 report 大小设置 raw stream 预算的问题：Kimi task 缺省 output_bytes 在封存前填入 8 MiB，live project 小于 2 MiB 时零请求拒绝；显式 seal 不改写，16 MiB 硬上限与既有超限/证据规则保留。源码、受管安装和验证见 [record](records/kimi-output-budget-fix.md)。
+
 ## Entitlement Age Policy — 2026-09-26
 
 按用户明确指令，Deep account entitlement observation 不再因超过 24 小时自动失效；历史观察日期保持原样。有效非未来时间戳、证据类型/来源、credential match、tier、1M entitlement 与 qualification 的依赖身份校验仍适用。该变化不证明远端当前订阅有效或已消费 1M context。离线验证和安装绑定见 [record](records/entitlement-age-limit-removal.md)。
