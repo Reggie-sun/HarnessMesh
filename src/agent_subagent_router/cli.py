@@ -89,6 +89,7 @@ def main(argv=None):
                                   sandbox=installed_sandbox(task.backend, args.sandbox_config))
             output = {'seal': sealed['seal'], 'contract': str(Path(sealed['snapshot_root'])/'manifest.json'),
                       'source_count': len(sealed['sources']), 'project_access': 'SEALED_ONLY',
+                      'frozen_source_paths': sorted(s['path'] for s in sealed['sources']),
                       'budgets': sealed['task']['budgets']}
             if task.backend == 'kimi' and task.budgets.output_bytes < MIN_KIMI_LIVE_OUTPUT_BYTES:
                 output['warnings'] = [{'classification': 'OUTPUT_BUDGET_TOO_SMALL',

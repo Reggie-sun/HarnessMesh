@@ -96,6 +96,7 @@ def test_inspect_exposes_sealed_budget_and_live_warning(tmp_path, monkeypatch, c
     output = json.loads(capsys.readouterr().out)
     sealed = json.loads(Path(output['contract']).read_text())
     assert output['budgets'] == sealed['task']['budgets']
+    assert output['frozen_source_paths'] == sorted(s['path'] for s in sealed['sources'])
     assert output['budgets']['output_bytes'] == (8388608 if cap is None else cap)
     if cap == 32000:
         assert output['warnings'][0]['classification'] == 'OUTPUT_BUDGET_TOO_SMALL'

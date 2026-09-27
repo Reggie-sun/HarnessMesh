@@ -52,6 +52,8 @@ def execute_project(manifest, runtime, sandbox, store, run, facts, credential,
         with Broker(route, credential, request_limit=task.budgets.request_limit,
                     wall_seconds=task.budgets.wall_seconds, upstream=upstream,
                     allowed_tools=TOOLS, socket_path=root/'broker.sock', report_budget=True,
+                    before_request=lambda: verify(manifest),
+                    generation_tokens=task.budgets.generation_tokens,
                     on_observation=lambda observed: store.observe(run, {'route': observed})) as broker:
             argv, env = project_command(runtime, route, root/'runtime', broker.capability, task.budgets)
             process = sandbox.execute(argv, env, prompt, task.budgets,

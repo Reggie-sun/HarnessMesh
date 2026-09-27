@@ -17,6 +17,12 @@ description: Route standing-authorized Kimi or an explicitly selected external b
 4. `subagent run --contract <manifest.json> --backend kimi --profile <selected-profile> --live --credential-ref <private-reference.json> --qualification <matching-canonical-route-id>`；`<selected-profile>`必须与sealed contract一致，且`worker`/`deep`使用各自matching qualification。Gemini用`--backend gemini --profile worker`，不传Kimi qualification；使用已有private OAuth reference，账号不合格即阻断，不登录/onboarding。
 5. `subagent receipt <invocation-id>` 检查 process、protocol、upstream identity、artifacts 和实际 Read evidence。`PARSED` 不等于 KEEP；项目 Harness、finding adjudication 与 completion 由 Parent 负责。
 
+### Source Stability During Invocation
+
+`inspect` 返回 `frozen_source_paths`，包含 source、适用 instructions、accepted refs、Plan、Harness 和选定 Skill assets，不只是 `read_paths`。从 seal 到 receipt 核验完成期间，Parent 不得修改其中任何文件，也不得派 writer 修改它们；并行工作只可涉及集合外文件。若已有同文件 writer，先按 ownership 规则解决后再 seal，不付费调用一个已知将失效的 snapshot。
+
+每次项目上游请求前重新执行原 seal/snapshot/host 校验；发生 drift 时撤销 invocation，后续请求不再送往 Provider。结束时校验仍保留；检查不是文件锁，不能阻止其他 session 写入，或挽回已经发出的请求。`SOURCE_CHANGED` 不是 timeout，不采用其报告，也不自动重试。若要继续，先稳定整个 frozen set，再由 Parent 新建有理由的有限 attempt。
+
 ### Output Budget
 
 Kimi task 的 `budgets.output_bytes` 限制整条 Claude `stream-json` stdout 与 stderr 的总 bytes，包含 thinking progress、native Read/tool payload 和最终报告；它不是模型 output tokens，也不是 256K/1M context。通常省略此字段，由 resolver 前的 contract normalization 将 **8 MiB** 写入 sealed task；`inspect` 输出实际 budgets，Parent 必须检查。其他 wall/idle/request/context budgets 仍须显式给出。
@@ -26,6 +32,10 @@ Kimi task 的 `budgets.output_bytes` 限制整条 Claude `stream-json` stdout �
 `PROCESS_OUTPUT_LIMIT` 后先检查 receipt 中原始 observed bytes、request count、sealed scope 与预算，再决定是否新建一次有限 attempt；不得自动重试。截断的输出继续隔离，不能将没有 terminal 的 partial findings 当成已完成 review。
 
 ### Time And Reporting Budget
+
+新 Kimi project task 在 `inspect` 前后可检查 `budgets.generation_tokens`：缺省在新 seal 中写入 **4096**，显式值须为 **1024–32000** 整数。这是每次上游生成的总输出 token（包含 thinking），不是 context 或 stream bytes。保留 worker/high、deep/max；较大报告可由 Parent 在新 task 中显式选择足够额度，不能自动提升或在旧 seal 上改写。旧 seal 缺少该额度时 live run 零请求返回 `GENERATION_BUDGET_REQUIRED`，须重新 inspect；不是回退到旧默认 32000。
+
+Runtime 收到相同 output cap，broker 再对实际 `max_tokens` 执行不增大的上限，并记录 request_max_tokens / generation_token_limit。若 manual thinking budget 与 cap 不兼容则拒绝，不静默削减 thinking。上游 `stop_reason=max_tokens` 或报告的 output usage 超出实际 cap 时，返回 `UPSTREAM_GENERATION_LIMIT`，不交付被截断内容并撤销本 invocation；不自动续写、重试或发起另一轮。上游仍可能在额度用尽前超时，token 上限不构成时延 SLA。
 
 `idle_seconds` 由 supervisor 同时观察 runtime stdout/stderr 和 broker 实际上游接收活动；不是“模型必须在此时间内交出整个答案”。Broker 仍在完整响应验证身份后才交付内容，CLI 自身的等待上限服从 wall budget。完全停滞仍触发 idle timeout；持续 progress/ping 也不能延长总 wall deadline。
 

@@ -111,8 +111,11 @@ class KimiUpstream:
 class Broker:
     def __init__(self, profile, credential: str, *, request_limit: int, wall_seconds: float,
                  upstream=None, allowed_tools=(), on_observation=None, socket_path=None,
-                 report_budget=False):
+                 report_budget=False, before_request=None, generation_tokens=None):
         if request_limit < 1 or wall_seconds <= 0:
+            raise RouterError('INVALID_BUDGET')
+        if generation_tokens is not None and (type(generation_tokens) is not int
+                                              or not 1024 <= generation_tokens <= 32000):
             raise RouterError('INVALID_BUDGET')
         self.profile = profile
         self._credential = credential
@@ -182,6 +185,20 @@ class Broker:
                     self.reply(400, canonical_bytes({'error': code}))
                     return
                 with broker._lock:
+                    active = broker._active
+                if not active:
+                    self.reply(403, b'{"error":"CAPABILITY_REVOKED"}')
+                    return
+                if before_request is not None:
+                    try:
+                        before_request()
+                    except Exception as exc:
+                        code = exc.code if isinstance(exc, RouterError) else 'SOURCE_CHECK_FAILED'
+                        broker._record_rejection(code)
+                        broker.revoke()
+                        self.reply(409, canonical_bytes({'error': code}))
+                        return
+                with broker._lock:
                     if not broker._active or time.monotonic() >= broker._deadline:
                         self.reply(403, b'{"error":"CAPABILITY_REVOKED"}')
                         return
@@ -190,6 +207,21 @@ class Broker:
                         return
                     client_hash = hashlib.sha256(raw).hexdigest()
                     phase = None
+                    if generation_tokens is not None:
+                        requested = body.get('max_tokens')
+                        if type(requested) is not int or requested <= 0:
+                            if len(broker.rejections) < 64:
+                                broker.rejections.append('INVALID_GENERATION_BUDGET')
+                            self.reply(400, b'{"error":"INVALID_GENERATION_BUDGET"}')
+                            return
+                        cap = min(requested, generation_tokens)
+                        if (body['thinking']['type'] == 'enabled'
+                                and body['thinking']['budget_tokens'] >= cap):
+                            if len(broker.rejections) < 64:
+                                broker.rejections.append('GENERATION_BUDGET_INCOMPATIBLE')
+                            self.reply(400, b'{"error":"GENERATION_BUDGET_INCOMPATIBLE"}')
+                            return
+                        body = body | {'max_tokens': cap}
                     if report_budget:
                         try:
                             body, phase = reporting_request(body,
@@ -199,6 +231,7 @@ class Broker:
                         except RouterError as exc:
                             self.reply(400, canonical_bytes({'error': exc.code}))
                             return
+                    if report_budget or generation_tokens is not None:
                         raw = canonical_bytes(body)
                         if len(raw) > 8*1024*1024:
                             self.reply(400, b'{"error":"INVALID_BODY"}')
@@ -215,6 +248,9 @@ class Broker:
                                    'classification': 'OUTCOME_UNKNOWN'}
                     if phase is not None:
                         observation.update(budget_phase=phase, client_request_sha256=client_hash)
+                    if generation_tokens is not None:
+                        observation.update(generation_token_limit=generation_tokens,
+                            request_max_tokens=body['max_tokens'], client_request_sha256=client_hash)
                     broker._observations.append(observation)
                 try:
                     broker._publish()
@@ -249,6 +285,9 @@ class Broker:
                         raise RouterError('UPSTREAM_HTTP_ERROR')
                     observation.update(validate_response(broker.profile, upstream_headers, data,
                                                          allow_tools=phase != 'FINAL_REPORT'))
+                    if (generation_tokens is not None
+                            and observation['usage'].get('output_tokens', 0) > body['max_tokens']):
+                        raise RouterError('UPSTREAM_GENERATION_LIMIT')
                     observation['proof'] = broker._proof
                     with broker._lock:
                         active = broker._active and time.monotonic() < broker._deadline
@@ -257,6 +296,8 @@ class Broker:
                     self.reply(200, data, upstream_headers.get('content-type', 'application/json'))
                 except RouterError as exc:
                     observation['classification'] = exc.code
+                    if exc.code == 'UPSTREAM_GENERATION_LIMIT':
+                        broker.revoke()
                     self.reply(502, canonical_bytes({'error': exc.code}))
                 except Exception:
                     observation['classification'] = 'OUTCOME_UNKNOWN'

@@ -30,6 +30,7 @@ def validate_response(profile, headers: dict, body: bytes, *, allow_tools=True) 
     if is_stream:
         starts = []
         final_usage = {}
+        stop_reason = None
         stopped = False
         for block in body.replace(b'\r\n', b'\n').split(b'\n\n'):
             data = b'\n'.join(line[5:].lstrip() for line in block.splitlines() if line.startswith(b'data:'))
@@ -51,17 +52,21 @@ def validate_response(profile, headers: dict, body: bytes, *, allow_tools=True) 
                 stopped = True
             if event.get('type') == 'message_delta' and isinstance(event.get('usage'), dict):
                 final_usage.update(event['usage'])
+            if event.get('type') == 'message_delta':
+                stop_reason = event.get('delta', {}).get('stop_reason', stop_reason)
         if len(starts) != 1 or not stopped:
             raise RouterError('IDENTITY_UNVERIFIED', 'missing or ambiguous message identity')
         message = starts[0]
         if isinstance(message, dict):
-            message = message | {'usage': (message.get('usage', {}) | final_usage)}
+            message = message | {'usage': (message.get('usage', {}) | final_usage), 'stop_reason': stop_reason}
     else:
         message = strict_json(body)
     if not isinstance(message, dict) or not message.get('model'):
         raise RouterError('IDENTITY_UNVERIFIED', 'response model absent')
     if message['model'] != profile.wire_model:
         raise RouterError('ROUTE_MISMATCH', 'upstream response model')
+    if message.get('stop_reason') == 'max_tokens':
+        raise RouterError('UPSTREAM_GENERATION_LIMIT')
     if (not allow_tools and any(block.get('type') in ('tool_use', 'server_tool_use')
                                for block in message.get('content', []))):
         raise RouterError('TOOL_POLICY_VIOLATION', 'reporting request cannot call tools')

@@ -44,6 +44,7 @@ def strict_json(raw: str | bytes) -> Any:
 # the final report. Defaults are materialized before sealing, never at execution.
 DEFAULT_KIMI_OUTPUT_BYTES = 8 * 1024 * 1024
 MIN_KIMI_LIVE_OUTPUT_BYTES = 2 * 1024 * 1024
+DEFAULT_KIMI_GENERATION_TOKENS = 4096
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,7 @@ class Budgets:
     request_limit: int
     output_bytes: int
     context_bytes: int
+    generation_tokens: int | None = None
 
     def __post_init__(self):
         limits = {'wall_seconds': 3600, 'idle_seconds': 3600, 'request_limit': 64,
@@ -66,6 +68,9 @@ class Budgets:
                 raise RouterError('INVALID_CONTRACT', f'{name} must be integer')
         if self.idle_seconds > self.wall_seconds:
             raise RouterError('INVALID_CONTRACT', 'idle exceeds wall budget')
+        if (self.generation_tokens is not None and
+                (type(self.generation_tokens) is not int or not 1024 <= self.generation_tokens <= 32000)):
+            raise RouterError('INVALID_CONTRACT', 'generation_tokens must be an integer in 1024..32000')
 
 
 @dataclass(frozen=True)
@@ -99,6 +104,8 @@ class TaskContract:
         try:
             value = dict(data)
             budgets = value['budgets']
+            if 'generation_tokens' in budgets and budgets['generation_tokens'] is None:
+                raise RouterError('INVALID_CONTRACT', 'explicit generation_tokens cannot be null')
             if value.get('backend') == 'kimi':
                 budgets = {'output_bytes': DEFAULT_KIMI_OUTPUT_BYTES, **budgets}
             value['budgets'] = Budgets(**budgets)
@@ -128,6 +135,8 @@ class TaskContract:
             raise RouterError('INVALID_CONTRACT', 'selected_refs must be a list')
         if self.backend == 'kimi' and self.budgets.idle_seconds > 1800:
             raise RouterError('INVALID_CONTRACT', 'kimi idle budget exceeds pinned runtime limit')
+        if self.backend != 'kimi' and self.budgets.generation_tokens is not None:
+            raise RouterError('INVALID_CONTRACT', 'generation_tokens is qualified only for Kimi')
         if bool(self.selected_refs) != (self.active_documents == 'accepted_refs'):
             raise RouterError('INVALID_CONTRACT', 'active documents not bound')
         for ref in self.selected_refs:
@@ -142,5 +151,8 @@ class TaskContract:
                 raise RouterError('INVALID_CONTRACT', f'invalid {name}')
 
     def to_dict(self) -> dict:
-        return {field.name: asdict(self)[field.name] for field in fields(self)
-                if getattr(self, field.name) is not None}
+        result = {field.name: asdict(self)[field.name] for field in fields(self)
+                  if getattr(self, field.name) is not None}
+        if self.budgets.generation_tokens is None:
+            result['budgets'].pop('generation_tokens')
+        return result

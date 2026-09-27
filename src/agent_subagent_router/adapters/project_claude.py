@@ -19,6 +19,8 @@ def project_command(runtime, route, directory, capability, budgets):
     argv.remove('--disable-slash-commands')
     argv += ['--allowedTools', 'Read(//work/**)', 'Glob(//work/**)', 'Grep(//work/**)']
     env = dict(invocation.env)
+    if budgets.generation_tokens is not None:
+        env['CLAUDE_CODE_MAX_OUTPUT_TOKENS'] = str(budgets.generation_tokens)
     env.update(HOME='/home/worker', TMPDIR='/tmp', CLAUDE_CONFIG_DIR='/home/worker/config')
     env.pop('CLAUDE_CODE_DISABLE_CLAUDE_MDS')
     return tuple(argv), env

@@ -74,7 +74,8 @@ def test_native_read_scope_and_forbidden_tools(tmp_path):
 
 
 @pytest.mark.containment
-def test_sealed_project_invocation_binds_native_read_report_and_receipt(tmp_path):
+@pytest.mark.parametrize('change_host', [None, 'before_next', 'terminal', 'generation_limit'])
+def test_sealed_project_invocation_binds_native_read_report_and_receipt(tmp_path, change_host):
     from agent_subagent_router.api import inspect_task, run_contract
     from agent_subagent_router.contracts import TaskContract, hash_bytes
     from agent_subagent_router.receipts import ReceiptStore
@@ -100,7 +101,11 @@ def test_sealed_project_invocation_binds_native_read_report_and_receipt(tmp_path
     calls = []
     def upstream(path, headers, body):
         calls.append(body)
+        if ((change_host == 'before_next' and len(calls) == 1)
+                or (change_host == 'terminal' and len(calls) == 2)):
+            (source/'a.py').write_text('VALUE = 99\n')
         wire = json.loads(body)
+        assert wire['max_tokens'] == sealed['task']['budgets']['generation_tokens'] == 4096
         assert ('FINAL_REPORT' if len(calls) == 2 else 'EXPLORE') in (
             wire['messages'][-1]['content'][-1]['text'])
         if len(calls) == 2:
@@ -108,9 +113,27 @@ def test_sealed_project_invocation_binds_native_read_report_and_receipt(tmp_path
         blocks = [{'type': 'tool_use', 'id': 'read_1', 'name': 'Read',
                    'input': {'file_path': '/work/a.py'}}] if len(calls) == 1 else [
                    {'type': 'text', 'text': json.dumps(report)}]
-        return 200, {'content-type': 'text/event-stream'}, _stream(blocks, tools=len(calls) == 1)
+        data = _stream(blocks, tools=len(calls) == 1)
+        if change_host == 'generation_limit' and len(calls) == 2:
+            events = [json.loads(line[6:]) for line in data.splitlines() if line.startswith(b'data: ')]
+            for event in events:
+                if event['type'] == 'message_delta':
+                    event['delta']['stop_reason'] = 'max_tokens'
+            data = ''.join('data: '+json.dumps(e)+'\n\n' for e in events).encode()
+        return 200, {'content-type': 'text/event-stream'}, data
     store = ReceiptStore(tmp_path/'runs')
     receipt = run_contract(sealed, 'kimi', 'worker', store, runtime, sandbox=sandbox, upstream=upstream)
+    if change_host == 'generation_limit':
+        assert receipt['classification'] == 'UPSTREAM_GENERATION_LIMIT', receipt
+        assert receipt['wire_requests'] == len(calls) == 2
+        assert not any(a['path'] == 'worker-report.json' for a in receipt['artifacts'])
+        return
+    if change_host:
+        assert receipt['classification'] == 'SOURCE_CHANGED', receipt
+        assert receipt['wire_requests'] == len(calls) == (1 if change_host == 'before_next' else 2)
+        assert not any(a['path'] == 'worker-report.json' for a in receipt['artifacts'])
+        assert store.read(receipt['invocation_id']) == receipt
+        return
     assert receipt['classification'] == 'PARSED', receipt
     assert receipt['wire_requests'] == 2 and receipt['observed_reads'][0]['start_line'] == 1
     assert receipt['parent_acceptance'] == 'NOT_EVALUATED'

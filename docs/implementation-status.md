@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Timeout Follow-up — 2026-09-28
+
+新证据表明，前次修复后单次长生成仍可耗尽 wall deadline。按用户选择，新 Kimi task 封存显式 generation_tokens（默认 4096），生成截断即拒收并 revoke、不自动续写；旧 seal 不静默改写。另新增 project 每次请求前的原 seal/source 校验及 `inspect.frozen_source_paths`，减少 source drift 后继续付费的浪费；未改变 final acceptance 或将超时宣称已根治。诊断、测试和边界见 [record](records/kimi-timeout-followup-2026-09-28.md)。
+
 ## Kimi Timeout And Reporting — 2026-09-27
 
 Broker 的实际上游 headers/chunks 纳入 supervisor idle 判断，完整身份验证后交付与总 wall deadline 保持；项目请求新增有限的收尾阶段，剩余时间或最后请求触发停止工具探索并生成报告。源代码、安装、native/live 证据与限制见 [record](records/kimi-timeout-reporting-fix.md)。这不保证上游停滞或超大任务必然完成，不改写历史失败审查。

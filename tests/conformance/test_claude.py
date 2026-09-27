@@ -35,7 +35,8 @@ def fake_stream(model):
 
 @pytest.mark.native
 @pytest.mark.parametrize('name', ['worker', 'deep'])
-def test_real_cli_wire_profile_and_isolation(tmp_path, monkeypatch, name):
+@pytest.mark.parametrize('generation_cap', [None, 4096])
+def test_real_cli_wire_profile_and_isolation(tmp_path, monkeypatch, name, generation_cap):
     monkeypatch.setenv('ANTHROPIC_BASE_URL', 'https://foreign.invalid')
     monkeypatch.setenv('ANTHROPIC_MODEL', 'MiniMax-M3')
     monkeypatch.setenv('ANTHROPIC_AUTH_TOKEN', 'HOST-SECRET-CANARY')
@@ -48,7 +49,8 @@ def test_real_cli_wire_profile_and_isolation(tmp_path, monkeypatch, name):
         return 200, {'content-type': 'text/event-stream'}, fake_stream(route.wire_model)
 
     runtime = Runtime(str(NATIVE), '2.1.277', hash_bytes(NATIVE.read_bytes()))
-    with Broker(route, 'FAKE-PROVIDER-SENTINEL', request_limit=1, wall_seconds=8, upstream=fake) as broker:
+    with Broker(route, 'FAKE-PROVIDER-SENTINEL', request_limit=1, wall_seconds=8, upstream=fake,
+                generation_tokens=generation_cap) as broker:
         invocation = build_invocation(runtime, route, tmp_path/'runtime', broker.url,
                                       broker.capability, b'Return a small JSON report.', Budgets(8, 8, 1, 200000, 200000))
         assert b'Return a small' not in str(invocation.argv).encode()
@@ -58,6 +60,9 @@ def test_real_cli_wire_profile_and_isolation(tmp_path, monkeypatch, name):
     assert result.exit_code == 0, result.stderr
     assert len(seen) == 1 and seen[0]['output_config']['effort'] == route.effort
     assert seen[0]['thinking']['type'] in ('enabled', 'adaptive')
+    if generation_cap is not None:
+        assert seen[0]['max_tokens'] <= generation_cap
+        assert broker.observations[0]['request_max_tokens'] == seen[0]['max_tokens']
     assert seen[0].get('tools', []) == []
     assert broker.observations[0]['classification'] == 'IDENTITY_VERIFIED'
     assert decode_claude(result.stdout).classification == 'PARSED'

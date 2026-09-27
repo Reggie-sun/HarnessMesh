@@ -1,9 +1,10 @@
 """Parent entrypoints; only the parent can decide project acceptance."""
 from pathlib import Path
+from dataclasses import replace
 import uuid
 
 from .backends.kimi import profile
-from .contracts import (DEFAULT_KIMI_OUTPUT_BYTES, MIN_KIMI_LIVE_OUTPUT_BYTES,
+from .contracts import (DEFAULT_KIMI_OUTPUT_BYTES, MIN_KIMI_LIVE_OUTPUT_BYTES, DEFAULT_KIMI_GENERATION_TOKENS,
                         RouterError, TaskContract, strict_json)
 from .permissions.containment import require_project_containment
 from .receipts import ReceiptStore
@@ -20,6 +21,8 @@ def inspect_task(task: TaskContract, state: Path, runtime, *, sandbox=None) -> d
             raise RouterError('WRITER_NOT_QUALIFIED')
     elif task.backend == 'kimi':
         selected = profile(task.profile)
+        if task.budgets.generation_tokens is None:
+            task = replace(task, budgets=replace(task.budgets, generation_tokens=DEFAULT_KIMI_GENERATION_TOKENS))
     else:
         raise RouterError('BACKEND_NOT_QUALIFIED')
     runtime.verify()
@@ -66,6 +69,9 @@ def run_contract(manifest: dict, backend: str, name: str, store: ReceiptStore, r
                 f'not final report tokens. Seal a new task with output_bytes omitted '
                 f'(default {DEFAULT_KIMI_OUTPUT_BYTES}) or an explicit sufficient limit; '
                 'the existing sealed budget is unchanged.')
+        if backend == 'kimi' and upstream is None and task.budgets.generation_tokens is None:
+            raise RouterError('GENERATION_BUDGET_REQUIRED',
+                'Seal a new task with an explicit generation_tokens budget; legacy seal is unchanged.')
         if task.role == 'implementer' and readonly_qualification_id is None:
             raise RouterError('WRITER_NOT_QUALIFIED', 'M8 requires qualified read-only route')
         if backend == 'gemini':
