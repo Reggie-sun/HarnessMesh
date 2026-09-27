@@ -40,6 +40,12 @@ def strict_json(raw: str | bytes) -> Any:
         raise RouterError('PROTOCOL_ERROR', 'invalid JSON') from exc
 
 
+# Claude stream-json includes progress events and native tool payloads, not just
+# the final report. Defaults are materialized before sealing, never at execution.
+DEFAULT_KIMI_OUTPUT_BYTES = 8 * 1024 * 1024
+MIN_KIMI_LIVE_OUTPUT_BYTES = 2 * 1024 * 1024
+
+
 @dataclass(frozen=True)
 class Budgets:
     wall_seconds: float
@@ -92,7 +98,10 @@ class TaskContract:
             raise RouterError('INVALID_CONTRACT', 'task must be an object')
         try:
             value = dict(data)
-            value['budgets'] = Budgets(**value['budgets'])
+            budgets = value['budgets']
+            if value.get('backend') == 'kimi':
+                budgets = {'output_bytes': DEFAULT_KIMI_OUTPUT_BYTES, **budgets}
+            value['budgets'] = Budgets(**budgets)
             return cls(**value)
         except (TypeError, KeyError) as exc:
             raise RouterError('INVALID_CONTRACT', 'missing or unknown task fields') from exc

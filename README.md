@@ -25,6 +25,8 @@ subagent receipt <invocation-id>
 
 Task JSON 包含 parent/task identity、cwd、role、goal、read_paths、write_paths、permissions、selected_refs、active_documents、harness_refs、constitution_refs、skills、skill_roots、expected_evidence、backend/profile 和 budgets。无 Git 时给 explicit_root；没有 active docs 填 `not_applicable`。选中 spec/plan ref 为 `{path, sha256, accepted: true}`。
 
+Kimi task 可省略 `budgets.output_bytes`，封存前会填入 8 MiB；`inspect` 会展示实际 budgets。该额度是原始 stdout + stderr 总 bytes，包含 progress/tool events，不是最终报告长度或模型 tokens。Live Kimi 项目调用低于 2 MiB 时在付费请求前拒绝，并要求新建预算明确的 seal；不会自动抬高显式预算。16 MiB 硬上限、超限终止、截断隔离和 no-auto-retry 保持有效。详细调用规则由 `skills/external-subagent/SKILL.md` 管理。
+
 Kimi profiles：`worker` (`k3-256k/high/adaptive`) 与 `deep` (`k3/max/adaptive`)。Key 只从 repo 外 owner-only provider-specific file 读取；本机 CC Switch key 已私密导入，原配置不改。`qualify-route` 将 canonical smoke 绑定当前 credential fingerprint；deep 另需 entitlement evidence。禁止删除 consumed/budget files 来重试。
 
 ## Scoped Writer

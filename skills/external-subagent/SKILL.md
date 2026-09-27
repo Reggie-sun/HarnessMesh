@@ -17,6 +17,14 @@ description: Route standing-authorized Kimi or an explicitly selected external b
 4. `subagent run --contract <manifest.json> --backend kimi --profile <selected-profile> --live --credential-ref <private-reference.json> --qualification <matching-canonical-route-id>`；`<selected-profile>`必须与sealed contract一致，且`worker`/`deep`使用各自matching qualification。Gemini用`--backend gemini --profile worker`，不传Kimi qualification；使用已有private OAuth reference，账号不合格即阻断，不登录/onboarding。
 5. `subagent receipt <invocation-id>` 检查 process、protocol、upstream identity、artifacts 和实际 Read evidence。`PARSED` 不等于 KEEP；项目 Harness、finding adjudication 与 completion 由 Parent 负责。
 
+### Output Budget
+
+Kimi task 的 `budgets.output_bytes` 限制整条 Claude `stream-json` stdout 与 stderr 的总 bytes，包含 thinking progress、native Read/tool payload 和最终报告；它不是模型 output tokens，也不是 256K/1M context。通常省略此字段，由 resolver 前的 contract normalization 将 **8 MiB** 写入 sealed task；`inspect` 输出实际 budgets，Parent 必须检查。其他 wall/idle/request/context budgets 仍须显式给出。
+
+不要用几十 KB 的最终回答长度估算传输预算，也不要失败后机械尝试 1 MiB。Live Kimi project task 低于 **2 MiB** 会在任何 Provider request 前返回 `OUTPUT_BUDGET_TOO_SMALL`；显式额度不会被静默调大，历史 seal 不改写。预计大量 Read 的任务可显式选择更高额度，现有 **16 MiB** 硬上限不变。额度不是预付 token 消耗，模型报告仍应简洁、scope 应最小化。
+
+`PROCESS_OUTPUT_LIMIT` 后先检查 receipt 中原始 observed bytes、request count、sealed scope 与预算，再决定是否新建一次有限 attempt；不得自动重试。截断的输出继续隔离，不能将没有 terminal 的 partial findings 当成已完成 review。
+
 ## Triggered Implementation Review
 
 本 Skill 不因 Spec、Plan、diff 或 artifact 存在而自行触发 review，也不为 Spec/Plan 默认调用 Kimi。Parent 只有在 repository canonical Spec §9 的 Implementation Review Risk Gate 得出 `KIMI_REVIEW_REQUIRED` 后，才使用本节 mechanics。

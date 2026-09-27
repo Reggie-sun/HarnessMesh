@@ -32,7 +32,7 @@ def main():
         write_paths=[target],permissions=['read','candidate-write'],selected_refs=[],active_documents='not_applicable',
         harness_refs=[],constitution_refs=[],skills=[],skill_roots=[],expected_evidence=[target,'tests/writer_duplicate_check.py'],
         instruction_precedence=['AGENTS.override.md','AGENTS.md','CLAUDE.md'],backend='kimi',profile='worker',
-        budgets=dict(wall_seconds=180,idle_seconds=180,request_limit=8,output_bytes=1000000,context_bytes=1000000)))
+        budgets=dict(wall_seconds=180,idle_seconds=180,request_limit=8,context_bytes=1000000)))
     manifest=inspect_task(task,state/'m8-contracts',runtime,sandbox=sandbox)
     # A separate, explicit parent correction for the recorded prompt defect; never an automatic retry.
     attempt_name='m8-correction-1' if args.correction else 'm8'

@@ -50,7 +50,7 @@ def test_sealed_project_invocation_stays_blocked_and_cannot_override_route(tmp_p
          write_paths=[], permissions=['read'], selected_refs=[], active_documents='not_applicable',
          harness_refs=[], constitution_refs=[], skills=[], skill_roots=[], expected_evidence=['a.py'],
          backend='kimi', profile='worker', budgets=dict(wall_seconds=5,idle_seconds=5,request_limit=1,
-                                                      output_bytes=10000,context_bytes=100000)))
+                                                      output_bytes=2097152,context_bytes=100000)))
     runtime = fake_runtime()
     manifest = inspect_task(task, tmp_path/'contracts', runtime)
     store = ReceiptStore(tmp_path/'runs')
@@ -74,7 +74,7 @@ def test_changed_credential_is_blocked_before_any_project_execution(tmp_path, mo
         permissions=['read'], selected_refs=[], active_documents='not_applicable', harness_refs=[],
         constitution_refs=[], skills=[], skill_roots=[], expected_evidence=['a.py'],
         backend='kimi', profile='worker', budgets=dict(wall_seconds=5, idle_seconds=5,
-        request_limit=1, output_bytes=10000, context_bytes=100000)))
+        request_limit=1, output_bytes=2097152, context_bytes=100000)))
     manifest = inspect_task(task, tmp_path/'contracts', runtime, sandbox=sandbox)
     qualified = {'classification': 'PARSED', 'evidence_kind': 'live',
         'profile': profile('worker').to_dict(), 'runtime': runtime.to_dict(),

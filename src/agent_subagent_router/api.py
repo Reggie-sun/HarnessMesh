@@ -3,7 +3,8 @@ from pathlib import Path
 import uuid
 
 from .backends.kimi import profile
-from .contracts import RouterError, TaskContract, strict_json
+from .contracts import (DEFAULT_KIMI_OUTPUT_BYTES, MIN_KIMI_LIVE_OUTPUT_BYTES,
+                        RouterError, TaskContract, strict_json)
 from .permissions.containment import require_project_containment
 from .receipts import ReceiptStore
 from .resolver import resolve, verify
@@ -57,6 +58,14 @@ def run_contract(manifest: dict, backend: str, name: str, store: ReceiptStore, r
                 or manifest['transport']['runtime_identity'] != runtime.to_dict()):
             raise RouterError('SEALED_ROUTE_MISMATCH')
         runtime.verify()
+        if (backend == 'kimi' and upstream is None
+                and task.budgets.output_bytes < MIN_KIMI_LIVE_OUTPUT_BYTES):
+            raise RouterError('OUTPUT_BUDGET_TOO_SMALL',
+                f'Kimi project stream-json needs at least {MIN_KIMI_LIVE_OUTPUT_BYTES} output bytes; '
+                f'sealed limit is {task.budgets.output_bytes}. This caps aggregate stdout/stderr, '
+                f'not final report tokens. Seal a new task with output_bytes omitted '
+                f'(default {DEFAULT_KIMI_OUTPUT_BYTES}) or an explicit sufficient limit; '
+                'the existing sealed budget is unchanged.')
         if task.role == 'implementer' and readonly_qualification_id is None:
             raise RouterError('WRITER_NOT_QUALIFIED', 'M8 requires qualified read-only route')
         if backend == 'gemini':

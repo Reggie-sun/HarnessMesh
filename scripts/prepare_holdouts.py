@@ -29,7 +29,7 @@ def main():
                 constitution_refs=[], skills=[], skill_roots=[], expected_evidence=item['paths'],
                 instruction_precedence=['AGENTS.override.md', 'AGENTS.md', 'CLAUDE.md'],
                 backend='kimi', profile=profile, budgets=dict(wall_seconds=240, idle_seconds=240,
-                request_limit=16, output_bytes=2000000, context_bytes=2000000)))
+                request_limit=16, context_bytes=2000000)))
             manifest = inspect_task(task, destination/'contracts', runtime, sandbox=sandbox)
             runs.append({'task_id': task.task_id, 'profile': profile, 'project': item['project'],
                          'contract': str(Path(manifest['snapshot_root'])/'manifest.json'),

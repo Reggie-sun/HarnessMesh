@@ -7,7 +7,7 @@ import threading
 
 from . import __version__
 from .api import inspect_task, run_contract
-from .contracts import RouterError, TaskContract, strict_json
+from .contracts import MIN_KIMI_LIVE_OUTPUT_BYTES, RouterError, TaskContract, strict_json
 from .permissions.containment import probe_containment
 from .receipts import ReceiptStore
 from .runtime_config import installed_runtime, installed_sandbox, installed_backend_runtime
@@ -88,7 +88,12 @@ def main(argv=None):
             sealed = inspect_task(task, args.state/'contracts', installed_backend_runtime(task.backend),
                                   sandbox=installed_sandbox(task.backend, args.sandbox_config))
             output = {'seal': sealed['seal'], 'contract': str(Path(sealed['snapshot_root'])/'manifest.json'),
-                      'source_count': len(sealed['sources']), 'project_access': 'SEALED_ONLY'}
+                      'source_count': len(sealed['sources']), 'project_access': 'SEALED_ONLY',
+                      'budgets': sealed['task']['budgets']}
+            if task.backend == 'kimi' and task.budgets.output_bytes < MIN_KIMI_LIVE_OUTPUT_BYTES:
+                output['warnings'] = [{'classification': 'OUTPUT_BUDGET_TOO_SMALL',
+                                       'minimum_output_bytes': MIN_KIMI_LIVE_OUTPUT_BYTES,
+                                       'live_execution': 'BLOCKED'}]
             code = 0
         else:
             store = ReceiptStore(args.state/'runs')
