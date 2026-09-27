@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Kimi Timeout And Reporting — 2026-09-27
+
+Broker 的实际上游 headers/chunks 纳入 supervisor idle 判断，完整身份验证后交付与总 wall deadline 保持；项目请求新增有限的收尾阶段，剩余时间或最后请求触发停止工具探索并生成报告。源代码、安装、native/live 证据与限制见 [record](records/kimi-timeout-reporting-fix.md)。这不保证上游停滞或超大任务必然完成，不改写历史失败审查。
+
 ## Kimi Output Budget — 2026-09-27
 
 修复项目调查反复以 report 大小设置 raw stream 预算的问题：Kimi task 缺省 output_bytes 在封存前填入 8 MiB，live project 小于 2 MiB 时零请求拒绝；显式 seal 不改写，16 MiB 硬上限与既有超限/证据规则保留。源码、受管安装和验证见 [record](records/kimi-output-budget-fix.md)。
