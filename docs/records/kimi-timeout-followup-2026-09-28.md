@@ -50,8 +50,24 @@ Token 变更的 RED 为 8 failed / 6 passed（新增接口尚不存在）；补�
 
 ## Final Verification
 
+Stable implementation snapshot：commit `1d8b134d181d7ae8e398ad5614196b82290a3113` / tree `c0e4cae13dd190551d8e602f317cbe15c443d5e9`。本 record 后续仅补充执行证据，不改变该代码身份。
+
 合并全部变更后 offline 为 **268 passed / 20 skipped**，ruff / diff whitespace 通过。真实 Claude + local fake upstream / containment 为 **17 passed**，新增覆盖 worker/deep wire cap、SOURCE_CHANGED 零后续请求、终态期间 drift 仍拒收，以及看似完整 report 被 max_tokens 截断时拒绝并不续写。Gemini 若显式携带此未实现的生成 cap 会被拒绝，不能静默忽略。
 
 测试过程中曾因 guard 内错误地再次获取同一非重入锁而阻塞定向 test process；定位后修正为现有 lock 内的有界 rejection append，并仅终止该测试 PID。随后 manual-thinking 不兼容与 invalid max_tokens 测试均通过，未放宽 contracts。
+
+## Managed Installation
+
+以 clean source commit `1d8b134d181d7ae8e398ad5614196b82290a3113` 安装，source_dirty_at_install=false；package identity `90b5403a5525bde812c9aa4082c7e770f35d909f3f7891c7162d6a318c3fa831`，Skill SHA-256 `a82abac901b7c60b3a49b0d192d8950d49cd99984beb407fe7bde5e116af5ede`。CLI integrity/version check 通过，inspect 显示 generation_tokens=4096 与完整 frozen paths。保留旧 installation 与 receipts；新 invocation 用新安装，已经启动的其他 invocation 不被中断或重写。
+
+## Installed Live Evidence
+
+安装后仅一次新 cap 验证，不重试先前 budget-hint 调查或业务 review。只读两文件 contracts.py / test_generation_budget.py；seal `820fa032d5311d66a4bce5409df5d0ccf4ff775f52c05fad8dd194d6480fff94`，显式 generation_tokens=4096、wall=180、idle=60、request_limit=2。整个 frozen set（含两个 AGENTS.md）在运行期间保持不变。
+
+Invocation `f91a3e03-bda5-4281-b833-5d2025d15150`：33.899 秒正常退出，PARSED，未截断，2 次 wire 均为 k3-256k/high、adaptive、authenticated endpoint identity verified；两次 request_max_tokens / generation_token_limit 均为 4096，output_tokens 分别 92 / 708。阶段为 EXPLORE → FINAL_REPORT，两个完整 Read 的 path/hash/range 已校验，receipt 重读及 artifacts 校验通过。实际费用未提供，internal_retry_count=unknown 保持原真值；orchestration_retries=0。
+
+Parent 对两项描述性 findings（typed token budget 范围、legacy seal 的测试预期）逐一核对源码和已执行 tests，均为 CONFIRMED、非 blocker。Kimi 明确只做 inspection、没有执行 tests，也未审 api.py 实现；这些部分由 Parent 的 source review 和可执行测试负责，不扩大它的检查范围。没有 unresolved finding，不为达成共识加一轮。
+
+最终 source snapshot 再跑 **17 native tests passed**。本次 authenticated live proof 仅覆盖 worker；deep/max 的新 cap 由 pinned CLI + fake upstream 验证，未新增 deep live cap benchmark。33.9 秒不是与旧失败任务同负载的 A/B，不能据此计算速度提升或声称大任务可靠性已解决。达到输出上限的拒收/禁止续写路径由 native synthetic 回归证明，没有故意付费制造 token exhaustion。
 
 没有新 Spec/Plan、push/release；accepted architecture bytes 未修改。Codegraph/tool_search 不可见，依据 current source 与 executable boundary tests 检查。仓库没有 capture skill，此 record 为持久 owner。
