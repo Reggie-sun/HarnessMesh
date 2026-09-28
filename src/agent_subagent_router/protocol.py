@@ -30,6 +30,20 @@ def validate_report(report: dict) -> None:
             raise RouterError('REPORT_SCHEMA_ERROR')
 
 
+def _report_json(text: str):
+    """Representation policy v1: unwrap only one complete, JSON-labelled fence.
+
+    Saved stdout and the receipt's implementation hash identify original input
+    and this policy version. Contents still undergo strict JSON/schema/evidence checks.
+    """
+    text = text.strip(' \t\r\n')
+    for opening in ('```json\n', '```json\r\n'):
+        if text.startswith(opening) and text.endswith('\n```'):
+            text = text[len(opening):-4]
+            break
+    return strict_json(text)
+
+
 def decode_claude(raw: bytes, *, required_evidence=(), source_hashes=None,
                   allowed_tools=(), observed_reads=()) -> ParsedOutput:
     observations = []
@@ -61,7 +75,7 @@ def decode_claude(raw: bytes, *, required_evidence=(), source_hashes=None,
             raise RouterError('RUNTIME_PROTOCOL_ERROR')
         if not isinstance(terminal.get('result'), str):
             raise RouterError('REPORT_SCHEMA_ERROR')
-        report = strict_json(terminal['result'])
+        report = _report_json(terminal['result'])
         validate_report(report)
         hashes = source_hashes or {}
         supported = set()

@@ -59,3 +59,44 @@ def test_read_range_must_support_claimed_evidence_lines():
                           observed_reads=[{'path': 'a.py', 'sha256': 'f'*64, 'status': 'complete',
                                            'start_line': 1, 'end_line': 1, 'truncated': False}])
     assert parsed.classification == 'EVIDENCE_INCOMPLETE'
+
+
+@pytest.mark.parametrize('newline', ['\n', '\r\n'])
+def test_single_json_fence_is_representation_only(newline):
+    value = report() | {'findings': ['literal ```json text'], 'questions': ['Which owner?']}
+    text = ' \t' + '```json' + newline + json.dumps(value) + newline + '```\n'
+    parsed = decode_claude(terminal(result=text))
+    assert parsed.classification == 'PARSED'
+    assert parsed.report == value
+    assert not hasattr(parsed, 'accepted')
+
+
+@pytest.mark.parametrize('text', [
+    'Explanation\n```json\n{}\n```',
+    '```json\n{}\n```\nExplanation',
+    '```json\n{}\n```\n```json\n{}\n```',
+    '```json\n```json\n{}\n```\n```',
+    '```json\n{}\n',
+    '```json\n{} {}\n```',
+    '```json\n{"findings":[],"findings":[]}\n```',
+    '```json\n{"findings":[NaN]}\n```',
+    '```json\n{"findings":[Infinity]}\n```',
+    '```json\n{"findings":[],}\n```',
+    '```python\n{}\n```',
+    '```\n{}\n```',
+])
+def test_ambiguous_or_invalid_fenced_json_is_rejected(text):
+    parsed = decode_claude(terminal(result=text))
+    assert parsed.classification == 'PROTOCOL_ERROR'
+    assert parsed.report is None
+
+
+def test_fence_does_not_bypass_report_schema_or_read_evidence():
+    def fenced(value):
+        return terminal(result='```json\n' + json.dumps(value) + '\n```')
+
+    assert decode_claude(fenced(report() | {'status': 'KEEP'})).classification == 'REPORT_SCHEMA_ERROR'
+    value = report() | {'evidence_refs': [{'path': 'a.py', 'sha256': 'f' * 64,
+                                         'start_line': 1, 'end_line': 3}]}
+    assert decode_claude(fenced(value), source_hashes={'a.py': 'f' * 64}).classification == 'EVIDENCE_INCOMPLETE'
+    assert decode_claude(fenced(report()), required_evidence=['a.py']).classification == 'EVIDENCE_INCOMPLETE'
