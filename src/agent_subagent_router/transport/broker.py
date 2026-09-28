@@ -17,6 +17,7 @@ import uuid
 from ..contracts import RouterError, canonical_bytes, strict_json
 from ..receipts import redact
 from .budget import reporting_request
+from .diagnostics import UpstreamFailure, failure_diagnostic
 from .identity import validate_request, validate_response
 
 
@@ -60,23 +61,31 @@ class KimiUpstream:
     def __call__(self, path, headers, body):
         if path not in ('/v1/messages', '/v1/messages?beta=true'):
             raise RouterError('FORBIDDEN_UPSTREAM_PATH')
-        connection = http.client.HTTPSConnection('api.kimi.ai', timeout=self.timeout,
-                                                 context=ssl.create_default_context())
+        try:
+            connection = http.client.HTTPSConnection('api.kimi.ai', timeout=self.timeout,
+                                                     context=ssl.create_default_context())
+        except Exception as exc:
+            raise UpstreamFailure('TLS_SETUP', exc) from None
         with self._lock:
             if self._closed.is_set():
                 raise RouterError('CAPABILITY_REVOKED')
             self._connection = connection
+        phase, http_status = 'CONNECT', None
         try:
             connection.connect()
             # Never reconnect automatically if cancellation closes the connected socket.
             connection.auto_open = 0
             if self._closed.is_set():
                 raise RouterError('CAPABILITY_REVOKED')
+            phase = 'REQUEST_SEND'
             connection.request('POST', '/coding'+path, body=body, headers=headers)
+            phase = 'RESPONSE_HEADERS'
             response = connection.getresponse()
+            http_status = response.status
             if self._on_activity:
                 self._on_activity(0)  # Actual response headers, not a synthetic heartbeat.
             data = bytearray()
+            phase = 'RESPONSE_BODY'
             while True:
                 if self._closed.is_set():
                     raise RouterError('CAPABILITY_REVOKED')
@@ -88,9 +97,14 @@ class KimiUpstream:
                 data.extend(chunk)
                 if len(data) > self.response_limit:
                     raise RouterError('UPSTREAM_OUTPUT_LIMIT')
+            phase = 'RESPONSE_METADATA'
             kept = {name: value for name, value in response.getheaders()
                     if name.lower() in ('content-type', 'request-id', 'x-request-id')}
             return response.status, {k.lower(): v for k, v in kept.items()}, bytes(data)
+        except RouterError:
+            raise
+        except Exception as exc:
+            raise UpstreamFailure(phase, exc, http_status) from None
         finally:
             connection.close()
             with self._lock:
@@ -252,6 +266,7 @@ class Broker:
                         observation.update(generation_token_limit=generation_tokens,
                             request_max_tokens=body['max_tokens'], client_request_sha256=client_hash)
                     broker._observations.append(observation)
+                phase = 'ADMISSION_RECORD'
                 try:
                     broker._publish()
                     with broker._lock:
@@ -262,7 +277,9 @@ class Broker:
                                'anthropic-version': '2023-06-01', 'accept': 'text/event-stream',
                                'x-stainless-timeout': str(remaining_seconds)}
                     # Beta features are explicit profile policy, never arbitrary forwarded headers.
+                    phase = 'UPSTREAM'
                     status, upstream_headers, data = broker._upstream(self.path, headers, raw)
+                    phase = 'RESPONSE_VALIDATION'
                     observation['http_status'] = status
                     if status != 200:
                         try:
@@ -293,14 +310,20 @@ class Broker:
                         active = broker._active and time.monotonic() < broker._deadline
                     if not active:
                         raise RouterError('OUTCOME_UNKNOWN', 'revoked before delivery')
+                    phase = 'DELIVERY'
                     self.reply(200, data, upstream_headers.get('content-type', 'application/json'))
                 except RouterError as exc:
                     observation['classification'] = exc.code
+                    if isinstance(exc, UpstreamFailure):
+                        observation['transport_error'] = exc.diagnostic
+                        if exc.http_status is not None:
+                            observation['http_status'] = exc.http_status
                     if exc.code == 'UPSTREAM_GENERATION_LIMIT':
                         broker.revoke()
                     self.reply(502, canonical_bytes({'error': exc.code}))
-                except Exception:
+                except Exception as exc:
                     observation['classification'] = 'OUTCOME_UNKNOWN'
+                    observation['broker_error'] = failure_diagnostic(phase, exc)
                     self.reply(502, b'{"error":"OUTCOME_UNKNOWN"}')
                 finally:
                     with broker._lock:
