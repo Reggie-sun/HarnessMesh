@@ -68,3 +68,21 @@ Parent 必须检查三个 scope 的联合覆盖，并 evidence-adjudicate 每个
 AOCI Verify/Check exit 1、Guide `authoring_required / complete:false`，19 项既有账户/并发 UI 相关 missing/stale/unbaselined findings。新增 package 是 ignored run artifacts，没有新 formal managed source；`aoci.code.txt` 与 `.aoci/baseline.json` 已有其他 owner 的未提交改动，未接管、覆写或 stage。当前不能宣称 AOCI 对齐；需该 owner 在源码稳定后完成维护。
 
 下一步由普通终端对新 scope 01 执行 canonical inspect，不发 Provider request；Parent 读取其 seal/manifest、检查实际 budgets 与整个 frozen source union 的稳定性后，再决定 live run。当前追加 paid invocations 仍 **0/3**、有效新增 Kimi reports **0**、gate 仍 `REVIEW_ESCALATION_REQUIRED`。没有自动新一轮、真实上传、确认、runtime/refactor、push/release。
+
+# Additional Invocation 01: Generation Limit
+
+用户普通终端完成 scope 01 inspect，seal `eae3f14deaa91bf9d673029a96a519cbb800abf6c3b6f9e0003d3a2767b86f6f`；manifest 在 contracts/`1dfbc341-57fc-4503-bade-4373a8064081`。Parent 使用当前 installed package 机械核验 seal/host preimages、16 项封存 sources、270044 bytes input、read-only permissions、matching deep qualification/runtime hash。Seal 记录 HEAD `87d981df5e8afdaf2419b37b429cb5aca1ef32e8`；与准备时 HEAD 的共同审查 20 paths 无 diff，不能把无关提交解释为审查 source drift。没有改写旧 package。
+
+随后普通终端发起 invocation `f244c937-eb0d-4216-9324-da7840e57be1`，attempt `b135c4be-0a63-4bc2-9cb1-d473158d1db1`，canonical receipt SHA-256 `8954494cf2b10117950f627a2be324c665a64da1cae7c0a81848c8a986f11f95`。Outcome `UPSTREAM_GENERATION_LIMIT`，exit 1，267.05s，两次 wire requests，零 orchestration retries。追加已用 **1/3**，剩余 **2/3**；这一次虽失败仍计入总额度。
+
+第一 wire `EXPLORE` 为 `IDENTITY_VERIFIED`，api.kimi.ai / k3 / max / authenticated endpoint declaration，27.68s；8 次 complete、non-truncated native Read 覆盖必需 evidence。第二 wire `FINAL_REPORT`，HTTP 200，238.71s，request_max_tokens/generation_token_limit 均 8192，约 1.03 MB upstream bytes，随后分类为 `UPSTREAM_GENERATION_LIMIT`。Process stdout 约 452 KB、stderr 73 bytes，`truncated:false`；没有触及 480s wall 或 8 MiB process-output limit。
+
+Parent 验证了全部三个 artifact size/hash、canonical receipt、当前 sealed preimages、实际 Read hashes 与 required evidence coverage；没有 canonical terminal report / 可验收 findings。CLI 最后一个 `result` 虽为 subtype success，但 `is_error:true`；usage 770 是第一 wire 的可交付计数，不能据此断言 FINAL_REPORT 只用了 770 tokens 或把它当最终成功。
+
+Installed `identity.validate_response` 在 response stop_reason=max_tokens 时 fail closed，并在返回完整 identity/usage metadata 之前抛错。第二 observation 缺少 usage；结合相同 installed broker 的处理顺序，判定其命中该分支，而不是具有 usage 的 output_tokens>cap 后置分支。失败响应 body 未作为 artifact 保留，不能编造第二 wire 的精确 usage。用 synthetic non-provider response 对同一 guard 做 offline executable check，确认返回 `UPSTREAM_GENERATION_LIMIT`；这不是 live review 或 implementation suite。
+
+CLI 的 `API Error: 502` 是 broker 对 RouterError 的本地包装；它的“server-side issue / try again”提示不覆盖 canonical policy。这次记录的真实上游 HTTP status 是 200，不能当成 Kimi upstream 502 或按 transient retry 处理。`k3[1m]` 的 input context 与 8192 output/thinking cap 是不同额度；增大 context、stream bytes 或单独延长 timeout 不解决本次截断。
+
+Parent 结论：当前 deep/max report workload 的 8192 generation cap 不足；不得放宽截断拒绝、接受 partial output、降低 reasoning、改旧 seal 或自动重试。停止未运行的 scope 02/03，保留两次额度。原三个独立 scope 仍全部没有有效终态报告，剩余两次若继续须先显式重排覆盖与有限 generation/time budgets；不能直接运行后两份相同 8192 task 并声称全范围完成。
+
+Gate 仍 `REVIEW_ESCALATION_REQUIRED`，Parent adjudication 为 `NO_TERMINAL_REVIEW_TO_ADJUDICATE`，不是零 blocker finding 的通过结论。本次仅追加实际失败/预算证据；未修改 runtime、Spec、Plan、任何 sealed source/context 或 historical receipt，未启动新 Provider call，未 push/release。
