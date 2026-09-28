@@ -27,13 +27,16 @@ _ENTRY = Path(__file__).with_name('container_entry.py')
 class DockerSandbox:
     """A local, immutable image invocation; image construction remains parent-owned."""
 
-    def __init__(self, image: str, runtime_sha256: str):
+    def __init__(self, image: str, runtime_sha256: str, *, image_entry: bool = False):
         if not isinstance(image, str) or not re.fullmatch(r'sha256:[0-9a-f]{64}', image):
             raise RouterError('INVALID_SANDBOX_IMAGE')
         if not isinstance(runtime_sha256, str) or not _DIGEST.fullmatch(runtime_sha256):
             raise RouterError('INVALID_RUNTIME_HASH')
         self.image = image
         self.runtime_sha256 = runtime_sha256
+        if type(image_entry) is not bool:
+            raise RouterError('INVALID_SANDBOX_IMAGE')
+        self.image_entry = image_entry
 
     def verify(self) -> None:
         """Require a local image ID and its build labels; ``image inspect`` never pulls."""
@@ -54,6 +57,10 @@ class DockerSandbox:
                 or labels.get('org.agent-subagent-router.entry-sha256') != hash_bytes(_ENTRY.read_bytes())
                 or entrypoint not in (None, []) or command not in (None, [])):
             raise RouterError('SANDBOX_IMAGE_INVALID')
+        if self.image_entry:
+            wrapper = _ENTRY.with_name('image_container_entry.py')
+            if labels.get('org.agent-subagent-router.image-entry-sha256') != hash_bytes(wrapper.read_bytes()):
+                raise RouterError('SANDBOX_IMAGE_INVALID')
 
     def execute(self, argv: tuple[str, ...], env: dict[str, str], stdin: bytes, budgets: Budgets, *,
                 source: Path | None = None, broker_socket: Path | None = None,
@@ -62,7 +69,9 @@ class DockerSandbox:
                 on_stop: Callable[[], None] | None = None,
                 last_activity: Callable[[], float] | None = None) -> ProcessResult:
         self.verify()
-        _validate_execution(argv, env, stdin, budgets, source, broker_socket)
+        if self.image_entry and (source is not None or candidate_directory is not None):
+            raise RouterError('IMAGE_PROJECT_MOUNT_FORBIDDEN')
+        _validate_execution(argv, env, stdin, budgets, source, broker_socket, image_entry=self.image_entry)
         if candidate_directory is not None:
             _require_directory(candidate_directory, 'INVALID_WRITER_OVERLAY')
             if (source is None or candidate_directory.resolve().is_relative_to(source.resolve())
@@ -72,9 +81,14 @@ class DockerSandbox:
             'argv': list(argv), 'env': env, 'prompt_b64': base64.b64encode(stdin).decode('ascii'),
             'wall_seconds': budgets.wall_seconds,
         })
-        if len(envelope) > budgets.context_bytes:
+        maximum_envelope = 48 * 1024 * 1024 if self.image_entry else budgets.context_bytes
+        if len(envelope) > maximum_envelope:
             raise RouterError('CONTRACT_TOO_LARGE', 'container envelope exceeds context budget')
-        container_id = _create_container(self.image, source, broker_socket, budgets, candidate_directory)
+        if self.image_entry:
+            container_id = _create_container(self.image, source, broker_socket, budgets,
+                                             candidate_directory, image_entry=True)
+        else:
+            container_id = _create_container(self.image, source, broker_socket, budgets, candidate_directory)
         stopped = False
 
         def revoke_once() -> None:
@@ -98,7 +112,7 @@ class DockerSandbox:
 
 
 def _validate_execution(argv: tuple[str, ...], env: dict[str, str], stdin: bytes, budgets: Budgets,
-                        source: Path | None, broker_socket: Path | None) -> None:
+                        source: Path | None, broker_socket: Path | None, *, image_entry=False) -> None:
     if (not isinstance(argv, tuple) or not argv
             or any(not isinstance(part, str) or not part for part in argv)):
         raise RouterError('INVALID_INVOCATION', 'argv must be a nonempty string tuple')
@@ -112,13 +126,15 @@ def _validate_execution(argv: tuple[str, ...], env: dict[str, str], stdin: bytes
         _require_directory(source, 'INVALID_SOURCE_PROJECTION')
     if broker_socket is not None:
         _require_socket(broker_socket)
-        urls = [env.get(name) for name in ('ANTHROPIC_BASE_URL', 'GOOGLE_GEMINI_BASE_URL') if name in env]
+        names = ('ANTHROPIC_BASE_URL', 'OPENAI_BASE_URL') if image_entry else (
+            'ANTHROPIC_BASE_URL', 'GOOGLE_GEMINI_BASE_URL')
+        urls = [env.get(name) for name in names if name in env]
         if urls != ['http://127.0.0.1:18765']:
             raise RouterError('INVALID_INVOCATION', 'broker needs fixed loopback URL')
 
 
 def _create_container(image: str, source: Path | None, broker_socket: Path | None,
-                      budgets: Budgets, candidate_directory=None) -> str:
+                      budgets: Budgets, candidate_directory=None, *, image_entry=False) -> str:
     uid, gid = os.getuid(), os.getgid()
     if uid == 0 or gid == 0:
         raise RouterError('UNSUPPORTED_REQUIRED_CAPABILITY', 'container requires non-root host identity')
@@ -143,7 +159,8 @@ def _create_container(image: str, source: Path | None, broker_socket: Path | Non
     if candidate_directory is not None:
         command.extend(['--mount', f'type=bind,src={candidate_directory.resolve()},dst=/candidate,'
                         'bind-propagation=rprivate'])
-    command.extend(['--entrypoint', 'python3', image, '/opt/router/container_entry.py'])
+    entry = '/opt/router/image_container_entry.py' if image_entry else '/opt/router/container_entry.py'
+    command.extend(['--entrypoint', 'python3', image, entry])
     try:
         result = _run_docker(tuple(command), timeout=_command_timeout(budgets.wall_seconds))
         identifier = result.stdout.decode(errors='replace').strip()

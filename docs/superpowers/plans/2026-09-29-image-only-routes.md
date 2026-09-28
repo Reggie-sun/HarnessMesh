@@ -10,6 +10,8 @@ Native Codex Parent 执行并裁决，使用 current working tree，不创建 wo
 
 既有 TaskContract、project adapters、五字段报告、credential/ReceiptStore、Docker 和 installation owners 保持兼容。新增 responsibility 分为 image contract/seal、native projection/wire validation、image lifecycle/qualification，禁止将其塞入 project worker 或建立第二 ReceiptStore。
 
+2026-09-29 用户随后“批准”接受 [Codex API amendment](../specs/2026-09-29-codex-image-api-budget-design.md) exact SHA `14e10cad0f3afc44f0f3796c2ae86c45e161c8a17ab2d54801c8c261a81df272`，由同一acceptance owner绑定；本文按writing-plans更新并Self-Review。以下API repair milestones替换M3中的subscription credential/endpoint semantics，其他未完成milestones继续执行，不创建第二plan或workflow。
+
 ## Current and Target Behavior
 
 当前只能通过 project 文件工具读取输入，无合格图片入口，Codex 无受管 relay/backend。目标为 `inspect-images`、`run-images`、`qualify-image-route`：strict image-only contract → immutable private PNG seal → capability admission → source=None Docker native invocation → authenticated request/response → typed canonical receipt。未知 runtime framing、工具等价禁用或模型身份均 fail closed；运行配置和模型自述不能替代证明。
@@ -46,7 +48,11 @@ Acceptance：adversarial unit tests 真正通过；旧 schema tests 仍拒绝 im
 
 ### M3: Codex Isolated Backend and Authenticated Channel
 
-新增 `adapters/image_codex.py`、`transport/codex_broker.py`，必要最小修改 runtime/image build/relay owners。仅 app-owned private credential reference；runtime opaque capability；固定 TLS chatgpt.com/backend-api/codex，不接触 global auth，不登录/刷新。独立 helper/process 使用 bounded native RPC，fresh ephemeral thread，无持久状态、ambient instructions 或通用工具。
+新增 `adapters/image_codex.py`、`transport/codex_broker.py`、`codex_image_wire.py`，最小修改既有transport credential owner的OpenAI API Key分支。仅app-owned private API credential reference；runtime opaque capability；固定TLS api.openai.com POST /v1/responses，不接触global auth，不登录/刷新。独立helper/process使用bounded native RPC，fresh ephemeral thread，无持久状态、ambient instructions或通用工具。
+
+`codex-image-api-cap/v1` 在exact native system/task/anonymous metadata、image字节/order/multiplicity、model/effort/tools=[]与已证明framing校验后只增加max_output_tokens=sealed generation_tokens；已有cap必须精确相同。保留native原bytes与实际API bytes/hash，不把ignored config当proof。Strict response events须绑定响应ID/model/request ID、完整completed status、usage≤cap和无tools；incomplete/unknown/truncation拒收并revoke。Native stdout另证thread/turn/item关联及turn.completed，单纯POST capture不交付。
+
+现有container_entry.py与project Docker入口保持原bytes/默认8MiB限制；新增bounded `permissions/image_container_entry.py`仅复用其固定relay/安全执行机制，将image入口注册/v1/responses及32MiB限额。DockerSandbox新增显式image-entry选择、校验wrapper与base entry labels，原default入口/pins行为不变。`scripts/build_image_route_sandbox.py`只用已有local pinned binary/base image、network-none构造新的Kimi/Codex image配置，不替换旧配置或wrapper，不下载或更新native版本。
 
 测试 credential injection/redaction、wrong endpoint/path/redirect/model/response association、native tool attempts、fresh context；运行显式 Docker fake conformance。不能证明 runtime 全部等价禁用/身份即 typed unsupported/INCOMPLETE，不接受伪成功。新 immutable runtime image 仅 installation/build owner 管理。
 
@@ -72,6 +78,10 @@ fresh full offline `python -m pytest -q`，受影响 `--native-conformance` 与 
 
 ## Current Execution Checkpoint
 
+新API amendment已按用户“批准”绑定，generation blocker进入implementation。Native mapper仅read-only核对credential/broker/receipt/Docker integration owners；独立bounded writer拥有 `transport/credentials.py`、`transport/codex_broker.py`、`codex_image_wire.py`及其三个unit tests，Parent拥有native adapter、image relay/Docker/runtime build、image lifecycle/qualification、CLI及对应tests/docs。集合不相交。Writer不得处理global auth/holdout/truth、调用Provider、nested delegate或stage/commit；先运行focused red再实现。此分工减少critical TLS/wire边界与native completion耦合的context负担；Parent最终核对安全路径、source diff和原生验证。
+
+Live OpenAI请求前还必须有真实private credential reference、account额度和actual frozen payload的保守input/image token accounting及current price/date/source，cost bound≤USD1；缺任一为零请求INCOMPLETE。新增费用批准不授权credential自动发现/迁移或formal预算；probe失效/未知不补请求。工程安装不等于capability qualification。
+
 M1 已实施并通过离线否定测试。M2 已有独立 native PNG projection、精确请求校验、禁工具响应和 raw exchange hook；真实 Docker/fake 验证 worker/deep 的八图及拒绝行为，但尚无 live invocation owner、32 MiB broker admission 或视觉 capability receipt，不能写成整条 M2 完成。
 
 M3 的 pinned Codex 0.154.0 已在独立 Docker diagnostic image 内证明原 PNG 顺序、fresh user-only 输入和实际 tools=[]；其实际请求即使配置 `model_max_output_tokens=2048` 仍无生成上限，`IMAGE_GENERATION_BOUND_UNPROVEN` 为当前可复现 blocker。Diagnostic helper 只捕获 fake 请求，不证明成功 turn、真实视觉能力或额度。没有读取账号凭据、调用真实 Codex、建立 authenticated broker/relay 或替换现有安装。
@@ -81,3 +91,17 @@ M4–M6 仍未完成。当前 CLI 仅新增无商业调用的 `inspect-images`�
 ## Self-Review
 
 已逐段覆盖 accepted Spec 的输入/seal、原字节传递、native framing、凭据隔离、真实 identity、finite lifecycle、typed receipt、probe rubric/envelope、拒绝/旧 schema 兼容、安装及风险审查。文件职责与名称一致；无占位步骤。未成立的 runtime/账户/预算门是真实执行门，计划不填造结果。此计划 Self-Review 通过后返回 Native Codex 实现，无新增 plan approval gate。
+
+## API Candidate Checkpoint
+
+上述input-only描述是历史checkpoint。用户“批准”已接受API amendment exact SHA `14e10cad0f3afc44f0f3796c2ae86c45e161c8a17ab2d54801c8c261a81df272`，Parent与独立six-path writer已实现M3/M4工程candidate：新fixed TLS broker/only-cap mapping、private application reference拒绝global auth、实际native thread/turn/item与strict JSON、image-only Docker wrapper、canonical invocation/probe/conformance/qualification receipts及CLI。旧project Budgets/entry/runtime配置不变。
+
+实际新image的source=None OS及完整八图native/fake通过；新Codex framing按pinned UUIDv7/window及原PNG确认，实际terminal summary与user input分开验证。Fresh offline524 PASS/27 explicit skip，完整native/fake+containment548 PASS/3 skip，ruff/diffcheck通过。Probe reservation按host canonical state固定，不能用新task或新--state恢复请求；只允许router-owned probe，formal USD0零请求，tested envelope不扩到648帧。
+
+构建中真实发生临时最后tag删除原Kimi image登记；已由原BuildKit记录与OCI各blob SHA恢复完全相同的08ef image，旧config/receipt未改。Builder改为保留verified base alias，新增untagged-base/alias-conflict否定测试。恢复不被当作新qualification。
+
+M5当前为KIMI_REVIEW_REQUIRED，native verification后进入exact stable snapshot的一个managed read-only deep review；尚未宣布工程完成或安装。新视觉provider请求0；缺独立OpenAI API credential reference、当前额度/冻结accounting evidence时capability与M5-D2A均INCOMPLETE。本聊天/订阅登录不是api-bounded credential。具体evidence、review与安装状态由 [API engineering record](../../records/image-api-engineering-2026-09-29.md) 独占，后续按真实结果更新同owner，无需再请求“继续”。
+
+## Required Review Blocked Checkpoint
+
+M5第一轮managed Kimi review已真实执行；canonical invocation `5d46f112-ba0e-48ae-afa0-10b2b1640d9a`为OUTCOME_UNKNOWN，第二次上游attempt TLS_ERROR/CONNECT，缺完整report/verdict。Parent核验canonical artifacts与封存源码未变，未采用部分工具探索，未自动retry/fallback。review round1失败保留，gate未满足，official installation BLOCKED；当前source保存未验收engineering checkpoint不表示M5完成。M6只更新Jianji phase/plan和真实证据，capability/formal请求保持0；有效review、clean安装、installed验证及真实账户/预算门仍为remaining work。具体失败和归档由同一record独占。

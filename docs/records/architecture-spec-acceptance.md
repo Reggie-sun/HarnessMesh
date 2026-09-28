@@ -36,3 +36,9 @@
 - Base contract: 上述 current accepted architecture Spec；新 mode 不放宽旧 project worker schema、工具或 authority。
 
 Supplement 内 `DRAFT / EXACT_SHA_APPROVAL_PENDING` 是批准前 frozen bytes 的历史 metadata；当前批准由本记录独占绑定。授权包括 implementation planning、受限实现、native/fake/containment 验证与符合冻结条件的最多两次独立 capability probes。它不批准无限商业调用、正式 Jianji semantic qualification 的未冻结预算或产品 activation。
+
+## Accepted Codex Image API Amendment
+
+2026-09-29 用户在收到新API修订路径、exact SHA及新增计费边界后明确回复“批准”，按前一回复推荐A批准实施及受管安装。绑定 `docs/superpowers/specs/2026-09-29-codex-image-api-budget-design.md` SHA `14e10cad0f3afc44f0f3796c2ae86c45e161c8a17ab2d54801c8c261a81df272`；原frozen文件的DRAFT/approval pending为历史metadata，bytes不变。本窄修订明确覆盖image supplement的Codex subscription transport为新增 `api-bounded` profile/fixed OpenAI Responses API/API Key与单字段generation cap映射；旧profiles不自动迁移。
+
+新增OpenAI capability probe最多一次、费用上限USD1，并须原spec所有native/OS/真实credential、actual payload、cost upper bound与已授权account额度证据成立；Kimi仍最多一次，两条合计最多两次，不retry/fallback。正式holdout cost authorization=0，production授权未扩大。该批准接受Spec并授权范围内implementation planning/execution/verification/review/installation，不证明代码已完成、live能力或source semantic资格。

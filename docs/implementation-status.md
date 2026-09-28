@@ -1,5 +1,11 @@
 # Implementation Status
 
+## Approved Image API Candidate — 2026-09-29
+
+用户“批准”接受Codex api-bounded amendment，已实现固定OpenAI Responses TLS broker、sealed generation cap映射、独立private credential、image-only Docker执行/终态/receipts、owned probe与一次性host预算门。Fresh offline524 PASS/27 skip，完整native/fake+containment548 PASS/3 skip，ruff/diffcheck通过；两新route只取得工程证据。
+
+Required Kimi deep/max review第一轮invocation `5d46f112-ba0e-48ae-afa0-10b2b1640d9a` 在第二次请求TLS CONNECT失败，canonical OUTCOME_UNKNOWN，无完整报告；没有补请求或采用部分结果。accepted Spec禁止缺有效review安装，故本任务未安装candidate，旧安装current source为223da83（由其他任务维护，dirty_at_install=true）。真实visual probe/formal均0，缺独立OpenAI credential/current额度/accounting，capability及M5-D2A INCOMPLETE，生产BLOCKED。下面bba安装及待批准描述为历史状态。完整证据、事故恢复、Risk Gate及剩余工作见 [API record](records/image-api-engineering-2026-09-29.md)。
+
 ## Kimi Maximum Project Resources — 2026-09-29
 
 按用户选择 C，新 Kimi project task 在 inspect/seal 前应用 `kimi-maximum-v1`：deep/max/1M 与当前最高有限资源；原请求和有效 route/预算均明示，旧 seal 不改写。Focused 131 PASS；完整 offline 376 PASS/25 skip/42 socket-permission failures，未声称完整/native/live 验证通过。受管 Kimi mapping 因 Docker preflight blocked，无 Provider request。安装状态、source hashes、Risk Gate 与不变的历史 review 预算见 [record](records/kimi-maximum-resources-2026-09-29.md)。

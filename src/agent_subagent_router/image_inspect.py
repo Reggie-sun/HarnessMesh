@@ -21,6 +21,17 @@ def inspect_images(data: dict, store_root: Path, *, sandbox_config: Path | None 
     # The CLI constructs actual pins. The task cannot provide its own runtime/image proof.
     from .adapters import image_claude, codex_image_rpc
     from . import image_wire, image_output
+    if sandbox_config is not None:
+        configured = strict_json(Path(sandbox_config).read_bytes())
+        if configured.get('purpose') == 'ISOLATED_IMAGE_ROUTE/v1':
+            from .image_runtime import image_runtime
+            sandbox, pins = image_runtime(value, sandbox_config)
+            sealed = seal_images(task, store_root, pins)
+            return {'schema': 'image-inspect/v1', 'manifest': sealed['manifest_path'],
+                    'image_count': len(sealed['images']), 'pins': pins,
+                    'capability_status': 'ENGINEERING_ROUTE_NOT_LIVE_QUALIFIED',
+                    'qualified_route': None, 'formal_execution': 'BLOCKED',
+                    'semantic_qualification': 'NOT_EVALUATED', 'authority': 'none', 'eligible': False}
     if task.backend == 'kimi':
         runtime = installed_runtime()
         runtime.verify()

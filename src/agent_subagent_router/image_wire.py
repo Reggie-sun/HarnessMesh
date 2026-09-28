@@ -15,15 +15,18 @@ CLAUDE_NATIVE_IDENTITY = "You are a Claude agent, built on Anthropic's Claude Ag
 
 def environment_text(task, framing):
     # Values must come from the parent-frozen native conformance tuple.
-    if set(framing) != {"os_release", "day"} or not re.fullmatch(
+    if set(framing) not in ({"os_release", "day"}, {"os_release", "day", "cwd"}) or not re.fullmatch(
         r"\d{4}-\d{2}-\d{2}", framing["day"]
     ):
         raise RouterError("IMAGE_FRAMING_UNVERIFIED")
     if not re.fullmatch(r"[A-Za-z0-9_.+-]{1,100}", framing["os_release"]):
         raise RouterError("IMAGE_FRAMING_UNVERIFIED")
+    cwd = framing.get('cwd', '/work')
+    if cwd not in ('/work', '/home/worker'):
+        raise RouterError('IMAGE_FRAMING_UNVERIFIED')
     return (
         "# Environment\nYou have been invoked in the following environment: \n"
-        " - Primary working directory: /work\n - Is a git repository: false\n"
+        f" - Primary working directory: {cwd}\n - Is a git repository: false\n"
         " - Platform: linux\n - Shell: unknown\n"
         f" - OS Version: Linux {framing['os_release']}\n\n"
         f"You are powered by the model {task['model']}.\n\n"
@@ -171,3 +174,23 @@ def require_native_generation_bound(body: dict, maximum: int) -> int:
     if type(cap) is not int or not 0 < cap <= maximum:
         raise RouterError("IMAGE_GENERATION_BOUND_UNPROVEN")
     return cap
+
+
+def validate_claude_image_response(task, headers, raw):
+    from .backends.kimi import profile
+    from .transport.identity import validate_response
+    proof = validate_response(profile(task['profile']), headers, raw, allow_tools=False)
+    events = []
+    if 'text/event-stream' in headers.get('content-type', ''):
+        for block in raw.replace(b'\r\n', b'\n').split(b'\n\n'):
+            data = b'\n'.join(line[5:].lstrip() for line in block.splitlines() if line.startswith(b'data:'))
+            if data:
+                events.append(strict_json(data))
+        deltas = [x.get('delta', {}) for x in events if x.get('type') == 'message_delta']
+        reason = next((x.get('stop_reason') for x in reversed(deltas) if x.get('stop_reason')), None)
+    else:
+        reason = strict_json(raw).get('stop_reason')
+    if (reason != 'end_turn' or not {'input_tokens', 'output_tokens'}.issubset(proof['usage'])
+            or proof['usage']['output_tokens'] > task['budgets']['generation_tokens']):
+        raise RouterError('IMAGE_COMPLETION_UNPROVEN')
+    return proof | {'stop_reason': reason}

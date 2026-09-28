@@ -1,4 +1,5 @@
 import argparse
+from contextlib import contextmanager
 import json
 from pathlib import Path
 import signal
@@ -18,6 +19,18 @@ def default_state():
     return Path.home()/'.local/state/agent-subagent-router'
 
 
+@contextmanager
+def _image_cancellation():
+    cancelled = threading.Event()
+    previous = {sig: signal.signal(sig, lambda *_: cancelled.set())
+                for sig in (signal.SIGINT, signal.SIGTERM)}
+    try:
+        yield cancelled
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='subagent')
     parser.add_argument('--version', action='version', version=__version__)
@@ -29,6 +42,23 @@ def main(argv=None):
     inspect.add_argument('--task', type=Path, required=True)
     images = commands.add_parser('inspect-images', help='Seal independent PNG inputs; no provider calls')
     images.add_argument('--task', type=Path, required=True)
+    image_probe = commands.add_parser('prepare-image-probe', help='Freeze router-owned random images; no provider calls')
+    image_probe.add_argument('--backend', choices=('kimi', 'codex'), required=True)
+    image_probe.add_argument('--refs-json', type=Path, required=True)
+    image_probe.add_argument('--model', required=True)
+    image_probe.add_argument('--profile', required=True)
+    image_probe.add_argument('--effort', required=True)
+    image_qualify = commands.add_parser('qualify-image-route', help='Image capability gate, distinct from project routes')
+    image_qualify.add_argument('--probe', required=True)
+    image_mode = image_qualify.add_mutually_exclusive_group(required=True)
+    image_mode.add_argument('--native-only', action='store_true')
+    image_mode.add_argument('--live', action='store_true')
+    image_qualify.add_argument('--credential-ref', type=Path)
+    image_qualify.add_argument('--budget-receipt')
+    image_run = commands.add_parser('run-images', help='Image execution; formal budget remains blocked')
+    image_run.add_argument('--contract', type=Path, required=True)
+    image_run.add_argument('--live', action='store_true', required=True)
+    image_run.add_argument('--credential-ref', type=Path, required=True)
     run = commands.add_parser('run', help='Run only a qualified sealed route')
     run.add_argument('--contract', type=Path, required=True)
     run.add_argument('--backend', required=True)
@@ -88,6 +118,43 @@ def main(argv=None):
             output = inspect_images(strict_json(args.task.read_bytes()), args.state/'image-contracts',
                                     sandbox_config=args.sandbox_config)
             code = 0
+        elif args.command in ('prepare-image-probe', 'qualify-image-route', 'run-images'):
+            if not args.sandbox_config:
+                raise RouterError('IMAGE_RUNTIME_CONFIG_REQUIRED')
+            store = ReceiptStore(args.state/'runs')
+            from .transport.credentials import read_credential_reference
+            if args.command == 'prepare-image-probe':
+                from .image_probe import prepare_probe
+                output = prepare_probe(store, backend=args.backend, model=args.model,
+                    profile=args.profile, effort=args.effort,
+                    refs=strict_json(args.refs_json.read_bytes()), sandbox_config=args.sandbox_config)
+                code = 0
+            elif args.command == 'qualify-image-route':
+                if args.native_only:
+                    from .image_conformance import native_conformance
+                    with _image_cancellation() as cancelled:
+                        output = native_conformance(store, args.probe, sandbox_config=args.sandbox_config,
+                                                    cancel=cancelled)
+                    code = 0 if output['classification'] == 'ENGINEERING_CONFORMANCE_COMPLETE' else 2
+                else:
+                    from .image_qualification import qualify_image_route
+                    probe_task = store.read(args.probe)
+                    # Probe input facts do not duplicate backend; read its sealed task.
+                    from .image_seal import verify_image_seal
+                    provider = 'openai' if verify_image_seal(Path(probe_task['manifest']))['task']['backend'] == 'codex' else 'kimi'
+                    with _image_cancellation() as cancelled:
+                        output = qualify_image_route(store, args.probe, sandbox_config=args.sandbox_config,
+                            credential_ref=read_credential_reference(provider, args.credential_ref) if args.credential_ref else None,
+                            budget_id=args.budget_receipt, cancel=cancelled)
+                    code = 0 if output['classification'] == 'QUALIFIED' else 2
+            else:
+                from .image_run import run_image_contract
+                from .image_seal import verify_image_seal
+                provider = 'openai' if verify_image_seal(args.contract)['task']['backend'] == 'codex' else 'kimi'
+                with _image_cancellation() as cancelled:
+                    output = run_image_contract(args.contract, store, sandbox_config=args.sandbox_config,
+                        credential_ref=read_credential_reference(provider, args.credential_ref), cancel=cancelled)
+                code = 0 if output['classification'] == 'IMAGE_NATIVE_COMPLETE' else 2
         elif args.command == 'inspect':
             task = TaskContract.from_dict(strict_json(args.task.read_bytes()))
             if Path(args.cwd).resolve() != Path(task.cwd).resolve():

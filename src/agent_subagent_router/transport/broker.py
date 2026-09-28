@@ -126,12 +126,17 @@ class Broker:
     def __init__(self, profile, credential: str, *, request_limit: int, wall_seconds: float,
                  upstream=None, allowed_tools=(), on_observation=None, socket_path=None,
                  report_budget=False, before_request=None, generation_tokens=None,
-                 request_validator=None, allow_response_tools=True, on_exchange=None):
+                 request_validator=None, allow_response_tools=True, on_exchange=None,
+                 max_request_bytes=8*1024*1024, response_validator=None):
         if request_limit < 1 or wall_seconds <= 0:
             raise RouterError('INVALID_BUDGET')
         if generation_tokens is not None and (type(generation_tokens) is not int
                                               or not 1024 <= generation_tokens <= 32000):
             raise RouterError('INVALID_BUDGET')
+        if (type(max_request_bytes) is not int or not 0 < max_request_bytes <= 32*1024*1024
+                or (max_request_bytes > 8*1024*1024 and (
+                    request_validator is None or allow_response_tools or allowed_tools or report_budget))):
+            raise RouterError('INVALID_IMAGE_TRANSPORT_BOUND')
         self.profile = profile
         self._credential = credential
         self.capability = secrets.token_urlsafe(32)
@@ -187,7 +192,7 @@ class Broker:
                     return
                 try:
                     length = int(self.headers.get('Content-Length', '0'))
-                    if not 0 < length <= 8*1024*1024:
+                    if not 0 < length <= max_request_bytes:
                         raise ValueError()
                     raw = self.rfile.read(length)
                     if len(raw) != length:
@@ -204,7 +209,7 @@ class Broker:
                 if not active:
                     self.reply(403, b'{"error":"CAPABILITY_REVOKED"}')
                     return
-                if before_request is not None:
+                if before_request is not None and response_validator is None:
                     try:
                         before_request()
                     except Exception as exc:
@@ -224,6 +229,11 @@ class Broker:
                     phase = None
                     if generation_tokens is not None:
                         requested = body.get('max_tokens')
+                        if response_validator is not None and requested != generation_tokens:
+                            broker._active = False
+                            broker.rejections.append('IMAGE_GENERATION_MISMATCH')
+                            self.reply(400, b'{"error":"IMAGE_GENERATION_MISMATCH"}')
+                            return
                         if type(requested) is not int or requested <= 0:
                             if len(broker.rejections) < 64:
                                 broker.rejections.append('INVALID_GENERATION_BUDGET')
@@ -248,7 +258,7 @@ class Broker:
                             return
                     if report_budget or generation_tokens is not None:
                         raw = canonical_bytes(body)
-                        if len(raw) > 8*1024*1024:
+                        if len(raw) > max_request_bytes:
                             self.reply(400, b'{"error":"INVALID_BODY"}')
                             return
                     input_proof = None
@@ -259,6 +269,8 @@ class Broker:
                             code = exc.code if isinstance(exc, RouterError) else 'INPUT_VALIDATION_FAILED'
                             if len(broker.rejections) < 64:
                                 broker.rejections.append(code)
+                            if response_validator is not None:
+                                broker._active = False
                             self.reply(400, canonical_bytes({'error': code}))
                             return
                     broker._inflight = True
@@ -282,6 +294,8 @@ class Broker:
                 phase = 'ADMISSION_RECORD'
                 try:
                     broker._publish()
+                    if response_validator is not None and before_request is not None:
+                        before_request()
                     with broker._lock:
                         if not broker._active or time.monotonic() >= broker._deadline:
                             raise RouterError('CAPABILITY_REVOKED')
@@ -293,6 +307,7 @@ class Broker:
                     phase = 'UPSTREAM'
                     if on_exchange is not None:
                         on_exchange('request', raw)
+                    observation['wire_started'] = True
                     status, upstream_headers, data = broker._upstream(self.path, headers, raw)
                     if on_exchange is not None:
                         on_exchange('response', data)
@@ -319,6 +334,8 @@ class Broker:
                         raise RouterError('UPSTREAM_HTTP_ERROR')
                     observation.update(validate_response(broker.profile, upstream_headers, data,
                         allow_tools=allow_response_tools and observation.get('budget_phase') != 'FINAL_REPORT'))
+                    if response_validator is not None:
+                        observation.update(response_validator(upstream_headers, data))
                     if (generation_tokens is not None
                             and observation['usage'].get('output_tokens', 0) > body['max_tokens']):
                         raise RouterError('UPSTREAM_GENERATION_LIMIT')
@@ -335,12 +352,14 @@ class Broker:
                         observation['transport_error'] = exc.diagnostic
                         if exc.http_status is not None:
                             observation['http_status'] = exc.http_status
-                    if exc.code == 'UPSTREAM_GENERATION_LIMIT':
+                    if exc.code == 'UPSTREAM_GENERATION_LIMIT' or response_validator is not None:
                         broker.revoke()
                     self.reply(502, canonical_bytes({'error': exc.code}))
                 except Exception as exc:
                     observation['classification'] = 'OUTCOME_UNKNOWN'
                     observation['broker_error'] = failure_diagnostic(phase, exc)
+                    if response_validator is not None:
+                        broker.revoke()
                     self.reply(502, b'{"error":"OUTCOME_UNKNOWN"}')
                 finally:
                     with broker._lock:
