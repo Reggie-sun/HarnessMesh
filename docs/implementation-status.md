@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Image Route Preparation and Reporting Repair — 2026-09-29
+
+Jianji M5-D2A用户已授权router视觉扩展及受管安装。新增image contract已Self-Review，但新exact SHA待base V3批准，新image semantics尚未实施，visual capability NOT_EVALUATED。等待期间修复现有FINAL_REPORT工具响应阶段被diagnostic phase覆盖的缺陷；原JSON/SSE两个否定测试真实red，修复后offline315 PASS，native/fake+containment333 PASS/2 skip，explicit通用container另1 PASS。G2对该收紧拒绝条件的一行修复为KIMI_REVIEW_NOT_REQUIRED；不传播到未来credential/image边界。证据、安装及剩余门见 [record](records/image-route-blocker-repair-2026-09-29.md)。
+
 ## Timeout Follow-up — 2026-09-28
 
 新证据表明，前次修复后单次长生成仍可耗尽 wall deadline。按用户选择，新 Kimi task 封存显式 generation_tokens（默认 4096），生成截断即拒收并 revoke、不自动续写；旧 seal 不静默改写。另新增 project 每次请求前的原 seal/source 校验及 `inspect.frozen_source_paths`，减少 source drift 后继续付费的浪费；未改变 final acceptance 或将超时宣称已根治。诊断、测试和边界见 [record](records/kimi-timeout-followup-2026-09-28.md)。

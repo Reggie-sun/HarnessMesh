@@ -301,7 +301,7 @@ class Broker:
                     if status != 200:
                         raise RouterError('UPSTREAM_HTTP_ERROR')
                     observation.update(validate_response(broker.profile, upstream_headers, data,
-                                                         allow_tools=phase != 'FINAL_REPORT'))
+                        allow_tools=observation.get('budget_phase') != 'FINAL_REPORT'))
                     if (generation_tokens is not None
                             and observation['usage'].get('output_tokens', 0) > body['max_tokens']):
                         raise RouterError('UPSTREAM_GENERATION_LIMIT')
