@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Generation Budget Investigation — 2026-09-29
+
+用户要求先修复blocker再安装。实际 Codex 0.154.0 请求、RPC schema及同版本官方源码没有已证明的≤2048 hard generation setter；本轮 native/fake 否定门测试1 PASS，证明拒绝有效，不证明视觉路线已修复。已准备新增明确 OpenAI API计费profile的窄修订，Self-Review完成、新exact SHA待用户批准；未改变旧accepted bytes或安装。受管Kimi安装边界mapping第二个请求TLS失败，canonical OUTCOME_UNKNOWN保留、无重试、未采用报告。新视觉/formal请求仍0，完整执行与qualification仍INCOMPLETE。当前installed source仍bba0563；其他任务的source/budget dirty保持。诊断、具体批准边界、安装核验和13项证据见 [record](records/generation-budget-blocker-2026-09-29.md)。
+
 ## Image Input Engineering — 2026-09-29
 
 用户“那继续实现啊”已批准 image supplement 的已展示 exact SHA，进入实施；上一节批准待定为历史状态。独立 image contract/seal、source CLI `inspect-images`、Kimi native image projection/wire guard 与 Codex Docker diagnostic input 已实际实施。Fresh offline 397 PASS/25 skip，显式 native/fake+containment 420 PASS/2 skip，ruff 与 diff check 通过；这些只证明工程输入边界。
