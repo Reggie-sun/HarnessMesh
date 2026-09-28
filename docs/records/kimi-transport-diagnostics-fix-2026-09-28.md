@@ -49,6 +49,17 @@ Standing delegation 按 external-subagent Skill 进行 doctor preflight，结果
 BLOCKED_CAPABILITY / SANDBOX_IMAGE_UNAVAILABLE / project_access=false；未准入项目数据，
 没有 Kimi paid request。工具目录未暴露 codegraph/tool_search，本次按源代码调用链定位。
 
-安装授权沿用用户先前明确授权。提交后执行正常 managed install 并核对结果；当前会话
-权限可能阻止更新 ~/.agents，真实安装结果以后续记录为准。仓库无专用 capture Skill，
-本记录保存 repair evidence。未修改 jianji、推送或发布；未宣称历史 502 已解决。
+安装授权沿用用户先前明确授权。Implementation commit 为
+`9d420ac1f9a900b651f60f88f2723eca6192a7a9`。提交后执行正常 managed install，
+在创建 `~/.agents/skills/.external-subagent-*` symlink 时系统返回 Errno 30
+Read-only file system；未切换入口。旧 entry SHA 与 Skill target 按 installation.json
+复核匹配，CLI 正常启动，active source_commit 仍为
+`6a197bbb1f36dedc4c51258665b9e7c8824ddfe5`。
+
+新 versioned package 已保存但未激活，package hash
+`142bc8650c9c5c285cf7b12ffcf90730b29732b71a423b0271f2b28a4968ba13`，
+router implementation SHA-256
+`d170e01e4130c97a58342b24c89f54e6d06aacefcbec228aef35e4338937f332`。
+普通终端重新运行 README 的 managed install 即可继续；不绕过 read-only 限制。
+仓库无专用 capture Skill，本记录保存 repair evidence。未修改 jianji、推送或发布；
+未宣称历史 502 已解决。
