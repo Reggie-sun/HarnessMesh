@@ -1,5 +1,11 @@
 # Implementation Status
 
+## Native Fallback and Review Escalation — 2026-09-29
+
+用户新指令已落实至global详细routing owner及thin pointers，并真实使用一个named native reviewer接手两次失败的Kimi工程审查，无第三次Kimi调用。Native三轮推动修正credential/response/native/delivery/seal缺陷；最后NR-IMAGE-005分段通路修正后fresh offline576 PASS/27 skip、native/fake+containment601 PASS/2 skip、ruff/diffcheck通过，programSHA12271d7f…。
+
+最后semantic fix尚需独立复核，native三轮上限已满：REVIEW_ESCALATION_REQUIRED，最终clean安装BLOCKED。当前managed manifest为9f271cc/source_dirty_at_install=true/package52b1…，未含最新修正，不作已审clean路线。较早223da83 manifest及失败历史保留。Exact snapshots/findings/当前安装证据由 [API record](records/image-api-engineering-2026-09-29.md#current-native-fallback-checkpoint) 独占。Visual/formal requests=0、capability/M5-D2A INCOMPLETE、authority=none/eligible=false，production BLOCKED。
+
 ## Installation Continuation Blocked — 2026-09-29
 
 用户“安装”后已继续核对clean ec1567f及未变executable SHA，调查前次失败、完成无凭据TLS-only与Kimi doctor，再进行一次有理由的第二轮managed review。Invocation `dbd52980-2e47-4b06-9ff3-f6609a89a90f`第二次request HTTP200后RESPONSE_BODY连接中断，364.56s/native exit1/OUTCOME_UNKNOWN，无完整报告；未自动发起第三轮。已消耗2/3 review rounds，缺有效required review，accepted Spec安装门仍BLOCKED；official安装器未运行，managed entry/Skill与现有223da83安装匹配。Visual/formal仍0、M5-D2A INCOMPLETE。原失败及当前15项证据见 [API record](records/image-api-engineering-2026-09-29.md#installation-continuation-and-review-round-two)。

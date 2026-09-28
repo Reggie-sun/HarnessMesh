@@ -1,6 +1,14 @@
 # Sealed Image Input Routes Implementation Plan
 
+## User Directed Review Routing Amendment
+
+用户于2026-09-29明确要求连续Kimi故障后使用原生子代理；窄修订由 [acceptance owner](../../records/architecture-spec-acceptance.md#user-directed-engineering-review-fallback) 绑定。沿用本计划：Parent维护global详细routing owner及thin pointers，封存当前candidate/source、accepted refs与已有native verification；两次真实transport failure后以一个read-only `reviewer_max`接手credential/TLS/wire/budget/qualification边界。初审最多一次、修复后的必要re-review最多两次；全部findings由Parent逐项裁决，semantic fix需fresh verification。
+
+验收仍为有效工程review、无unresolved blocker、source一致的project-native gates，随后official installation owner安装clean scoped commit并校验installed entry/Skill、双image runtime/OS/native fake receipts与旧project兼容。独立image配置不覆盖旧sandbox.json；实际visual capability、账户和正式M5-D2A资格不由native工程review替代。此更新仅改reviewer接手条件，不改旧失败、不扩付费budget或生产scope。Self-Review核对上述边界、owner与finite review预算，无新schema或第二lifecycle。
+
 ## Goal
+
+Current M5 checkpoint：native接手已实际执行三轮；最后分段凭据通路修正fresh验证为offline576 PASS/27 skip、native/fake+containment601 PASS/2 skip。修正后必需re-review尚未发生、native有限轮数已满，REVIEW_ESCALATION_REQUIRED；最终clean installation/installed conformance继续BLOCKED。完整状态由 [API record](../../records/image-api-engineering-2026-09-29.md#current-native-fallback-checkpoint) 维护，当前dirty managed登记不能代替安装验收。
 
 实现独立、无文件工具、Docker 隔离的 Kimi/Codex 图像传递与实际 wire proof，为 Jianji M5-D2A 解除工程路线 blocker。Router 只签发 capability evidence；不获得 source semantic、admission 或产品 authority。
 

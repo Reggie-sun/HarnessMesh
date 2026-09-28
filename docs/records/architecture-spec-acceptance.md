@@ -42,3 +42,11 @@ Supplement 内 `DRAFT / EXACT_SHA_APPROVAL_PENDING` 是批准前 frozen bytes �
 2026-09-29 用户在收到新API修订路径、exact SHA及新增计费边界后明确回复“批准”，按前一回复推荐A批准实施及受管安装。绑定 `docs/superpowers/specs/2026-09-29-codex-image-api-budget-design.md` SHA `14e10cad0f3afc44f0f3796c2ae86c45e161c8a17ab2d54801c8c261a81df272`；原frozen文件的DRAFT/approval pending为历史metadata，bytes不变。本窄修订明确覆盖image supplement的Codex subscription transport为新增 `api-bounded` profile/fixed OpenAI Responses API/API Key与单字段generation cap映射；旧profiles不自动迁移。
 
 新增OpenAI capability probe最多一次、费用上限USD1，并须原spec所有native/OS/真实credential、actual payload、cost upper bound与已授权account额度证据成立；Kimi仍最多一次，两条合计最多两次，不retry/fallback。正式holdout cost authorization=0，production授权未扩大。该批准接受Spec并授权范围内implementation planning/execution/verification/review/installation，不证明代码已完成、live能力或source semantic资格。
+
+## User Directed Engineering Review Fallback
+
+2026-09-29 用户明确要求“修改逻辑,当kimi一直出问题的时候得用原生子代理”。该新授权仅修订 base §9 及 API amendment 的 engineering reviewer 限制：连续两次真实受管 Kimi 运行故障无完整输出时，按照 `/home/reggie/.codex/SUBAGENTS.md` 的 Repeated Kimi Failure Fallback，由一个职责匹配的 read-only native Codex reviewer 接手同一候选审查，Parent 仍须核实全部 findings 与 verification。不是删除 required review，也不是声称用户事先批准本段的新 SHA；执行授权来自这条明确变更指令。
+
+旧 accepted Spec bytes 与两次 OUTCOME_UNKNOWN receipts 保留原样。安全/权限/预算/资格拒绝、源码漂移或 reviewer 硬错误不能充当故障触发。Native 身份与执行证据独立记录，不伪称具有 Kimi Docker/route receipts；任何 semantic fix 仍须新 snapshot、验证及适用 re-review。当前两次 invocation `5d46f112-ba0e-48ae-afa0-10b2b1640d9a`、`dbd52980-2e47-4b06-9ff3-f6609a89a90f` 的 transport 故障满足本条阈值，下一步执行 native 工程审查而非第三次付费 Kimi 调用。
+
+Image actor/provider、sealed contract、qualified route、Docker containment、canonical image receipts、有限 capability 费用及 formal budget=0 保持。安装仍需有效 required engineering review 与 Parent 裁决；本修订不批准生产、source admission、视觉资格或使用本聊天充当 blinded actor。

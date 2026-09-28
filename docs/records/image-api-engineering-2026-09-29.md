@@ -1,5 +1,19 @@
 # Image API Engineering Record
 
+## Current Native Fallback Checkpoint
+
+2026-09-29 用户明确要求连续Kimi故障后改用原生子代理。两个既有canonical OUTCOME_UNKNOWN invocation满足阈值，Parent未追加Kimi，按global SUBAGENTS的详细routing owner由一个named `reviewer_max`接手。Global/home/router AGENTS与source Skill仅保留指针；accepted Spec旧bytes不变，工程reviewer窄修订由原acceptance owner记录。该profile配置gpt-6-sol/max，实际authenticated provider/model未评估；native工程记录不是Kimi Docker receipt或blinded actor证据。
+
+原生三轮均read-only，无测试执行、mutation、nested delegation或Provider调用。Round1 snapshot SHA `fe568d27b1f73b37c034c647c72a97f6cc50a1ad790d3bc307bc0f3c6b2043c8`发现NR-IMAGE-001–004：identity receipt反射、SSE/native文本关联、revoke/delivery竞态、sealed后重读原PNG。Parent逐项以源码和否定测试确认并修正。Round2 snapshot SHA `24bbec28bffd853df9b4bf64377ed04bd1697e336bc63be24dfc3707b8f1db1a`发现NR-IMAGE-005正文反射，literal及JSON Unicode escape负例red→green。Round3 snapshot SHA `a4fd9984b18d07b0dbc386ae24541d2b473bbf3d6e7703af09e0661ef7c9374c`，155 paths前后不变、programSHA b8ae61bb…；旧四项触发路径保持修正，NR-IMAGE-005仍有跨Kimi delta/Codex part重组凭据通路，保留blocking_candidate，未以585 PASS降低severity。
+
+Parent随后独立复现split通路8 failed/4 passed，native污染输出仍completion负例1 failed/7 passed。当前修正聚合Kimi正文及Codex既有response proof text后检测，交付前拒绝/revoke；污染raw HTTP只存`response-quarantined`摘要和长度，不落盘可重组凭据正文，正常分段仍保存原raw。image_run在raw/canonical模型输出持久化前另行拒绝污染。相关100项tests通过；fresh全套offline **576 PASS/27 skipped（6.29s）**，显式native/fake+containment **601 PASS/2 skipped（54.20s）**，ruff与diffcheck通过。当前program SHA `12271d7f073e40c3727d1142bd958d573b004b380b7c07d21d1b82f907b1617d`。这些是工程验证，不是修正后的独立re-review或视觉资格。
+
+Native stage已用满三轮，最后semantic fix尚未复核：**REVIEW_ESCALATION_REQUIRED / FINAL_INSTALLATION_BLOCKED**。不自动启动第四轮、切回Kimi或重置预算。只有用户明确授权额外有界native re-review，才能绑定本修正exact snapshot及verification继续；否则保留未验收candidate。Required review不足时不提交已验收代码或进行最终clean安装。
+
+本窗口后续实读managed manifest显示source_commit=`9f271cc80a24538faec13540f608ae16e76ccc1b`、source_dirty_at_install=true、package hash=`52b1d7779b2a8bbca872028e9e32b216b86562fca73d5029d98bb8d193197305`，mtime为06:49；该包源码与HEAD原工程candidate一致，未含本轮修正，managed entry/Skill完整性核验通过。Archive中的223da83/14df…是较早snapshot，不能继续声称当前manifest未变，也不能将dirty登记倒写成通过审查的clean安装。本次最终installer尚未执行；旧包/receipts/sandbox保留，不自动rollback。
+
+Private archive `/home/reggie/.local/state/agent-subagent-router/native-fallback-install-20260929`保存规则、三轮snapshot、Parent engineering finding records、red/green日志及observed安装manifest/package hashes，最后manifest绑定文件原字节。Visual/formal请求仍0；独立OpenAI credential reference及真实account/cost材料仍缺，capability/M5-D2A INCOMPLETE，authority=none/eligible=false，产品guards BLOCKED。无适用capture skill，不写外部memory。
+
 ## Authority and State
 
 用户“批准”接受API amendment exact SHA `14e10cad0f3afc44f0f3796c2ae86c45e161c8a17ab2d54801c8c261a81df272`，由既有acceptance owner绑定。历史DRAFT/pending及旧失败保留。当前是native-verified engineering candidate；required review两轮均因上游transport失败未完成，official installation因此BLOCKED，capability及Jianji M5-D2A仍INCOMPLETE，authority=none、eligible=false、source semantic NOT_EVALUATED。无source admission、产品activation或successful production issuer。

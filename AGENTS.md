@@ -14,6 +14,10 @@ Canonical architecture contract 位于 `docs/superpowers/specs/2026-09-23-harnes
 
 ## Implementation Review Gate
 
+连续 Kimi 工程审查运行故障的原生接手按 `/home/reggie/.codex/SUBAGENTS.md` 与
+[用户窄修订记录](docs/records/architecture-spec-acceptance.md#user-directed-engineering-review-fallback) 执行；
+下述 Kimi 默认规则受该显式例外约束。Image/live qualification 的无 fallback 与隔离门不变。
+
 Spec 由 `superpowers:brainstorming` Self-Review 与 User Review Gate 接受；Plan 仅在 `superpowers:writing-plans` Routing Gate 触发时创建并由其 Self-Review 接受。两者均不默认调用 Kimi 或额外 Codex reviewer。
 
 Implementation 先通过 project-native tests/Harness，再由 Parent 在 stable checkpoint 按 canonical Spec §9 的 Risk Gate 判断。未触发时采用 normal Codex verification；触发时只增加一名通过 qualified HarnessMesh route 调用的 read-only Kimi adversarial reviewer，由 Codex Parent 调查、修复并裁决 findings。Kimi 不拥有 KEEP、REVERT、completion 或 acceptance，也不得修改 source、Spec、Plan、tests 或 Harness。Review package、targeted/full re-review、三轮默认上限与 escalation 完全由 canonical Spec §9 管理；本文件不复制 trigger catalog 或形成第二 owner。

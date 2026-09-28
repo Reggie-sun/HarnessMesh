@@ -60,6 +60,11 @@ Parent 的 review package 应聚焦实际风险和 changed boundaries；`expecte
 
 ## Triggered Implementation Review
 
+连续 Kimi 运行故障后的 native delegation/review 由 `/home/reggie/.codex/SUBAGENTS.md` 的
+Repeated Kimi Failure Fallback 与 applicable accepted amendment 管理。Parent 保存 canonical
+失败 receipts 后返回 Native Codex 路由；本 Skill/CLI 不自动 retry、切换 backend 或伪造 native receipt。
+工程 reviewer 替换不适用于 image qualification 或真实 Provider capability。
+
 本 Skill 不因 Spec、Plan、diff 或 artifact 存在而自行触发 review，也不为 Spec/Plan 默认调用 Kimi。Parent 只有在 repository canonical Spec §9 的 Implementation Review Risk Gate 得出 `KIMI_REVIEW_REQUIRED` 后，才使用本节 mechanics。
 
 Kimi 使用 `reviewer` role 与 read-only permissions，读取 exact final candidate snapshot、applicable accepted Spec/Plan identity、相关 project contract、changed paths/source context、tests/Harness evidence、constraints 与 acceptance criteria。是否 review 仍由 canonical Spec §9 决定；本次 maximum policy 只改变新 invocation 的 sizing/profile，不增加触发频率、付费 attempts 或三轮 review 上限。新 seal 使用 `deep` / max / 1M，输入仍保持 minimum sufficient。初次 review 不包含 Parent 预判；re-review 只增加 previous unresolved findings、Parent resolution、correction evidence 与受影响 contract。Kimi 不得修改 source、Spec、Plan、tests、Harness 或 candidate，不得派生 subagent、commit/push、改变 acceptance criteria 或宣布 completion。
