@@ -27,6 +27,8 @@ def main(argv=None):
     inspect = commands.add_parser('inspect', help='Seal exact local inputs; no provider calls')
     inspect.add_argument('--cwd', required=True)
     inspect.add_argument('--task', type=Path, required=True)
+    images = commands.add_parser('inspect-images', help='Seal independent PNG inputs; no provider calls')
+    images.add_argument('--task', type=Path, required=True)
     run = commands.add_parser('run', help='Run only a qualified sealed route')
     run.add_argument('--contract', type=Path, required=True)
     run.add_argument('--backend', required=True)
@@ -81,6 +83,11 @@ def main(argv=None):
                       'writer': 'REQUIRES_READONLY_QUALIFICATION_AND_PARENT_TEST',
                       'second_backend': 'REQUIRES_INDEPENDENT_QUALIFICATION'}
             code = 0 if evidence['qualified'] else 2
+        elif args.command == 'inspect-images':
+            from .image_inspect import inspect_images
+            output = inspect_images(strict_json(args.task.read_bytes()), args.state/'image-contracts',
+                                    sandbox_config=args.sandbox_config)
+            code = 0
         elif args.command == 'inspect':
             task = TaskContract.from_dict(strict_json(args.task.read_bytes()))
             if Path(args.cwd).resolve() != Path(task.cwd).resolve():

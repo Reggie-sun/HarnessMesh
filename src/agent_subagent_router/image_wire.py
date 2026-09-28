@@ -1,0 +1,173 @@
+"""Exact native projection guard before any authenticated image request."""
+
+import base64
+import binascii
+import re
+import uuid
+
+from .adapters.image_claude import visible_text
+from .contracts import RouterError, canonical_bytes, hash_bytes, strict_json
+
+
+WIRE_VERSION = "claude-image-wire/v1"
+CLAUDE_NATIVE_IDENTITY = "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+
+
+def environment_text(task, framing):
+    # Values must come from the parent-frozen native conformance tuple.
+    if set(framing) != {"os_release", "day"} or not re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}", framing["day"]
+    ):
+        raise RouterError("IMAGE_FRAMING_UNVERIFIED")
+    if not re.fullmatch(r"[A-Za-z0-9_.+-]{1,100}", framing["os_release"]):
+        raise RouterError("IMAGE_FRAMING_UNVERIFIED")
+    return (
+        "# Environment\nYou have been invoked in the following environment: \n"
+        " - Primary working directory: /work\n - Is a git repository: false\n"
+        " - Platform: linux\n - Shell: unknown\n"
+        f" - OS Version: Linux {framing['os_release']}\n\n"
+        f"You are powered by the model {task['model']}.\n\n"
+        "<total_tokens>15000000 tokens left</total_tokens>\n\n"
+        f"Today's date is {framing['day']}."
+    )
+
+
+def validate_claude_image_request(task: dict, body: dict, framing: dict) -> dict:
+    allowed = {
+        "model",
+        "system",
+        "messages",
+        "tools",
+        "metadata",
+        "max_tokens",
+        "stream",
+        "thinking",
+        "output_config",
+        "context_management",
+    }
+    if not isinstance(body, dict) or set(body) != allowed:
+        raise RouterError("IMAGE_PROJECTION_MISMATCH")
+    wire_model = "k3" if task["model"] == "k3[1m]" else task["model"]
+    if (
+        body["model"] != wire_model
+        or body["output_config"] != {"effort": task["effort"]}
+        or body["thinking"] != {"type": "adaptive"}
+        or body["tools"] != []
+        or body["stream"] is not True
+    ):
+        raise RouterError("IMAGE_ROUTE_MISMATCH")
+    if (
+        type(body["max_tokens"]) is not int
+        or body["max_tokens"] != task["budgets"]["generation_tokens"]
+    ):
+        raise RouterError("IMAGE_GENERATION_MISMATCH")
+    if body["context_management"] != {
+        "edits": [{"keep": "all", "type": "clear_thinking_20251015"}]
+    }:
+        raise RouterError("IMAGE_PROJECTION_MISMATCH")
+    system = body["system"]
+    if (
+        not isinstance(system, list)
+        or len(system) != 3
+        or not isinstance(system[0], dict)
+        or set(system[0]) != {"type", "text"}
+        or system[0]["type"] != "text"
+        or not isinstance(system[0]["text"], str)
+        or not re.fullmatch(
+            r"x-anthropic-billing-header: cc_version=2\.1\.277\.[0-9a-f]{3}; cc_entrypoint=sdk-cli;",
+            system[0]["text"],
+        )
+        or system[1]
+        != {"type": "text", "text": CLAUDE_NATIVE_IDENTITY, "cache_control": {"type": "ephemeral"}}
+        or system[2]
+        != {"type": "text", "text": task["system_text"], "cache_control": {"type": "ephemeral"}}
+    ):
+        raise RouterError("IMAGE_SYSTEM_MISMATCH")
+    metadata = body["metadata"]
+    if not isinstance(metadata, dict) or set(metadata) != {"user_id"}:
+        raise RouterError("IMAGE_METADATA_MISMATCH")
+    if not isinstance(metadata["user_id"], str):
+        raise RouterError("IMAGE_METADATA_MISMATCH")
+    identity = strict_json(metadata["user_id"])
+    if (
+        not isinstance(identity, dict)
+        or set(identity) != {"device_id", "account_uuid", "session_id"}
+        or identity["account_uuid"] != ""
+        or not isinstance(identity["device_id"], str)
+        or not re.fullmatch("[0-9a-f]{64}", identity["device_id"])
+    ):
+        raise RouterError("IMAGE_METADATA_MISMATCH")
+    try:
+        if str(uuid.UUID(identity["session_id"])) != identity["session_id"]:
+            raise ValueError()
+    except (ValueError, TypeError, AttributeError):
+        raise RouterError("IMAGE_METADATA_MISMATCH") from None
+    messages = body["messages"]
+    if (
+        not isinstance(messages, list)
+        or len(messages) != 2
+        or messages[1]
+        != {
+            "role": "system",
+            "content": [
+                {
+                    "type": "text",
+                    "text": environment_text(task, framing),
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
+        }
+        or not isinstance(messages[0], dict)
+        or set(messages[0]) != {"role", "content"}
+        or messages[0]["role"] != "user"
+        or not isinstance(messages[0]["content"], list)
+    ):
+        raise RouterError("IMAGE_CONTEXT_MISMATCH")
+    content = messages[0]["content"]
+    if len(content) != len(task["images"]) + 1 or content[0] != {
+        "type": "text",
+        "text": visible_text(task),
+    }:
+        raise RouterError("IMAGE_BINDING_MISMATCH")
+    observations = []
+    for descriptor, item in zip(task["images"], content[1:], strict=True):
+        if (
+            not isinstance(item, dict)
+            or set(item) != {"type", "source"}
+            or item["type"] != "image"
+            or not isinstance(item["source"], dict)
+            or set(item["source"]) != {"type", "media_type", "data"}
+            or item["source"]["type"] != "base64"
+            or item["source"]["media_type"] != "image/png"
+        ):
+            raise RouterError("IMAGE_BINDING_MISMATCH")
+        try:
+            data = base64.b64decode(item["source"]["data"], validate=True)
+        except (ValueError, TypeError, binascii.Error):
+            raise RouterError("IMAGE_BINDING_MISMATCH") from None
+        if len(data) != descriptor["byte_length"] or hash_bytes(data) != descriptor["sha256"]:
+            raise RouterError("IMAGE_BINDING_MISMATCH")
+        observations.append(
+            {
+                key: descriptor[key]
+                for key in ("image_id", "byte_length", "sha256", "width", "height")
+            }
+        )
+    if len(canonical_bytes(body)) > task["budgets"]["payload_bytes"]:
+        raise RouterError("IMAGE_PAYLOAD_LIMIT")
+    return {
+        "version": WIRE_VERSION,
+        "images": observations,
+        "session_id": identity["session_id"],
+        "system_sha256": hash_bytes(canonical_bytes(system)),
+        "task_sha256": hash_bytes(visible_text(task).encode()),
+        "native_request_sha256": hash_bytes(canonical_bytes(body)),
+    }
+
+
+def require_native_generation_bound(body: dict, maximum: int) -> int:
+    """A local config value or response-time check cannot prove a sending bound."""
+    cap = body.get("max_output_tokens")
+    if type(cap) is not int or not 0 < cap <= maximum:
+        raise RouterError("IMAGE_GENERATION_BOUND_UNPROVEN")
+    return cap

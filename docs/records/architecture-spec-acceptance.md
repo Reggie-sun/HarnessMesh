@@ -25,3 +25,14 @@
 本次 acceptance 只确认上述 exact Spec snapshot 已通过 `superpowers:brainstorming` Architectural flow、Spec Self-Review 与 User Review Gate。Spec 内的 “draft”/“user review pending” 是批准前封存 bytes 中的历史 metadata；当前 acceptance 状态以本记录绑定的 path、SHA-256 与用户批准为准。依照该 Spec 的 `G1`，Spec 默认不调用 Kimi review；未执行 Kimi Spec review 不是缺失 gate。
 
 本记录不接受或声称任何 Implementation Plan、runtime implementation、refactor、push 或 release，也不把 Spec acceptance 解释为 implementation completion、qualification 或 project-native verification PASS。
+
+## Accepted Image Route Supplement
+
+2026-09-29 用户先明确选择“包含 router 扩展，保留 sealed contract、Docker 和资格门”，随后在获知 image-only route written Spec 的 exact path/SHA 和尚未实施状态后要求“那继续实现啊”。该指令批准并授权执行已展示的下列 supplement；不是此前已实施或 qualified 的证明。
+
+- Path: `docs/superpowers/specs/2026-09-29-image-only-route-design.md`
+- SHA-256: `c1169a61ba8573a2c4ce442b321683a65b800230d3e8620e069e388a6d97c0f1`
+- Approval source: 当前用户继续实施指令，绑定上述前一窗口已展示的 unchanged bytes。
+- Base contract: 上述 current accepted architecture Spec；新 mode 不放宽旧 project worker schema、工具或 authority。
+
+Supplement 内 `DRAFT / EXACT_SHA_APPROVAL_PENDING` 是批准前 frozen bytes 的历史 metadata；当前批准由本记录独占绑定。授权包括 implementation planning、受限实现、native/fake/containment 验证与符合冻结条件的最多两次独立 capability probes。它不批准无限商业调用、正式 Jianji semantic qualification 的未冻结预算或产品 activation。

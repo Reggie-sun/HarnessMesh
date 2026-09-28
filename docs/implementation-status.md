@@ -1,5 +1,11 @@
 # Implementation Status
 
+## Image Input Engineering — 2026-09-29
+
+用户“那继续实现啊”已批准 image supplement 的已展示 exact SHA，进入实施；上一节批准待定为历史状态。独立 image contract/seal、source CLI `inspect-images`、Kimi native image projection/wire guard 与 Codex Docker diagnostic input 已实际实施。Fresh offline 397 PASS/25 skip，显式 native/fake+containment 420 PASS/2 skip，ruff 与 diff check 通过；这些只证明工程输入边界。
+
+Codex 实际请求的工具列表和额外 instructions 已清空，但没有可证实的生成 token 上限；`IMAGE_GENERATION_BOUND_UNPROVEN` 阻断 live route。尚未实现 authenticated Codex broker/relay、完整 image execution/typed qualification owner；当前安装未替换，真实视觉 probe/formal requests 均为0，整体 INCOMPLETE。源码、具体控制项、Risk Gate、失败历史和剩余工作见 [record](records/image-input-engineering-2026-09-29.md)。
+
 ## Image Route Preparation and Reporting Repair — 2026-09-29
 
 Jianji M5-D2A用户已授权router视觉扩展及受管安装。新增image contract已Self-Review，但新exact SHA待base V3批准，新image semantics尚未实施，visual capability NOT_EVALUATED。等待期间修复现有FINAL_REPORT工具响应阶段被diagnostic phase覆盖的缺陷；原JSON/SSE两个否定测试真实red，修复后offline315 PASS，native/fake+containment333 PASS/2 skip，explicit通用container另1 PASS。G2对该收紧拒绝条件的一行修复为KIMI_REVIEW_NOT_REQUIRED；不传播到未来credential/image边界。证据、安装及剩余门见 [record](records/image-route-blocker-repair-2026-09-29.md)。

@@ -125,7 +125,8 @@ class KimiUpstream:
 class Broker:
     def __init__(self, profile, credential: str, *, request_limit: int, wall_seconds: float,
                  upstream=None, allowed_tools=(), on_observation=None, socket_path=None,
-                 report_budget=False, before_request=None, generation_tokens=None):
+                 report_budget=False, before_request=None, generation_tokens=None,
+                 request_validator=None, allow_response_tools=True, on_exchange=None):
         if request_limit < 1 or wall_seconds <= 0:
             raise RouterError('INVALID_BUDGET')
         if generation_tokens is not None and (type(generation_tokens) is not int
@@ -250,6 +251,16 @@ class Broker:
                         if len(raw) > 8*1024*1024:
                             self.reply(400, b'{"error":"INVALID_BODY"}')
                             return
+                    input_proof = None
+                    if request_validator is not None:
+                        try:
+                            input_proof = request_validator(body)
+                        except Exception as exc:
+                            code = exc.code if isinstance(exc, RouterError) else 'INPUT_VALIDATION_FAILED'
+                            if len(broker.rejections) < 64:
+                                broker.rejections.append(code)
+                            self.reply(400, canonical_bytes({'error': code}))
+                            return
                     broker._inflight = True
                     broker._last_activity = admitted_at = time.monotonic()
                     broker._idle.clear()
@@ -260,6 +271,8 @@ class Broker:
                                    'effort': body['output_config']['effort'],
                                    'request_sha256': hashlib.sha256(raw).hexdigest(),
                                    'classification': 'OUTCOME_UNKNOWN'}
+                    if input_proof is not None:
+                        observation['input_proof'] = input_proof
                     if phase is not None:
                         observation.update(budget_phase=phase, client_request_sha256=client_hash)
                     if generation_tokens is not None:
@@ -278,7 +291,11 @@ class Broker:
                                'x-stainless-timeout': str(remaining_seconds)}
                     # Beta features are explicit profile policy, never arbitrary forwarded headers.
                     phase = 'UPSTREAM'
+                    if on_exchange is not None:
+                        on_exchange('request', raw)
                     status, upstream_headers, data = broker._upstream(self.path, headers, raw)
+                    if on_exchange is not None:
+                        on_exchange('response', data)
                     phase = 'RESPONSE_VALIDATION'
                     observation['http_status'] = status
                     if status != 200:
@@ -301,7 +318,7 @@ class Broker:
                     if status != 200:
                         raise RouterError('UPSTREAM_HTTP_ERROR')
                     observation.update(validate_response(broker.profile, upstream_headers, data,
-                        allow_tools=observation.get('budget_phase') != 'FINAL_REPORT'))
+                        allow_tools=allow_response_tools and observation.get('budget_phase') != 'FINAL_REPORT'))
                     if (generation_tokens is not None
                             and observation['usage'].get('output_tokens', 0) > body['max_tokens']):
                         raise RouterError('UPSTREAM_GENERATION_LIMIT')
