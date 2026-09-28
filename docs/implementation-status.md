@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Installation Continuation Blocked — 2026-09-29
+
+用户“安装”后已继续核对clean ec1567f及未变executable SHA，调查前次失败、完成无凭据TLS-only与Kimi doctor，再进行一次有理由的第二轮managed review。Invocation `dbd52980-2e47-4b06-9ff3-f6609a89a90f`第二次request HTTP200后RESPONSE_BODY连接中断，364.56s/native exit1/OUTCOME_UNKNOWN，无完整报告；未自动发起第三轮。已消耗2/3 review rounds，缺有效required review，accepted Spec安装门仍BLOCKED；official安装器未运行，managed entry/Skill与现有223da83安装匹配。Visual/formal仍0、M5-D2A INCOMPLETE。原失败及当前15项证据见 [API record](records/image-api-engineering-2026-09-29.md#installation-continuation-and-review-round-two)。
+
 ## Approved Image API Candidate — 2026-09-29
 
 用户“批准”接受Codex api-bounded amendment，已实现固定OpenAI Responses TLS broker、sealed generation cap映射、独立private credential、image-only Docker执行/终态/receipts、owned probe与一次性host预算门。Fresh offline524 PASS/27 skip，完整native/fake+containment548 PASS/3 skip，ruff/diffcheck通过；两新route只取得工程证据。

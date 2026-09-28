@@ -105,3 +105,5 @@ M5当前为KIMI_REVIEW_REQUIRED，native verification后进入exact stable snaps
 ## Required Review Blocked Checkpoint
 
 M5第一轮managed Kimi review已真实执行；canonical invocation `5d46f112-ba0e-48ae-afa0-10b2b1640d9a`为OUTCOME_UNKNOWN，第二次上游attempt TLS_ERROR/CONNECT，缺完整report/verdict。Parent核验canonical artifacts与封存源码未变，未采用部分工具探索，未自动retry/fallback。review round1失败保留，gate未满足，official installation BLOCKED；当前source保存未验收engineering checkpoint不表示M5完成。M6只更新Jianji phase/plan和真实证据，capability/formal请求保持0；有效review、clean安装、installed验证及真实账户/预算门仍为remaining work。具体失败和归档由同一record独占。
+
+用户随后“安装”，Parent在调查round1、核对源码未变及取得当前TLS-only成功证据后，显式封存并执行一次round2；scope/安全门不变。第二轮invocation `dbd52980-2e47-4b06-9ff3-f6609a89a90f` HTTP200后RESPONSE_BODY连接中断，canonical OUTCOME_UNKNOWN，无完整report。M5安装门仍BLOCKED、official installer未运行；不自动使用剩余第三轮、不恢复预算或用partial结果通过。两轮历史保留，最新evidence和remaining work仍由同一API record独占；M6/视觉/正式资格保持INCOMPLETE。

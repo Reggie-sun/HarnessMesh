@@ -2,7 +2,7 @@
 
 ## Authority and State
 
-用户“批准”接受API amendment exact SHA `14e10cad0f3afc44f0f3796c2ae86c45e161c8a17ab2d54801c8c261a81df272`，由既有acceptance owner绑定。历史DRAFT/pending及旧失败保留。当前是native-verified engineering candidate；required review第一轮因上游TLS失败未完成，official installation因此BLOCKED，capability及Jianji M5-D2A仍INCOMPLETE，authority=none、eligible=false、source semantic NOT_EVALUATED。无source admission、产品activation或successful production issuer。
+用户“批准”接受API amendment exact SHA `14e10cad0f3afc44f0f3796c2ae86c45e161c8a17ab2d54801c8c261a81df272`，由既有acceptance owner绑定。历史DRAFT/pending及旧失败保留。当前是native-verified engineering candidate；required review两轮均因上游transport失败未完成，official installation因此BLOCKED，capability及Jianji M5-D2A仍INCOMPLETE，authority=none、eligible=false、source semantic NOT_EVALUATED。无source admission、产品activation或successful production issuer。
 
 ## Implementation and Verification
 
@@ -41,3 +41,15 @@ canonical receipt为OUTCOME_UNKNOWN、native exit1、22.84s。两次上游attemp
 当前visual Provider requests=0、formal requests=0、formalCostAuthorizationUSD=0；未收到独立OpenAI API credential reference和当前额度/actual frozen accounting evidence。用户“就用codex啊”明确继续Codex，但不构成提供API Key、绕过≤2048 gate或读取global Codex登录。原subscription route无已证明hard cap的历史事实保留。
 
 批准的OpenAI capability至多1次/USD1；Kimi至多1次，总2，每次generation2048/wall180/idle90，全部preflight真实成立才调用，不用换state/新fixture恢复预算。当前source review的648帧、独立truth/criteria/inputPlan/human协议不被本probe复制或改写。先required review与clean official install/installed verification，再有真实账户证据才owned capability；M5-D2A formal仍需自己的全部冻结/actor/receipts/correspondence/truth-vs-review gates与独立成本批准。未评估指标null，synthetic不能推出real-media PASS。
+
+## Installation Continuation and Review Round Two
+
+用户随后明确“安装”，Parent继续现有scope，未解释为免除accepted API Spec的required review。重新核对clean HEAD=`ec1567ffd67f04df2efee06f50d5df84d9a83f3a`、程序SHA仍2d1c3976…，所有executable paths与548 PASS时逐SHA相同。先调查round1 canonical OUTCOME_UNKNOWN/TLS_ERROR/CONNECT，再以同一api.kimi.ai端点做一次无凭据、无HTTP的12秒有界TLS-only检查：TLS1.3、certificate verification OK。受管Kimi doctor再次确认20项OS及native boundary通过；这不证明视觉或live资格。Parent据新增当前TLS证据与明确安装续行指令发起**仅一次**有限round2，不自动循环、不增加原三轮总预算。
+
+Round2仍一个managed read-only deep/max reviewer、同qualified project route。seal=`50b170e46531bd7a2bfe16e511d0d1cd7a4c250c4227c99190e55973c288afb7`，invocation=`dbd52980-2e47-4b06-9ff3-f6609a89a90f`，Plan SHA=`6beb560bf0b34610a65b0f642369bd6ad69361f272e88ae4001b452df1efabe8`。Scope与五项required native Read evidence保持；432002-byte package增加exact changed source/tests、必要canonical dependencies及modified-path diff，以减少反复探索，不缩减安全门或伪造Read。38个frozen paths从seal至receipt核验逐SHA一致，snapshot SHA=`3c1cdb0b4de8806e0d5a1a573a50f54ddd6de9855f08d806bcb336f211cb3ce0`。
+
+Canonical结果仍OUTCOME_UNKNOWN，native exit1、364.56s、stdout201576 bytes，未截断。第一次request实际Kimi/k3/max HTTP200、input121193/output482 tokens；第二次request取得HTTP200并持续接收数据，336.43s后在RESPONSE_BODY发生CONNECTION_ERROR，记录1652092 upstream bytes，无完整usage/model/terminal proof。Native result is_error=true，文本Request timed out；不能仅据该文本判成Parent wall/idle deadline耗尽，process.reason实际为exited。没有完整worker report、没有采纳partial findings；第二次actual cost与usage保持null。orchestration_retries=0、fallback=forbidden、internal_retry_count=unknown。两个失败review rounds已消耗；没有自动发起round3、换provider或降低门。
+
+现有installation manifest原字节保持；official `_check_existing`再次核验managed entry/Skill SHA与旧223da83安装一致。本次**未运行installation owner**、未写入installed tree/wrapper/sandbox配置；不足required review不能安装可运行新路线。新visual probe与formal requests仍0，独立OpenAI账户/预算材料仍缺。真实stop为必需审查的重复transport failure；其更底层原因未证明，不能宣称网络已修复。剩余为解决transport后完成有效review及Parent adjudication、官方安装与installed验证，再按已授权的有限capability条件执行；本条“安装”不授予产品启用。
+
+独占archive=`/home/reggie/.local/state/agent-subagent-router/image-route-install-20260929`，15项文件manifest SHA=`9282e929c7007169a5eb9895e713e8f03a6dace1380aaf96b6cd52ab3aaa9642`，保存TLS-only输出、doctor、sealed task/source snapshot、canonical receipt及原artifacts、unchanged安装manifest。Current source未改，本轮无新增pytest/ruff执行；已有全套工程结果只在SHA匹配范围内沿用，新的结论仅由本次实际preflight/receipts/安装核验支撑。记录使用原owner，无专用capture skill，不写memory。
