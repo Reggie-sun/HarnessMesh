@@ -47,3 +47,24 @@ npm test -- tests/douyin-upload-service.test.ts tests/douyin-upload-store.test.t
 Parent 必须检查三个 scope 的联合覆盖，并 evidence-adjudicate 每个 blocker。任何 failed/missing review 或 acceptance-relevant uncertainty 继续阻断。当前 `REVIEW_ESCALATION_REQUIRED` 保留；本轮只完成 package preparation 和 blocker evidence，不宣称 required review 完成或 timeout 已修复。
 
 仓库无专用 session-record/capture skill；本文件是实际 preflight/verification/handoff record，不写全局 memory。
+
+# Native Verification And Refreshed Package
+
+随后用户普通终端 doctor 返回 `CONTAINMENT_QUALIFIED`、全部所列 boundary checks true，`live_identity: NOT_EVALUATED`。这证明该终端可通过既有 Docker containment preflight，不改变当前 Codex exec session 的 Docker API 权限，也不是新 live model identity proof。无需重复 doctor、改 socket 权限或绕过 route。
+
+直接读取 Jianji Code Harness run `20260928T185125Z-d7635d14` 的 canonical receipt 与六份 structured Vitest reports：PASS，405/405、0 failed、0 skipped、typecheck PASS，before/after source identity 相同。Receipt SHA-256 为 `f7bc3a80d280d463b505aa0a906991fb045764a4ab77d48e3ac5ae82d18eaa7e`；其 upload group 145/145 中，用户所贴五个 suite 为 93/93（CDP 40、service 28、store 17、integration 5、page 3），结构化证据与 excerpt 相符。不需要用户复制 terminal progress repaint 或完整 stdout。
+
+该运行绑定 HEAD `2bbf7b4afb2de806fdbdedfef3e8186277869c4a` 与当时 working tree。最初重新核对 HEAD、tracked diff 和两项 untracked source hashes 均相符；准备期间其他会话随后修改了非审查范围 UI，whole tracked diff 不再相同。因此只保留该运行的 exact identity/evidence，不声称当前整个 working tree Harness PASS。当前审查 common source/ref/instruction hashes 仍稳定、scope paths 在 HEAD 无未提交修改。
+
+当前 exec session 另行 typecheck exit 0；重跑五个 focused suite 为 exit 1，四个 suite 53/53 PASS，CDP suite 40 项因 beforeAll `listen EPERM: operation not permitted 127.0.0.1` 未运行。不能把这次写成 93/93 PASS，亦不将环境边界拒绝伪装成 implementation regression。原普通终端与 Harness 的 40 项 CDP evidence 保留独立 provenance。
+
+旧 package 保持原 bytes，但其中 AGENTS、Spec、Plan、service、shared account schema、service tests 六项已变化，不能在当前 candidate 上执行旧 task。刷新材料在 `/home/reggie/vscode_folder/jianji/.agent/harness/runs/20260929-qianchuan-scoped-review-2bbf7b4/`，仍为三份 task/source-only diff、共同 manifest、有限 review context；没有修改业务源码或创建 Plan。
+
+- 新 `snapshot.json` exact SHA-256：`e9d7cf8dc0a612f9a3bab285813c7f6c632c96bdf2402c056ef183378df287ba`，20 项 common source/ref/instruction hashes、6 项 drift、既有新旧 verification provenance 和 budget identity。
+- 当前 Spec/Plan 记载 2026-09-29 用户授权的软件内账号设置增量；仅加入相关 reader/settings 的 admission/restore dependency context，不扩张为整个设置功能/UI acceptance。当前全文无新的 exact-byte approval record，本次不伪造 `ACCEPTED_SPEC/ACCEPTED_PLAN`。Task `selected_refs` 明确只绑定已有 `Scope And Accepted Delta` 记录的用户授权九文件要求；Spec 可 Read，Plan identity 留在 manifest，不重复投影完整执行安排。
+- 使用当前 installed package 的 `TaskContract`，三份 task 的 schema、read-only authority、source/ref/diff hashes、expected-evidence 路径闭包均通过本地检查。输入加 task metadata 为 269225 / 324190 / 315018 bytes，各另预留 16384 bytes transport headroom，均低于 350000；实际 seal/transport 仍须 canonical inspect 核验，未伪造 seal。
+- 当前安装 source commit `bba056309342f3f55a62e7cb9378a4c6d96503ec`、source hash `6aea7fb98886712bb0f42e3449c41acc51c83acd3f0d0f478d8fb6a84fc4d879`，仅核对、不重新安装 dirty router source，也不把 reporting-policy 修正称为已治愈 live timeout。
+
+AOCI Verify/Check exit 1、Guide `authoring_required / complete:false`，19 项既有账户/并发 UI 相关 missing/stale/unbaselined findings。新增 package 是 ignored run artifacts，没有新 formal managed source；`aoci.code.txt` 与 `.aoci/baseline.json` 已有其他 owner 的未提交改动，未接管、覆写或 stage。当前不能宣称 AOCI 对齐；需该 owner 在源码稳定后完成维护。
+
+下一步由普通终端对新 scope 01 执行 canonical inspect，不发 Provider request；Parent 读取其 seal/manifest、检查实际 budgets 与整个 frozen source union 的稳定性后，再决定 live run。当前追加 paid invocations 仍 **0/3**、有效新增 Kimi reports **0**、gate 仍 `REVIEW_ESCALATION_REQUIRED`。没有自动新一轮、真实上传、确认、runtime/refactor、push/release。
