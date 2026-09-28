@@ -4,14 +4,15 @@ from dataclasses import replace
 import uuid
 
 from .backends.kimi import profile
-from .contracts import (DEFAULT_KIMI_OUTPUT_BYTES, MIN_KIMI_LIVE_OUTPUT_BYTES, DEFAULT_KIMI_GENERATION_TOKENS,
-                        RouterError, TaskContract, strict_json)
+from .contracts import (BUDGET_LIMITS, MAX_KIMI_GENERATION_TOKENS, MAX_KIMI_IDLE_SECONDS,
+                        MIN_KIMI_LIVE_OUTPUT_BYTES, Budgets, RouterError, TaskContract, strict_json)
 from .permissions.containment import require_project_containment
 from .receipts import ReceiptStore
 from .resolver import resolve, verify
 
 
 def inspect_task(task: TaskContract, state: Path, runtime, *, sandbox=None) -> dict:
+    resource_policy = None
     if task.backend == 'gemini':
         from .backends.gemini import profile as gemini_profile
         selected = gemini_profile(task.profile)
@@ -20,9 +21,14 @@ def inspect_task(task: TaskContract, state: Path, runtime, *, sandbox=None) -> d
         if task.role == 'implementer':
             raise RouterError('WRITER_NOT_QUALIFIED')
     elif task.backend == 'kimi':
+        profile(task.profile)  # Unknown routes remain errors, not repaired defaults.
+        resource_policy = {'name': 'kimi-maximum-v1', 'requested_profile': task.profile,
+                           'requested_budgets': task.to_dict()['budgets']}
+        # Explicit user-selected global sizing policy; applied only before a new seal.
+        task = replace(task, profile='deep', budgets=Budgets(**(BUDGET_LIMITS | {
+            'idle_seconds': MAX_KIMI_IDLE_SECONDS,
+            'generation_tokens': MAX_KIMI_GENERATION_TOKENS})))
         selected = profile(task.profile)
-        if task.budgets.generation_tokens is None:
-            task = replace(task, budgets=replace(task.budgets, generation_tokens=DEFAULT_KIMI_GENERATION_TOKENS))
     else:
         raise RouterError('BACKEND_NOT_QUALIFIED')
     runtime.verify()
@@ -32,6 +38,8 @@ def inspect_task(task: TaskContract, state: Path, runtime, *, sandbox=None) -> d
                  'runtime': 'gemini-cli' if task.backend == 'gemini' else 'claude-code',
                  'runtime_identity': runtime.to_dict(), 'profile_identity': selected.to_dict(),
                  'capabilities': ['read']}
+    if resource_policy is not None:
+        transport['resource_policy'] = resource_policy
     if sandbox is not None:
         sandbox.verify()
         transport['containment'] = {'image': sandbox.image, 'runtime_sha256': sandbox.runtime_sha256}
@@ -66,8 +74,7 @@ def run_contract(manifest: dict, backend: str, name: str, store: ReceiptStore, r
             raise RouterError('OUTPUT_BUDGET_TOO_SMALL',
                 f'Kimi project stream-json needs at least {MIN_KIMI_LIVE_OUTPUT_BYTES} output bytes; '
                 f'sealed limit is {task.budgets.output_bytes}. This caps aggregate stdout/stderr, '
-                f'not final report tokens. Seal a new task with output_bytes omitted '
-                f'(default {DEFAULT_KIMI_OUTPUT_BYTES}) or an explicit sufficient limit; '
+                'not final report tokens. Inspect a new task to apply the global maximum policy; '
                 'the existing sealed budget is unchanged.')
         if backend == 'kimi' and upstream is None and task.budgets.generation_tokens is None:
             raise RouterError('GENERATION_BUDGET_REQUIRED',

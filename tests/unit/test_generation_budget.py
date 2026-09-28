@@ -17,7 +17,8 @@ def test_new_kimi_seal_binds_generation_limit(tmp_path, limit):
     task = TaskContract.from_dict(data)
     runtime = SimpleNamespace(verify=lambda: None, to_dict=lambda: {'version': 'synthetic'})
     manifest = inspect_task(task, tmp_path/'contracts', runtime)
-    assert manifest['task']['budgets']['generation_tokens'] == (4096 if limit is None else limit)
+    assert manifest['task']['budgets']['generation_tokens'] == 32000
+    assert manifest['transport']['resource_policy']['requested_budgets'].get('generation_tokens') == limit
 
 
 @pytest.mark.parametrize('limit', [None, True, 0, 1023, 32001, 2048.5])

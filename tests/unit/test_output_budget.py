@@ -8,6 +8,7 @@ from agent_subagent_router.api import inspect_task, run_contract
 from agent_subagent_router.cli import main
 from agent_subagent_router.contracts import RouterError, TaskContract
 from agent_subagent_router.receipts import ReceiptStore
+from agent_subagent_router.resolver import resolve
 from agent_subagent_router.supervisor import Invocation, supervise
 
 
@@ -20,6 +21,17 @@ def task_data(root):
         budgets=dict(wall_seconds=5, idle_seconds=5, request_limit=1, context_bytes=100000))
 
 
+def legacy_seal(task, destination, runtime, sandbox=None):
+    """Frozen pre-maximum-policy fixture; new inspection is tested separately."""
+    from agent_subagent_router.backends.kimi import profile
+    transport = {'backend': 'kimi', 'profile': task.profile, 'runtime': 'claude-code',
+        'runtime_identity': runtime.to_dict(), 'profile_identity': profile(task.profile).to_dict(),
+        'capabilities': ['read']}
+    if sandbox is not None:
+        transport['containment'] = {'image': sandbox.image, 'runtime_sha256': sandbox.runtime_sha256}
+    return resolve(task, destination, transport)
+
+
 def test_default_is_sealed_and_captures_large_event_stream(tmp_path):
     root = tmp_path/'project'
     root.mkdir()
@@ -28,7 +40,7 @@ def test_default_is_sealed_and_captures_large_event_stream(tmp_path):
     runtime = SimpleNamespace(verify=lambda: None, to_dict=lambda: {'version': 'synthetic'})
     sealed = inspect_task(task, tmp_path/'contracts', runtime)
     restored = TaskContract.from_dict(sealed['task'])
-    assert restored.budgets.output_bytes == 8388608
+    assert restored.budgets.output_bytes == 16777216
     # Representative native progress overhead alone can exhaust a 1 MiB cap.
     stream = tmp_path/'events.jsonl'
     terminal = b'{"type":"result","subtype":"success","result":"done"}\n'
@@ -49,9 +61,10 @@ def test_live_budget_refusal_precedes_execution_and_preserves_seal(tmp_path, cap
     data = task_data(root)
     data['profile'] = profile
     data['budgets']['output_bytes'] = cap
+    data['budgets']['generation_tokens'] = 4096
     task = TaskContract.from_dict(data)
     runtime = SimpleNamespace(verify=lambda: None, to_dict=lambda: {'version': 'synthetic'})
-    sealed = inspect_task(task, tmp_path/'contracts', runtime)
+    sealed = legacy_seal(task, tmp_path/'legacy', runtime)
     store = ReceiptStore(tmp_path/'runs')
     receipt = run_contract(sealed, 'kimi', profile, store, runtime)
     expected = 'OUTPUT_BUDGET_TOO_SMALL' if cap < 2097152 else 'BLOCKED_CAPABILITY'
@@ -78,7 +91,7 @@ def test_gemini_does_not_inherit_kimi_default(tmp_path):
 
 
 @pytest.mark.parametrize('cap', [None, 32000, 2097152])
-def test_inspect_exposes_sealed_budget_and_live_warning(tmp_path, monkeypatch, capsys, cap):
+def test_inspect_exposes_maximum_budget_and_requested_output(tmp_path, monkeypatch, capsys, cap):
     root = tmp_path/'project'
     root.mkdir()
     (root/'a.py').write_text('VALUE = 1\n')
@@ -97,9 +110,7 @@ def test_inspect_exposes_sealed_budget_and_live_warning(tmp_path, monkeypatch, c
     sealed = json.loads(Path(output['contract']).read_text())
     assert output['budgets'] == sealed['task']['budgets']
     assert output['frozen_source_paths'] == sorted(s['path'] for s in sealed['sources'])
-    assert output['budgets']['output_bytes'] == (8388608 if cap is None else cap)
-    if cap == 32000:
-        assert output['warnings'][0]['classification'] == 'OUTPUT_BUDGET_TOO_SMALL'
-        assert output['warnings'][0]['live_execution'] == 'BLOCKED'
-    else:
-        assert 'warnings' not in output
+    assert output['budgets']['output_bytes'] == 16777216
+    assert output['resource_policy']['requested_budgets']['output_bytes'] == (
+        8388608 if cap is None else cap)
+    assert 'warnings' not in output

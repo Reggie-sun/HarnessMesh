@@ -44,7 +44,10 @@ def strict_json(raw: str | bytes) -> Any:
 # the final report. Defaults are materialized before sealing, never at execution.
 DEFAULT_KIMI_OUTPUT_BYTES = 8 * 1024 * 1024
 MIN_KIMI_LIVE_OUTPUT_BYTES = 2 * 1024 * 1024
-DEFAULT_KIMI_GENERATION_TOKENS = 4096
+BUDGET_LIMITS = {'wall_seconds': 3600, 'idle_seconds': 3600, 'request_limit': 64,
+                 'output_bytes': 16 * 1024 * 1024, 'context_bytes': 8 * 1024 * 1024}
+MAX_KIMI_IDLE_SECONDS = 1800
+MAX_KIMI_GENERATION_TOKENS = 32000
 
 
 @dataclass(frozen=True)
@@ -57,9 +60,7 @@ class Budgets:
     generation_tokens: int | None = None
 
     def __post_init__(self):
-        limits = {'wall_seconds': 3600, 'idle_seconds': 3600, 'request_limit': 64,
-                  'output_bytes': 16 * 1024 * 1024, 'context_bytes': 8 * 1024 * 1024}
-        for name, maximum in limits.items():
+        for name, maximum in BUDGET_LIMITS.items():
             value = getattr(self, name)
             if (type(value) not in (int, float) or not math.isfinite(value)
                     or not 0 < value <= maximum):
@@ -69,7 +70,8 @@ class Budgets:
         if self.idle_seconds > self.wall_seconds:
             raise RouterError('INVALID_CONTRACT', 'idle exceeds wall budget')
         if (self.generation_tokens is not None and
-                (type(self.generation_tokens) is not int or not 1024 <= self.generation_tokens <= 32000)):
+                (type(self.generation_tokens) is not int
+                 or not 1024 <= self.generation_tokens <= MAX_KIMI_GENERATION_TOKENS)):
             raise RouterError('INVALID_CONTRACT', 'generation_tokens must be an integer in 1024..32000')
 
 
@@ -133,7 +135,7 @@ class TaskContract:
             raise RouterError('INVALID_CONTRACT', 'explicit active document selection required')
         if not isinstance(self.selected_refs, list):
             raise RouterError('INVALID_CONTRACT', 'selected_refs must be a list')
-        if self.backend == 'kimi' and self.budgets.idle_seconds > 1800:
+        if self.backend == 'kimi' and self.budgets.idle_seconds > MAX_KIMI_IDLE_SECONDS:
             raise RouterError('INVALID_CONTRACT', 'kimi idle budget exceeds pinned runtime limit')
         if self.backend != 'kimi' and self.budgets.generation_tokens is not None:
             raise RouterError('INVALID_CONTRACT', 'generation_tokens is qualified only for Kimi')

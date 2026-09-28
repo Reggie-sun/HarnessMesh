@@ -98,7 +98,13 @@ def main(argv=None):
                       'source_count': len(sealed['sources']), 'project_access': 'SEALED_ONLY',
                       'frozen_source_paths': sorted(s['path'] for s in sealed['sources']),
                       'budgets': sealed['task']['budgets']}
-            if task.backend == 'kimi' and task.budgets.output_bytes < MIN_KIMI_LIVE_OUTPUT_BYTES:
+            if 'resource_policy' in sealed['transport']:
+                output['route'] = {'backend': sealed['task']['backend'],
+                                   'profile': sealed['task']['profile'],
+                                   'identity': sealed['transport']['profile_identity']}
+                output['resource_policy'] = sealed['transport']['resource_policy']
+            if (task.backend == 'kimi'
+                    and sealed['task']['budgets']['output_bytes'] < MIN_KIMI_LIVE_OUTPUT_BYTES):
                 output['warnings'] = [{'classification': 'OUTPUT_BUDGET_TOO_SMALL',
                                        'minimum_output_bytes': MIN_KIMI_LIVE_OUTPUT_BYTES,
                                        'live_execution': 'BLOCKED'}]

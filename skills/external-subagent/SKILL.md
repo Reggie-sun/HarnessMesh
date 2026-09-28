@@ -7,14 +7,14 @@ description: Route standing-authorized Kimi or an explicitly selected external b
 
 ## Authority
 
-遵守当前平台、用户、global/project rules。当前用户已在 `/home/reggie` workspace授予Kimi standing authorization；global `AGENTS.md`命中non-trivial route或用户明确点名Kimi时必须使用本Skill。此Skill是`subagent` CLI的薄入口，不自动重试、不扩大scope，无nested delegation或worker acceptance。默认选择`worker`；跨模块、长上下文、architecture/security/high-risk或用户要求最强模型时选择`deep`。
+遵守当前平台、用户、global/project rules。当前用户已在 `/home/reggie` workspace授予Kimi standing authorization；global `AGENTS.md`命中non-trivial route或用户明确点名Kimi时必须使用本Skill。此Skill是`subagent` CLI的薄入口，不自动重试、不扩大scope，无nested delegation或worker acceptance。按用户选择的 global maximum policy，新 Kimi project task 选择 `deep` / max / 1M；`worker` 仅保留用于已有 seal/资格，不在 run 时升级。
 
 ## Invocation
 
 1. `subagent doctor --backend <selected-backend>`检查sealed contract所选backend的OS/native containment；它只使用fake upstream，不证明live account/identity。
 2. Parent 编写 task JSON：显式 backend/profile、role、cwd、read/write paths、exact accepted refs、required evidence 与 finite budgets。没有 active docs 明确 `not_applicable`；Skill 重名用 exact path；dirty target 按用户 ownership 规则处理。
-3. `subagent inspect --cwd <repo> --task <task.json>` 封存 inputs/route/runtime/image，不联网、不执行项目 scripts。
-4. `subagent run --contract <manifest.json> --backend kimi --profile <selected-profile> --live --credential-ref <private-reference.json> --qualification <matching-canonical-route-id>`；`<selected-profile>`必须与sealed contract一致，且`worker`/`deep`使用各自matching qualification。Gemini用`--backend gemini --profile worker`，不传Kimi qualification；使用已有private OAuth reference，账号不合格即阻断，不登录/onboarding。
+3. `subagent inspect --cwd <repo> --task <task.json>` 在新 Kimi seal 前执行下述 maximum policy，再封存 inputs/route/runtime/image，不联网、不执行项目 scripts。核对输出的 `route.profile`、`budgets`、`resource_policy` 与 `frozen_source_paths`；没有 `resource_policy` 的旧安装不能被视为已启用该策略。
+4. `subagent run --contract <manifest.json> --backend kimi --profile <selected-profile> --live --credential-ref <private-reference.json> --qualification <matching-canonical-route-id>`；`<selected-profile>`以 inspect 的有效 sealed route 为准，新 seal 使用 `deep` 及其 matching qualification，不能照抄原 task 的 `worker` 或使用 worker qualification。旧 seal 仍使用自己的原 profile/资格，不在 run 时改写。Gemini用`--backend gemini --profile worker`，不传Kimi qualification；使用已有private OAuth reference，账号不合格即阻断，不登录/onboarding。
 5. `subagent receipt <invocation-id>` 检查 process、protocol、upstream identity、artifacts 和实际 Read evidence。`PARSED` 不等于 KEEP；项目 Harness、finding adjudication 与 completion 由 Parent 负责。
 
 ### Source Stability During Invocation
@@ -23,17 +23,32 @@ description: Route standing-authorized Kimi or an explicitly selected external b
 
 每次项目上游请求前重新执行原 seal/snapshot/host 校验；发生 drift 时撤销 invocation，后续请求不再送往 Provider。结束时校验仍保留；检查不是文件锁，不能阻止其他 session 写入，或挽回已经发出的请求。`SOURCE_CHANGED` 不是 timeout，不采用其报告，也不自动重试。若要继续，先稳定整个 frozen set，再由 Parent 新建有理由的有限 attempt。
 
+### New Project Sizing
+
+`kimi-maximum-v1` 是用户明确选择的 global 新项目调用策略，仅在 `inspect` 封存前应用。所有有效新 Kimi task（包括复制旧 task JSON 的较低额度）使用当前 router/pinned runtime 已支持的最高有限额度与 `deep` / max / 1M。`transport.resource_policy` 封存原请求的 profile/budgets，CLI 明确展示原请求与有效结果；task 文件本身不改写。非法值、unknown profile 仍拒绝，read/write paths、permissions、refs 和 acceptance 不变。Gemini 与独立 image contract 不继承此 project-task 策略。
+
+| Budget | Sealed maximum |
+| --- | --- |
+| `generation_tokens` | 32000 per request，包括 thinking |
+| `wall_seconds` | 3600 |
+| `idle_seconds` | 1800，Kimi pinned runtime 的上限 |
+| `request_limit` | 64，本 invocation 的工具/生成请求总数，不是 review rounds |
+| `output_bytes` | 16777216（16 MiB） |
+| `context_bytes` | 8388608（8 MiB） |
+
+这些是本地已支持的 ceiling，不是无穷预算或 provider-wide maximum。1M 是所选 profile 的 context 上限，不是生成 tokens 或 bytes；仍投影 minimum sufficient package。额度提高可能增加成本与等待时间，不保证全部消费，也不保证终态报告必然完成。若未来需要恢复更低的新 task 额度，先由用户明确变更该 global policy，不能在 run 中绕过 seal。
+
 ### Output Budget
 
-Kimi task 的 `budgets.output_bytes` 限制整条 Claude `stream-json` stdout 与 stderr 的总 bytes，包含 thinking progress、native Read/tool payload 和最终报告；它不是模型 output tokens，也不是 256K/1M context。通常省略此字段，由 resolver 前的 contract normalization 将 **8 MiB** 写入 sealed task；`inspect` 输出实际 budgets，Parent 必须检查。其他 wall/idle/request/context budgets 仍须显式给出。
+Kimi task 的 `budgets.output_bytes` 限制整条 Claude `stream-json` stdout 与 stderr 的总 bytes，包含 thinking progress、native Read/tool payload 和最终报告；它不是模型 output tokens，也不是 256K/1M context。可省略此字段；maximum policy 在新 seal 中写入 **16 MiB**，Parent 必须检查 inspect 的有效 budgets。其他 wall/idle/request/context budgets 仍须提供有效有限值，但新 seal 按 maximum policy 归一化。
 
-不要用几十 KB 的最终回答长度估算传输预算，也不要失败后机械尝试 1 MiB。Live Kimi project task 低于 **2 MiB** 会在任何 Provider request 前返回 `OUTPUT_BUDGET_TOO_SMALL`；显式额度不会被静默调大，历史 seal 不改写。预计大量 Read 的任务可显式选择更高额度，现有 **16 MiB** 硬上限不变。额度不是预付 token 消耗，模型报告仍应简洁、scope 应最小化。
+不要用几十 KB 的最终回答长度估算传输预算，也不要失败后机械尝试 1 MiB。历史 seal 的较低额度不调大：live Kimi project seal 低于 **2 MiB** 仍在任何 Provider request 前返回 `OUTPUT_BUDGET_TOO_SMALL`。新 seal 的 maximum policy 不删除现有 **16 MiB** 硬上限。额度不是预付 token 消耗，模型报告仍应简洁、scope 应最小化。
 
 `PROCESS_OUTPUT_LIMIT` 后先检查 receipt 中原始 observed bytes、request count、sealed scope 与预算，再决定是否新建一次有限 attempt；不得自动重试。截断的输出继续隔离，不能将没有 terminal 的 partial findings 当成已完成 review。
 
 ### Time And Reporting Budget
 
-新 Kimi project task 在 `inspect` 前后可检查 `budgets.generation_tokens`：缺省在新 seal 中写入 **4096**，显式值须为 **1024–32000** 整数。这是每次上游生成的总输出 token（包含 thinking），不是 context 或 stream bytes。保留 worker/high、deep/max；较大报告可由 Parent 在新 task 中显式选择足够额度，不能自动提升或在旧 seal 上改写。旧 seal 缺少该额度时 live run 零请求返回 `GENERATION_BUDGET_REQUIRED`，须重新 inspect；不是回退到旧默认 32000。
+新 task 输入可省略 `budgets.generation_tokens`，新 Kimi project seal 的有效值为 **32000**；输入中的显式值仍须为 **1024–32000** 整数，不能靠 normalization 修复非法值。这是每次上游生成的总输出 token（包含 thinking），不是 context 或 stream bytes。旧 seal 的 4096/8192 等较低额度继续严格执行；旧 seal 缺少该额度时 live run 零请求返回 `GENERATION_BUDGET_REQUIRED`。若要应用新 maximum policy，Parent 明确 inspect 一个新 task，不篡改旧 seal、不自动续跑。
 
 Runtime 收到相同 output cap，broker 再对实际 `max_tokens` 执行不增大的上限，并记录 request_max_tokens / generation_token_limit。若 manual thinking budget 与 cap 不兼容则拒绝，不静默削减 thinking。上游 `stop_reason=max_tokens` 或报告的 output usage 超出实际 cap 时，返回 `UPSTREAM_GENERATION_LIMIT`，不交付被截断内容并撤销本 invocation；不自动续写、重试或发起另一轮。上游仍可能在额度用尽前超时，token 上限不构成时延 SLA。
 
@@ -47,7 +62,7 @@ Parent 的 review package 应聚焦实际风险和 changed boundaries；`expecte
 
 本 Skill 不因 Spec、Plan、diff 或 artifact 存在而自行触发 review，也不为 Spec/Plan 默认调用 Kimi。Parent 只有在 repository canonical Spec §9 的 Implementation Review Risk Gate 得出 `KIMI_REVIEW_REQUIRED` 后，才使用本节 mechanics。
 
-Kimi 使用 `reviewer` role 与 read-only permissions，读取 exact final candidate snapshot、applicable accepted Spec/Plan identity、相关 project contract、changed paths/source context、tests/Harness evidence、constraints 与 acceptance criteria。Profile 由 canonical Spec §9 与 route policy 按实际 risk/context 选择；高风险 architecture/authority/security 等 review 使用 `deep` / max，只有实际 review package 需要时才使用 1M context。初次 review 不包含 Parent 预判；re-review 只增加 previous unresolved findings、Parent resolution、correction evidence 与受影响 contract。Kimi 不得修改 source、Spec、Plan、tests、Harness 或 candidate，不得派生 subagent、commit/push、改变 acceptance criteria 或宣布 completion。
+Kimi 使用 `reviewer` role 与 read-only permissions，读取 exact final candidate snapshot、applicable accepted Spec/Plan identity、相关 project contract、changed paths/source context、tests/Harness evidence、constraints 与 acceptance criteria。是否 review 仍由 canonical Spec §9 决定；本次 maximum policy 只改变新 invocation 的 sizing/profile，不增加触发频率、付费 attempts 或三轮 review 上限。新 seal 使用 `deep` / max / 1M，输入仍保持 minimum sufficient。初次 review 不包含 Parent 预判；re-review 只增加 previous unresolved findings、Parent resolution、correction evidence 与受影响 contract。Kimi 不得修改 source、Spec、Plan、tests、Harness 或 candidate，不得派生 subagent、commit/push、改变 acceptance criteria 或宣布 completion。
 
 Kimi 只在 canonical 五字段 report 的 `findings` 中输出 findings；每项包含 stable ID、`blocking_candidate` 或 `non_blocking` severity、exact concern、affected path/symbol、violated contract/invariant、concrete snapshot evidence 与 expected correction。`PARSED`、exit 0、空 findings 或 LGTM 只描述 transport/report outcome，不是 acceptance。Parent 按 canonical Spec §9 adjudicate；本 Skill 不自动 retry、不启动第四轮、不拥有 round budget 或 KEEP/REVERT。Semantic fix 需要 Parent 封存新 snapshot 并显式发起适用的 targeted/full re-review。
 

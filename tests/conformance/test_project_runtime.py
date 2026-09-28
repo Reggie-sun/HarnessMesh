@@ -76,10 +76,11 @@ def test_native_read_scope_and_forbidden_tools(tmp_path):
 @pytest.mark.containment
 @pytest.mark.parametrize('change_host', [None, 'before_next', 'terminal', 'generation_limit'])
 def test_sealed_project_invocation_binds_native_read_report_and_receipt(tmp_path, change_host):
-    from agent_subagent_router.api import inspect_task, run_contract
+    from agent_subagent_router.api import run_contract
     from agent_subagent_router.contracts import TaskContract, hash_bytes
     from agent_subagent_router.receipts import ReceiptStore
     from agent_subagent_router.permissions.qualification import _stream
+    from agent_subagent_router.resolver import resolve
     config = json.loads((Path.home()/'.local/share/agent-subagent-router/sandbox.json').read_text())
     sandbox = DockerSandbox(config['image'], config['runtime_sha256'])
     runtime = installed_runtime()
@@ -93,8 +94,13 @@ def test_sealed_project_invocation_binds_native_read_report_and_receipt(tmp_path
         active_documents='not_applicable', harness_refs=[], constitution_refs=[], skills=[],
         skill_roots=[], expected_evidence=['a.py'], backend='kimi', profile='worker',
         budgets=dict(wall_seconds=30, idle_seconds=30, request_limit=2,
-                     output_bytes=1000000, context_bytes=2000000)))
-    sealed = inspect_task(task, tmp_path/'contracts', runtime, sandbox=sandbox)
+                     output_bytes=1000000, context_bytes=2000000, generation_tokens=4096)))
+    # Retain the pre-maximum-policy worker seal to verify historical execution.
+    sealed = resolve(task, tmp_path/'contracts', {
+        'backend': 'kimi', 'profile': 'worker', 'runtime': 'claude-code',
+        'runtime_identity': runtime.to_dict(), 'profile_identity': profile('worker').to_dict(),
+        'capabilities': ['read'],
+        'containment': {'image': sandbox.image, 'runtime_sha256': sandbox.runtime_sha256}})
     report = {'findings': ['VALUE is 42'], 'proposed_changes': [], 'uncertainties': [], 'questions': [],
               'evidence_refs': [{'path': str(source/'a.py'), 'sha256': hash_bytes(data),
                                  'start_line': 1, 'end_line': 1}]}

@@ -54,10 +54,10 @@ def test_sealed_project_invocation_stays_blocked_and_cannot_override_route(tmp_p
     runtime = fake_runtime()
     manifest = inspect_task(task, tmp_path/'contracts', runtime)
     store = ReceiptStore(tmp_path/'runs')
-    blocked = run_contract(manifest, 'kimi', 'worker', store, runtime)
+    blocked = run_contract(manifest, 'kimi', 'deep', store, runtime)
     assert blocked['classification'] == 'BLOCKED_CAPABILITY' and blocked['wire_requests'] == 0
     assert blocked['process'] is None
-    mismatch = run_contract(manifest, 'kimi', 'deep', store, runtime)
+    mismatch = run_contract(manifest, 'kimi', 'worker', store, runtime)
     assert mismatch['classification'] == 'SEALED_ROUTE_MISMATCH' and mismatch['process'] is None
 
 
@@ -77,7 +77,11 @@ def test_changed_credential_is_blocked_before_any_project_execution(tmp_path, mo
         request_limit=1, output_bytes=2097152, context_bytes=100000)))
     manifest = inspect_task(task, tmp_path/'contracts', runtime, sandbox=sandbox)
     qualified = {'classification': 'PARSED', 'evidence_kind': 'live',
-        'profile': profile('worker').to_dict(), 'runtime': runtime.to_dict(),
+        'profile': profile('deep').to_dict(), 'runtime': runtime.to_dict(),
+        'deep_entitlement': 'VERIFIED', 'account_entitlement': {
+            'kind': 'account-entitlement-observation', 'source': 'https://www.kimi.com/code/console',
+            'credential_match': True, 'tier': 'Pro', 'entitled_context_tokens': 1048576,
+            'observed_at': '2026-09-19T12:00:00Z'},
         'credential_fingerprint': credential_fingerprint('kimi', 'key-A'),
         'observations': [{'classification': 'IDENTITY_VERIFIED', 'proof': 'authenticated_endpoint_declaration'}]}
     monkeypatch.setattr('agent_subagent_router.api.require_project_containment', lambda *_: {'qualified': True})
@@ -88,7 +92,7 @@ def test_changed_credential_is_blocked_before_any_project_execution(tmp_path, mo
     key = tmp_path/'key'
     key.write_text('key-B')
     key.chmod(0o600)
-    receipt = run_contract(manifest, 'kimi', 'worker', ReceiptStore(tmp_path/'runs'), runtime,
+    receipt = run_contract(manifest, 'kimi', 'deep', ReceiptStore(tmp_path/'runs'), runtime,
         sandbox=sandbox, qualification_id='qualification', credential_ref={'provider': 'kimi', 'file': str(key)})
     assert receipt['classification'] == 'QUALIFICATION_CREDENTIAL_MISMATCH'
     assert receipt['wire_requests'] == 0 and receipt['process'] is None

@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Kimi Maximum Project Resources — 2026-09-29
+
+按用户选择 C，新 Kimi project task 在 inspect/seal 前应用 `kimi-maximum-v1`：deep/max/1M 与当前最高有限资源；原请求和有效 route/预算均明示，旧 seal 不改写。Focused 131 PASS；完整 offline 376 PASS/25 skip/42 socket-permission failures，未声称完整/native/live 验证通过。受管 Kimi mapping 因 Docker preflight blocked，无 Provider request。安装状态、source hashes、Risk Gate 与不变的历史 review 预算见 [record](records/kimi-maximum-resources-2026-09-29.md)。
+
 ## Generation Budget Investigation — 2026-09-29
 
 用户要求先修复blocker再安装。实际 Codex 0.154.0 请求、RPC schema及同版本官方源码没有已证明的≤2048 hard generation setter；本轮 native/fake 否定门测试1 PASS，证明拒绝有效，不证明视觉路线已修复。已准备新增明确 OpenAI API计费profile的窄修订，Self-Review完成、新exact SHA待用户批准；未改变旧accepted bytes或安装。受管Kimi安装边界mapping第二个请求TLS失败，canonical OUTCOME_UNKNOWN保留、无重试、未采用报告。新视觉/formal请求仍0，完整执行与qualification仍INCOMPLETE。当前installed source仍bba0563；其他任务的source/budget dirty保持。诊断、具体批准边界、安装核验和13项证据见 [record](records/generation-budget-blocker-2026-09-29.md)。

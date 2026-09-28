@@ -15,7 +15,7 @@ subagent --version
 subagent doctor
 subagent doctor --backend gemini
 subagent inspect --cwd /absolute/project --task /private/task.json
-subagent run --contract /private/snapshot/manifest.json --backend kimi --profile worker \
+subagent run --contract /private/snapshot/manifest.json --backend kimi --profile deep \
   --live --credential-ref ~/.config/agent-subagent-router/kimi-credential.json \
   --qualification <canonical-route-qualification-id>
 subagent receipt <invocation-id>
@@ -25,7 +25,7 @@ subagent receipt <invocation-id>
 
 Task JSON 包含 parent/task identity、cwd、role、goal、read_paths、write_paths、permissions、selected_refs、active_documents、harness_refs、constitution_refs、skills、skill_roots、expected_evidence、backend/profile 和 budgets。无 Git 时给 explicit_root；没有 active docs 填 `not_applicable`。选中 spec/plan ref 为 `{path, sha256, accepted: true}`。
 
-Kimi task 可省略 `budgets.output_bytes`，封存前会填入 8 MiB；`inspect` 会展示实际 budgets。该额度是原始 stdout + stderr 总 bytes，包含 progress/tool events，不是最终报告长度或模型 tokens。Live Kimi 项目调用低于 2 MiB 时在付费请求前拒绝，并要求新建预算明确的 seal；不会自动抬高显式预算。16 MiB 硬上限、超限终止、截断隔离和 no-auto-retry 保持有效。详细调用规则由 `skills/external-subagent/SKILL.md` 管理。
+按用户选择的 `kimi-maximum-v1`，新 Kimi project task 在 `inspect` 封存前采用当前支持的最高有限额度与 `deep` / max / 1M。输出 `route`、`budgets` 与 `resource_policy` 明确显示有效 route/额度及原请求；`run --profile` 和 qualification 必须匹配有效 seal。旧 seal/receipt 不改写，较低历史额度继续执行；截断隔离、超限终止与 no-auto-retry 保持有效。具体数值与调用规则由 [external-subagent Skill](skills/external-subagent/SKILL.md) 管理；此策略不自动运行任务或重置 review rounds。
 
 Kimi profiles：`worker` (`k3-256k/high/adaptive`) 与 `deep` (`k3/max/adaptive`)。Key 只从 repo 外 owner-only provider-specific file 读取；本机 CC Switch key 已私密导入，原配置不改。`qualify-route` 将 canonical smoke 绑定当前 credential fingerprint；deep 另需 entitlement evidence。禁止删除 consumed/budget files 来重试。
 
