@@ -16,6 +16,10 @@ def observed_reads(raw: bytes, manifest: dict, projection: dict, *, ignored_exec
         event = strict_json(line)
         if not isinstance(event, dict) or event.get('parent_tool_use_id') is not None:
             raise RouterError('TOOL_POLICY_VIOLATION')
+        # Native system notices have string messages, not conversation content.
+        # They cannot establish successful reads; nested events remain forbidden.
+        if event.get('type') not in ('assistant', 'user'):
+            continue
         content = event.get('message', {}).get('content', [])
         if event.get('type') == 'assistant':
             for block in content:

@@ -31,6 +31,33 @@ def test_observed_ranges_are_bound_to_successful_native_read_and_exact_bytes(tmp
     assert read['path'] == '/host/a'
 
 
+def test_native_permission_notice_is_not_a_read_or_protocol_failure(tmp_path):
+    manifest, projection, events = fixture(tmp_path)
+    notice = {'type': 'system', 'subtype': 'permission_denied',
+              'message': 'Permission to use Read has been denied'}
+    denied = [
+        {'type': 'assistant', 'message': {'content': [{'type': 'tool_use',
+            'id': 'denied', 'name': 'Read', 'input': {'file_path': '/host/a'}}]}},
+        notice,
+        {'type': 'user', 'message': {'content': [{'type': 'tool_result',
+            'tool_use_id': 'denied', 'is_error': True, 'content': 'denied'}]}}]
+    assert observed_reads(encode(denied), manifest, projection) == []
+    reads = observed_reads(encode(denied + events), manifest, projection)
+    assert len(reads) == 1
+    assert reads[0]['native_tool_use_id'] == 'r1'
+
+
+def test_prompt_distinguishes_tool_paths_from_citation_paths():
+    from agent_subagent_router.adapters.project_claude import project_prompt
+    manifest = {'task': {'role': 'reviewer', 'goal': 'review',
+                        'expected_evidence': ['a'], 'budgets': {}}}
+    projection = {'source_map': [{'source_path': '/host/a', 'execution_path': 'a',
+                                 'sha256': 'a' * 64}]}
+    prompt = json.loads(project_prompt(manifest, projection))
+    assert prompt['read_targets'] == [{'file_path': '/work/a', 'source_path': '/host/a'}]
+    assert 'Never pass source_path to Read' in prompt['instructions']
+
+
 @pytest.mark.parametrize('mutation', ['content', 'path', 'request', 'nested', 'duplicate'])
 def test_forged_and_unassociated_reads_cannot_support_citations(tmp_path, mutation):
     manifest, projection, events = fixture(tmp_path)

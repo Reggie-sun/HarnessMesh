@@ -31,6 +31,9 @@ def project_prompt(manifest, projection):
     return canonical_bytes({
         'role': task['role'], 'goal': task['goal'],
         'source_map': projection['source_map'],
+        'read_targets': [{'file_path': '/work/' + item['execution_path'],
+                          'source_path': item['source_path']}
+                         for item in projection['source_map']],
         'required_evidence': task['expected_evidence'],
         'budgets': task['budgets'],
         'report_schema': {
@@ -41,7 +44,10 @@ def project_prompt(manifest, projection):
                                'start_line': 1, 'end_line': 1}],
             'uncertainties': [], 'questions': []},
         'instructions': (
-            'Read the selected source files using Read. All paths are relative to /work. '
+            'Read selected files using Read with read_targets.file_path (/work paths). '
+            'Never pass source_path to Read: it is a host citation identity, not a tool path. '
+            'Host paths in the task or documents must be mapped through read_targets before tools. '
+            'Do not retry denied host paths or bypass permissions with another tool. '
             'Batch independent necessary Reads and prioritize required_evidence. '
             'Observe HarnessMesh budget notices; FINAL_REPORT ends tool exploration. '
             'Return exactly one JSON object without markdown: findings (strings), '
