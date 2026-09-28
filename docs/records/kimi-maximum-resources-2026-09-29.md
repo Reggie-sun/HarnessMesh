@@ -2,7 +2,7 @@
 
 ## Status And Authorization
 
-`SOURCE_FIXED / INSTALL_PENDING`。
+`SOURCE_FIXED / INSTALL_BLOCKED`。Code checkpoint：`bb5f619`。
 
 用户在 receipt `f244c937-eb0d-4216-9324-da7840e57be1` 的 8192-token 截断后要求“全局都开最高”，并选择 C：新 Kimi project task 的 profile、生成、wall/idle、requests、output 和 context 均使用当前支持的最高值。此前已有受管安装更新授权。本轮只落实该明确、有限的 sizing policy；不创建 Spec/Plan，不改业务项目，不 push/release。
 
@@ -44,7 +44,7 @@ Owned tests：new `test_kimi_maximum_resources.py`；generation/output/API tests
 
 具体 verification gap 是本会话 socket/Docker 不可用，故未获得 native/fake E2E 或新的 live 性能证据；这是环境门的缺口，不通过模型意见闭合。新-seal sizing、CLI 透明性、原范围保留、非法输入、有限输入边界、runtime env 和旧-seal route/额度已获 focused executable evidence；未发现同时满足 G2“重大失败后果 + 实质语义缺口 + Kimi 可补独立增益”的具体风险。因此不添加 expensive final review，也不伪造 required gate 完成。Standing Kimi 调查尝试仍因真实 preflight blocker 未能运行，与 final-review Risk Gate 分别记录。
 
-Parent 已检查 owned diff，无新的 confirmed blocking finding；安装和 native/live 边界不被描述为已通过。
+Parent 已检查 owned diff，无新的 confirmed blocking finding；安装和 native/live 边界不被描述为已通过。全局 active entry 仍旧，因此不声明用户的全局 maximum request 已完全生效。
 
 ## Historical Review Boundary
 
@@ -52,4 +52,17 @@ Jianji 的既有 8192-token seal/receipt 不改写。`f244c937-eb0d-4216-9324-da
 
 ## Installation
 
-待 source checkpoint 后通过 canonical installer 更新；原 content-addressed package/receipts 保留，安装结果在此节追加。安装失败必须报告真实状态，不绕过 launcher/Skill hash guard 或 OS containment。
+Source checkpoint `bb5f619` 后执行 canonical installer，尝试 source/Skill hash `30ab9cd4a72e67a4e2d17cd65a8d9eac1446ed6157a31493e6a625a4bb656323`。Versioned package 已完整生成；临时 Skill symlink 创建在 `/home/reggie/.agents/skills` 返回 `Errno 30: Read-only file system`，全局入口尚未替换。Cleanup 对不存在 symlink 的 unlink 也被同一只读边界拒绝；没有为绕过该门修改 installer、mount 或 launcher。
+
+`installation._check_existing` 与旧 launcher `subagent --version` 核验通过：active source commit 仍 `bba056309342f3f55a62e7cb9378a4c6d96503ec`，active source hash `6aea7fb98886712bb0f42e3449c41acc51c83acd3f0d0f478d8fb6a84fc4d879`，active entry hash `7d298cf0b8c31b591cdb5e18003c2f3dc665f7819e96e18328acc6060f79ecdf`；manifest hash `0a93980ea1bce1a2357c55c24aa55b2c53f18d2954bbb7fd590a9459874d2862`。旧 package、receipts、credentials 保留。
+
+New versioned candidate 的 source/Skill 完整重算匹配 `30ab9cd4...`，从其 `src` 导入（而非 workspace src）运行同一 focused suite **131 PASS**，但它不是 active global installation。普通 host terminal 可以完成已授权的同一安装操作；不需要改权限门或绕过 containment：
+
+```sh
+cd /home/reggie/vscode_folder/agent-subagent-router
+PYTHONPATH=src /home/reggie/micromamba/envs/ai-video-p2/bin/python \
+  -m agent_subagent_router.installation --source "$PWD" \
+  --python /home/reggie/micromamba/envs/ai-video-p2/bin/python
+```
+
+完成该命令后应核对新 manifest 的 source/Skill hash，并新 inspect（不改写既有 seal）。本会话无法在只读边界内完成此最后 activation；安装状态如实保持 blocked，没有启动 live 调用。
