@@ -11,7 +11,7 @@ from agent_subagent_router.receipts import ReceiptStore
 
 @pytest.mark.native
 @pytest.mark.containment
-@pytest.mark.parametrize('backend', ['codex', 'kimi'])
+@pytest.mark.parametrize('backend', ['codex', 'kimi', 'minimax'])
 def test_actual_image_execution_has_os_and_completed_native_receipts(tmp_path, backend):
     config = os.environ.get('ROUTER_IMAGE_'+backend.upper()+'_CONFIG')
     if not config:
@@ -23,9 +23,14 @@ def test_actual_image_execution_has_os_and_completed_native_receipts(tmp_path, b
                  'docs/superpowers/plans/2026-09-29-image-only-routes.md']:
         path=root/name
         refs.append({'path':str(path),'sha256':hash_bytes(path.read_bytes()),'accepted':True})
+    if backend == 'minimax':
+        path = root/'docs/superpowers/specs/2026-09-29-minimax-image-route-design.md'
+        refs.append({'path': str(path), 'sha256': hash_bytes(path.read_bytes()), 'accepted': True})
     store=ReceiptStore(tmp_path/'runs')
-    probe=prepare_probe(store, backend=backend, model='gpt-5.4' if backend=='codex' else 'k3[1m]',
-        profile='api-bounded' if backend=='codex' else 'deep', effort='high' if backend=='codex' else 'max',
+    routes = {'codex': ('gpt-5.4', 'api-bounded', 'high'), 'kimi': ('k3[1m]', 'deep', 'max'),
+        'minimax': ('MiniMax-M3', 'responses-bounded', 'provider-default')}
+    model, profile, effort = routes[backend]
+    probe=prepare_probe(store, backend=backend, model=model, profile=profile, effort=effort,
         refs=refs,sandbox_config=config)
     receipt=native_conformance(store,probe['invocation_id'],sandbox_config=config)
     assert receipt['classification']=='ENGINEERING_CONFORMANCE_COMPLETE', receipt

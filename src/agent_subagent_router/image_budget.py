@@ -7,6 +7,7 @@ from pathlib import Path
 from .contracts import RouterError, canonical_bytes, hash_bytes
 from .image_runtime import API_SPEC_SHA
 from .receipts import atomic_json
+from .image_contract import IMAGE_PROVIDERS
 
 
 def input_digest(task):
@@ -19,6 +20,9 @@ def input_digest(task):
 
 
 def require_probe_budget(store, identifier, task, fingerprint):
+    # MiniMax engineering is authorized; its authenticated accounting/budget is not yet frozen.
+    if task.get('backend') == 'minimax':
+        raise RouterError('IMAGE_MINIMAX_BUDGET_NOT_AUTHORIZED')
     if not identifier:
         raise RouterError('IMAGE_ACCOUNT_BUDGET_UNVERIFIED')
     record = store.read(identifier)
@@ -37,7 +41,7 @@ def require_probe_budget(store, identifier, task, fingerprint):
             and record['request_limit'] == 1 and record['generation_tokens'] == 2048
             and 0 <= age <= 86400
             and account['credential_fingerprint'] == fingerprint
-            and account['provider'] == ('openai' if task['backend'] == 'codex' else 'kimi')
+            and account['provider'] == IMAGE_PROVIDERS[task['backend']]
             and account['authenticated'] is True
             and isinstance(account['source'], str) and account['source'].startswith('https://')
             and bool(record['artifacts']))

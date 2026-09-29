@@ -1,5 +1,16 @@
 # Sealed Image Input Routes Implementation Plan
 
+## MiniMax and GPT Continuation
+
+按 [MiniMax amendment](../specs/2026-09-29-minimax-image-route-design.md) 继续同一M5-D2A，用户明确MiniMax/GPT并禁止Kimi。先复用Jianji ConnectionStore只读发现实际MiniMax-M3/Responses；不要再次假定用户未配置。GPT旧安装保持；新MiniMax显式backend/profile/runtime/tuple，不能重命名旧Kimi资格。当前任务内合同由Parent Self-Review接受，旧frozen Spec bytes/receipts/history不改。
+
+1. 在原image contract/runtime/run、bounded Responses broker、credential/budget/CLI/probe/conformance owners增加明确MiniMax分支；独立wire与固定Python runner验证full PNG、tools=[]、store=false、request hard cap、完整terminal及exact receipt关联。Unknown backend及旧schema拒绝保持，不新增第二生命周期/credential store。
+2. Fresh offline/否定测试、实际Docker runner/fake八图及完整OS边界，保存原始工程receipts。新host必须固定用户保存的api.minimaxi.com；国内文档当前cn地址不自动变成fallback。缺authenticated account/safe handoff/cost frozen proof零live。
+3. Critical TLS/credential分支按原native fallback做最多两轮read-only reviewer_max各900秒；round16未取得terminal full report，round17完成完整critical scope。其隔离typed关联修复按[有限定向例外](../../records/architecture-spec-acceptance.md#minimax-typed-association-targeted-review-exception)新增仅一次round18/180秒，已完成且finding set为空。调查findings、fresh验证及Parent裁决后才clean official installation及installed source/Skill/package/native/OS核验；历史计数不重置。
+4. MiniMax新live费用目前0；先形成独立actual input/account/accounting/canonical预算才可最多一次capability。GPT原USD1/一次和formal0不扩张，用户保存ChatGPT模型不能充当独立OpenAI API credential。任一真实门缺失保留INCOMPLETE及未评估null，不伪造正式资格或产品启用。
+
+Self-Review：按真实owners划分wire/runner与共享broker/runtime责任，旧Codex/Kimi工程兼容与immutable证据保留；MiniMax没有live资格的状态明确，工程实现/安装不能推出语义或生产PASS。
+
 ## Native Input Capture Repair
 
 按[native input capture续行修订](../../records/architecture-spec-acceptance.md#native-input-capture-repair-continuation)修复同一M5：非法native request只保存有界metadata，合法raw在mapping及所有admission/preflight门后捕获。实际ReceiptStore red3 failed确认，既有正常wire三段证据保留，增加preflight拒绝零raw/零upstream验证。Round14已真实完成完整scope但仍有该confirmed blocker；fresh全套验证后仅一次round15 full review/wall900秒（可复用本人检查过且hash未变的独立证据），历史不重置。最新review及Parent裁决成立才clean official installation、installed双路线conformance和actual accounting；credential/account/formal及产品门不放宽，结果归API record。

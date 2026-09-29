@@ -24,7 +24,7 @@ def read_credential_reference(provider: str, path: Path) -> dict:
     """New image CLI reference admission, before reading any reference bytes."""
     path = Path(path)
     if (not path.is_absolute() or path.is_symlink()
-            or (provider == 'openai' and _is_global_codex_path(path))):
+            or (provider in ('openai', 'minimax') and _is_global_codex_path(path))):
         raise RouterError('UNSAFE_CREDENTIAL', 'private application reference required')
     try:
         fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
@@ -51,7 +51,7 @@ def load_credential(provider: str, reference: dict | None, *, project_root: Path
     path = Path(reference['file'])
     if not path.is_absolute():
         raise RouterError('UNSAFE_CREDENTIAL', 'private absolute file required')
-    if provider == 'openai' and _is_global_codex_path(path):
+    if provider in ('openai', 'minimax') and _is_global_codex_path(path):
         raise RouterError('UNSAFE_CREDENTIAL', 'global Codex credentials are not accepted')
     if path.is_symlink():
         raise RouterError('UNSAFE_CREDENTIAL', 'private absolute file required')

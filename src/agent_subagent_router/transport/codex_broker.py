@@ -1,4 +1,4 @@
-"""Invocation-local, one-endpoint relay for the bounded Codex image API route."""
+"""Owned Responses relay for explicit bounded Codex and MiniMax image routes."""
 
 import hmac
 import http.client
@@ -48,7 +48,10 @@ class _TCPServer(_BoundedHandlers, http.server.ThreadingHTTPServer):
 class _CodexUpstream:
     """Fixed HTTPS transport with no redirect, proxy, or retry behavior."""
 
-    def __init__(self, timeout, response_limit, *, deadline=None, on_activity=None):
+    def __init__(self, timeout, response_limit, *, deadline=None, on_activity=None, backend='codex'):
+        if backend not in ('codex', 'minimax'):
+            raise RouterError('IMAGE_ROUTE_MISMATCH')
+        self.host = 'api.minimaxi.com' if backend == 'minimax' else _API_HOST
         self.timeout = timeout
         self.response_limit = response_limit
         self.deadline = deadline
@@ -63,7 +66,7 @@ class _CodexUpstream:
         try:
             timeout = self._remaining_timeout()
             connection = http.client.HTTPSConnection(
-                _API_HOST, timeout=timeout, context=ssl.create_default_context()
+                self.host, timeout=timeout, context=ssl.create_default_context()
             )
         except RouterError:
             raise
@@ -146,17 +149,19 @@ class CodexBroker:
     def __init__(self, task: dict, credential: str, *, upstream=None, socket_path=None,
                  before_request=None, on_observation=None, on_exchange=None):
         contract = ImageTaskContract.from_dict(task).to_dict()
-        if contract["backend"] != "codex" or contract["profile"] != "api-bounded":
+        if (contract["backend"], contract["profile"]) not in (
+                ('codex', 'api-bounded'), ('minimax', 'responses-bounded')):
             raise RouterError("IMAGE_ROUTE_MISMATCH")
         if not contract["selected_refs"]:
             raise RouterError("IMAGE_REF_REQUIRED")
-        if (not isinstance(credential, str) or not credential.startswith("sk-")
-                or len(credential) < 20
+        if (not isinstance(credential, str) or not credential
+                or (contract['backend'] == 'codex' and (not credential.startswith('sk-') or len(credential) < 20))
                 or any(ord(char) < 33 or ord(char) > 126 for char in credential)):
-            raise RouterError("UNSAFE_CREDENTIAL", "OpenAI API key required")
+            raise RouterError("UNSAFE_CREDENTIAL", "provider-specific API key required")
         if upstream is None and before_request is None:
             raise RouterError("IMAGE_SEAL_RECHECK_REQUIRED")
         self.task = contract
+        self._api_host = 'api.minimaxi.com' if contract['backend'] == 'minimax' else _API_HOST
         budgets = contract["budgets"]
         if budgets["generation_tokens"] > MAX_CODEX_IMAGE_TOKENS:
             raise RouterError("IMAGE_GENERATION_LIMIT")
@@ -186,6 +191,7 @@ class CodexBroker:
             min(budgets["wall_seconds"], budgets["idle_seconds"]),
             budgets["output_bytes"], deadline=self._deadline,
             on_activity=self._record_activity,
+            backend=contract['backend'],
         )
         self._proof = "synthetic_upstream" if upstream is not None else "authenticated_endpoint_declaration"
 
@@ -368,7 +374,11 @@ class CodexBroker:
             body = strict_json(raw)
             if type(body) is not dict:
                 raise RouterError("IMAGE_PROJECTION_MISMATCH")
-            actual, proof = map_codex_image_request(self.task, body)
+            if self.task['backend'] == 'minimax':
+                from ..minimax_image_wire import map_minimax_image_request
+                actual, proof = map_minimax_image_request(self.task, body)
+            else:
+                actual, proof = map_codex_image_request(self.task, body)
         except RouterError as exc:
             self._exchange('native-request-quarantined', canonical_bytes({
                 'classification': exc.code, 'sha256': hash_bytes(raw), 'byte_length': len(raw)}))
@@ -386,7 +396,7 @@ class CodexBroker:
             observation = {
                 "attempt_id": str(uuid.uuid4()),
                 "request_number": len(self._observations) + 1,
-                "upstream_host": _API_HOST,
+                "upstream_host": self._api_host,
                 "upstream_path": _ENDPOINT_PATH,
                 "model": self.task["model"],
                 "effort": self.task["effort"],
@@ -436,7 +446,11 @@ class CodexBroker:
                 response_secrets = (self._credential.encode(), self.capability.encode())
                 validate_response_secrets(response_headers, response, response_secrets)
                 if status == 200:
-                    response_proof = validate_codex_image_response(self.task, response_headers, response)
+                    if self.task['backend'] == 'minimax':
+                        from ..minimax_image_wire import validate_minimax_image_response
+                        response_proof = validate_minimax_image_response(self.task, response_headers, response)
+                    else:
+                        response_proof = validate_codex_image_response(self.task, response_headers, response)
                     _, reflected = redact_known_secrets(response_proof['text'].encode(), response_secrets)
                     if reflected:
                         raise RouterError('UPSTREAM_SECRET_REFLECTION')

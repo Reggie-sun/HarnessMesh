@@ -17,6 +17,7 @@ from .contracts import RouterError
 IMAGE_TASK_SCHEMA = 'image-task/v1'
 IMAGE_OUTPUT_PROTOCOL = 'JSON_OBJECT/v1'
 IMAGE_CONTEXT_POLICY = 'FRESH_SEALED_INPUT/v1'
+IMAGE_PROVIDERS = MappingProxyType({'kimi': 'kimi', 'codex': 'openai', 'minimax': 'minimax'})
 MAX_IMAGES = 1024
 MAX_PNG_BYTES = 24 * 1024 * 1024
 MAX_NATIVE_PAYLOAD_BYTES = 32 * 1024 * 1024
@@ -239,11 +240,13 @@ class ImageTaskContract:
         if not _IDENTIFIER.fullmatch(parent_session_id) or not _IDENTIFIER.fullmatch(task_id):
             _fail('INVALID_CONTRACT', 'invalid task identity')
         backend = data['backend']
-        if backend not in ('kimi', 'codex'):
-            _fail('INVALID_CONTRACT', 'image backend must be explicit kimi or codex')
+        if backend not in IMAGE_PROVIDERS:
+            _fail('INVALID_CONTRACT', 'image backend must be explicit kimi, codex or minimax')
         model = _bounded_string(data['model'], 'model', 256)
         profile = _bounded_string(data['profile'], 'profile', 128)
         effort = _bounded_string(data['effort'], 'effort', 64)
+        if backend == 'minimax' and (model, profile, effort) != ('MiniMax-M3', 'responses-bounded', 'provider-default'):
+            _fail('IMAGE_ROUTE_MISMATCH')
         if data['output_protocol'] != IMAGE_OUTPUT_PROTOCOL:
             _fail('INVALID_CONTRACT', 'unsupported output protocol')
         if data['context_policy'] != IMAGE_CONTEXT_POLICY:

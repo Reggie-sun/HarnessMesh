@@ -40,7 +40,7 @@ def inspect_images(data: dict, store_root: Path, *, sandbox_config: Path | None 
         runtime_pin = runtime.to_dict()
         adapter = Path(image_claude.__file__).read_bytes()
         status = 'NATIVE_FAKE_ONLY_NOT_LIVE_QUALIFIED'
-    else:
+    elif task.backend == 'codex':
         if sandbox_config is None:
             raise RouterError('IMAGE_SANDBOX_CONFIG_REQUIRED')
         config = strict_json(Path(sandbox_config).read_bytes())
@@ -61,6 +61,8 @@ def inspect_images(data: dict, store_root: Path, *, sandbox_config: Path | None 
         runtime_pin = {'sha256': CODEX_SHA, 'version': '0.154.0'}
         adapter = Path(codex_image_rpc.__file__).read_bytes()
         status = 'INCOMPLETE_GENERATION_BOUND'
+    else:
+        raise RouterError('IMAGE_RUNTIME_CONFIG_REQUIRED')
     pins = {'runtime': runtime_pin, 'adapter': {'sha256': hash_bytes(adapter)},
             'image': {'sha256': sandbox.image.removeprefix('sha256:')},
             'protocol': {'sha256': hash_bytes(canonical_bytes({

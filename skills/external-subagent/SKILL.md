@@ -79,6 +79,12 @@ Parent 用 `candidate-test --invocation <id> --argv-json <exact-argv.json>` 在�
 
 ## Evidence And Limits
 
+### Isolated Image Routes
+
+独立 `image-task/v1` 不继承project task的工具、profile或额度。只有current task明确选择、exact accepted image amendments和单独image config成立时，才使用 `prepare-image-probe`、`qualify-image-route` 或 `run-images`。MiniMax tuple为 `minimax / responses-bounded / MiniMax-M3 / provider-default`，GPT API tuple保持原合同；未知backend拒绝，不将旧Kimi runtime/receipt改名复用。
+
+`qualify-image-route --native-only`只生成本地fake/实际Docker conformance，不证明模型视觉能力；真实 `--live` 仍必须有独立credential reference、当前认证账号、frozen input accounting和canonical预算。MiniMax当前费用授权为0、budget gate硬拒绝，正式image请求也无费用授权；不得以prepared probe、API连通或native conformance绕过。具体image输入、固定TLS endpoint、hard cap、receipt与资格语义由accepted image Specs和source owners独占；不使用旧MiniMax runner、host CLI或global Codex OAuth回退。
+
 Kimi worker/deep 本机 live route 与两 repo holdout 已有 canonical qualification；deep 实际 1M consumption 未评估。Gemini native/fake 已通过，现有 Code Assist account 返回 `UNSUPPORTED_CLIENT`，两 repo live 仍 blocked。不能把 fake receipts、CLI init、exit 0 或模型自述当成 authenticated identity。
 
 真实 credential 只经 private provider-specific file reference 注入，不进入聊天、argv、prompt 或日志。没有 fallback 到旧 `sub-agents`/MiniMax runner。Follow-up 必须由 parent 检查旧 outcome/artifacts，并新建有理由、独立有限预算的 attempt；禁止删除 budget/consumed records。无自动 accept、revert、commit 或 push。

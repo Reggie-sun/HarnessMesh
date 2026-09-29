@@ -1,6 +1,6 @@
 """Independent strict JSON object output, never project report normalization."""
 
-from .contracts import RouterError, canonical_bytes, strict_json
+from .contracts import RouterError, canonical_bytes, strict_json, hash_bytes
 
 
 def parse_image_text(raw: bytes, maximum: int) -> tuple[dict, bytes]:
@@ -13,6 +13,24 @@ def parse_image_text(raw: bytes, maximum: int) -> tuple[dict, bytes]:
     if len(canonical) > maximum:
         raise RouterError("IMAGE_OUTPUT_LIMIT")
     return value, canonical
+
+
+def decode_image_minimax(stdout: bytes, maximum: int, *, task, observation, response_bytes) -> tuple[bytes, bytes]:
+    from .minimax_image_wire import validate_minimax_image_response
+    value = strict_json(stdout)
+    if (not isinstance(value, dict) or set(value) != {'schema', 'status', 'request_sha256', 'response_sha256', 'response'}
+            or value['schema'] != 'minimax-image-runtime/v1' or value['status'] != 'completed'):
+        raise RouterError('IMAGE_TERMINAL_MISSING')
+    if (value['request_sha256'] != observation['actual_request_sha256']
+            or value['response_sha256'] != observation['response_sha256']
+            or hash_bytes(response_bytes) != observation['response_sha256']
+            or canonical_bytes(value['response']) != canonical_bytes(strict_json(response_bytes))):
+        raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
+    proof = validate_minimax_image_response(task, {'content-type': 'application/json',
+        'x-request-id': observation['response_request_id']}, response_bytes)
+    raw = proof['text'].encode('utf-8')
+    _, canonical = parse_image_text(raw, maximum)
+    return raw, canonical
 
 
 def decode_image_claude(stdout: bytes, maximum: int) -> tuple[bytes, bytes]:

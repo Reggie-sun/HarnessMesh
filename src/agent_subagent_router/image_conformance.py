@@ -87,8 +87,17 @@ def native_conformance(store, probe_id, *, sandbox_config, cancel=None):
         if (result.exit_code != 0 or result.reason != 'exited' or result.truncated
                 or not isinstance(checks, dict) or not checks or any(v is not True for v in checks.values())):
             raise RouterError('IMAGE_OS_CONTAINMENT_UNPROVEN')
-        stream = _codex_stream if task['backend'] == 'codex' else _kimi_stream
         def upstream(path, headers, body):
+            if task['backend'] == 'minimax':
+                response = {'id': 'minimax_image_offline', 'object': 'response', 'status': 'completed',
+                    'model': task['model'], 'store': False, 'output': [{'id': 'minimax_message_offline',
+                    'type': 'message', 'role': 'assistant', 'status': 'completed',
+                    'content': [{'type': 'output_text', 'text': canonical_bytes(rubric).decode()}]}],
+                    'usage': {'input_tokens': 100, 'output_tokens': 100, 'total_tokens': 200}}
+                return 200, {'content-type': 'application/json', 'x-request-id': 'req_image_offline'}, canonical_bytes(response)
+            if task['backend'] not in ('codex', 'kimi'):
+                raise RouterError('IMAGE_ROUTE_MISMATCH')
+            stream = _codex_stream if task['backend'] == 'codex' else _kimi_stream
             return 200, {'content-type': 'text/event-stream', 'x-request-id': 'req_image_offline'}, stream(task, canonical_bytes(rubric).decode())
         from .image_run import run_image_contract
         invocation = run_image_contract(probe['manifest'], store,

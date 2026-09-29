@@ -43,7 +43,7 @@ def main(argv=None):
     images = commands.add_parser('inspect-images', help='Seal independent PNG inputs; no provider calls')
     images.add_argument('--task', type=Path, required=True)
     image_probe = commands.add_parser('prepare-image-probe', help='Freeze router-owned random images; no provider calls')
-    image_probe.add_argument('--backend', choices=('kimi', 'codex'), required=True)
+    image_probe.add_argument('--backend', choices=('kimi', 'codex', 'minimax'), required=True)
     image_probe.add_argument('--refs-json', type=Path, required=True)
     image_probe.add_argument('--model', required=True)
     image_probe.add_argument('--profile', required=True)
@@ -141,7 +141,8 @@ def main(argv=None):
                     probe_task = store.read(args.probe)
                     # Probe input facts do not duplicate backend; read its sealed task.
                     from .image_seal import verify_image_seal
-                    provider = 'openai' if verify_image_seal(Path(probe_task['manifest']))['task']['backend'] == 'codex' else 'kimi'
+                    from .image_contract import IMAGE_PROVIDERS
+                    provider = IMAGE_PROVIDERS[verify_image_seal(Path(probe_task['manifest']))['task']['backend']]
                     with _image_cancellation() as cancelled:
                         output = qualify_image_route(store, args.probe, sandbox_config=args.sandbox_config,
                             credential_ref=read_credential_reference(provider, args.credential_ref) if args.credential_ref else None,
@@ -150,7 +151,8 @@ def main(argv=None):
             else:
                 from .image_run import run_image_contract
                 from .image_seal import verify_image_seal
-                provider = 'openai' if verify_image_seal(args.contract)['task']['backend'] == 'codex' else 'kimi'
+                from .image_contract import IMAGE_PROVIDERS
+                provider = IMAGE_PROVIDERS[verify_image_seal(args.contract)['task']['backend']]
                 with _image_cancellation() as cancelled:
                     output = run_image_contract(args.contract, store, sandbox_config=args.sandbox_config,
                         credential_ref=read_credential_reference(provider, args.credential_ref), cancel=cancelled)

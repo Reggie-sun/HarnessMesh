@@ -1,5 +1,19 @@
 # HarnessMesh Architecture Spec Acceptance
 
+## Task Authorized MiniMax Image Amendment
+
+2026-09-29 当前用户明确“模型用minimax和gpt就可以,kimii不要用”，后以应用截图确认已保存MiniMax-M3/Responses连接。按其当前global Execution Mode，任务内共享合同经Parent Self-Review默认获得实施授权；绑定 `docs/superpowers/specs/2026-09-29-minimax-image-route-design.md` SHA `24bc75a73bf32bde768f6aec13d333b215785fade08cb9b3c81134c9668031ed`。不是用户逐字审阅该新SHA的声明；旧accepted bytes、Kimi/GPT证据、失败和预算历史原样保留。
+
+本修订仅新增显式minimax Responses/Python Docker路线及原owners的工程/安装接线，不能用旧Kimi改名或本聊天充当actor。后续不调用Kimi。按已成立native fallback，新critical分支最多两次同一read-only reviewer_max复核、各900秒，保留旧Kimi2/native1–15计数。真实MiniMax费用授权0、formal0；没有safe credential handoff、authenticated account/原host及冻结input/accounting/canonical预算证据时零live。GPT原一次/USD1不提升，所有Jianji产品禁止保持。
+
+## MiniMax Typed Association Targeted Review Exception
+
+2026-09-29 新分支的两轮预算已使用：round16 在900秒内没有terminal full report，记录为 `INCOMPLETE_NO_TERMINAL_FULL_REPORT`；round17 在193/193一致snapshot上完成完整critical scope（401.28秒），确认NR-MINIMAX-001已修复，仅报告non-blocking NR-MINIMAX-002。Parent以真实否定测试确认native envelope的`store:false→0`可穿过Python字典相等比较；原响应重新校验及正常pinned runner仍成立，但typed关联应拒绝该差异。
+
+按当前任务内有限预算默认授权，Parent Self-Review仅增加一次同一read-only `reviewer_max`定向round18，wall上限180秒。只复核canonical JSON typed比较、该否定测试及直接关联链路；round17亲自完成且hash不变的完整边界可复用。历史Kimi2/native1–17计数、partial结果和原Spec SHA不重写、不重置；没有自动下一轮。先fresh offline/native/OS/Ruff/diff，再封存dispatch；Parent裁决及无unresolved blocker后才clean官方安装。
+
+Self-Review：修复在既有decoder owner，原native响应与broker原bytes仍独立绑定，不改ReceiptStore、credential、source、qualification或生命周期owner；canonical bytes保留JSON值类型并忽略无语义的key顺序。只增加一项工程review预算，MiniMax真实费用0、formal0、GPT原一次/USD1上限及全部产品禁止保持。该例外不声称原两轮未耗尽，也不把工程测试或review作为真实视觉资格。
+
 ## Status
 
 `ACCEPTED_SPEC_WITH_USER_DIRECTED_Q2_AMENDMENT`

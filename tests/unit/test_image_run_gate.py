@@ -11,6 +11,21 @@ def test_arbitrary_image_contract_cannot_bootstrap_live(tmp_path):
         require_live_admission(store, {}, None, None, None, None)
 
 
+def test_minimax_does_not_inherit_openai_or_kimi_budget(tmp_path):
+    from agent_subagent_router.image_budget import require_probe_budget
+    with pytest.raises(RouterError, match='IMAGE_MINIMAX_BUDGET_NOT_AUTHORIZED'):
+        require_probe_budget(ReceiptStore(tmp_path/'runs'), 'old-receipt', {'backend': 'minimax'}, 'old-fingerprint')
+
+
+def test_minimax_cannot_read_global_codex_auth_as_an_api_key(monkeypatch, tmp_path):
+    from agent_subagent_router.transport import credentials
+    called = []
+    monkeypatch.setattr(credentials.os, 'open', lambda *a: called.append(a))
+    with pytest.raises(RouterError, match='UNSAFE_CREDENTIAL'):
+        credentials.read_credential_reference('minimax', tmp_path/'.codex'/'auth.json')
+    assert called == []
+
+
 def test_text_qualification_cannot_admit_image_probe(tmp_path):
     store = ReceiptStore(tmp_path/'runs')
     run = store.create('parent', 'old-text')

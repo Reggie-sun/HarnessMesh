@@ -11,6 +11,7 @@ from agent_subagent_router.permissions.docker import _run_docker
 from agent_subagent_router.runtime_config import installed_sandbox, CLAUDE_SHA256, CLAUDE_VERSION
 from agent_subagent_router.adapters import image_codex, codex_image_rpc
 from build_image_codex_sandbox import BASE, CODEX_SHA256, CODEX_VERSION
+from agent_subagent_router.image_runtime import MINIMAX_BASE
 
 
 def preserve_local_base(base):
@@ -31,7 +32,7 @@ def preserve_local_base(base):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--backend', choices=('kimi', 'codex'), required=True)
+    parser.add_argument('--backend', choices=('kimi', 'codex', 'minimax'), required=True)
     parser.add_argument('--runtime-source', type=Path)
     parser.add_argument('--config-out', type=Path, required=True)
     args = parser.parse_args()
@@ -45,13 +46,21 @@ def main():
         runtime_sha, version = CLAUDE_SHA256, CLAUDE_VERSION
         if args.runtime_source is not None:
             raise RouterError('INVALID_RUNTIME_SOURCE')
-    else:
+    elif args.backend == 'codex':
         path = args.runtime_source
         if path is None or path.is_symlink() or not path.is_file() or hash_bytes(path.read_bytes()) != CODEX_SHA256:
             raise RouterError('RUNTIME_CHANGED')
         base, runtime_sha, version = BASE, CODEX_SHA256, CODEX_VERSION
         helpers = {Path(module.__file__).name: Path(module.__file__).read_bytes()
                    for module in (image_codex, codex_image_rpc)}
+    else:
+        from agent_subagent_router.adapters import image_minimax
+        if args.runtime_source is not None:
+            raise RouterError('INVALID_RUNTIME_SOURCE')
+        base = MINIMAX_BASE
+        content = Path(image_minimax.__file__).read_bytes()
+        runtime_sha, version = hash_bytes(content), 'minimax-responses/v1'
+        helpers = {'image_minimax.py': content}
     _run_docker(('image', 'inspect', base), timeout=5).check_returncode()
     entry = Path(container_entry.__file__).read_bytes()
     wrapper = Path(image_container_entry.__file__).read_bytes()

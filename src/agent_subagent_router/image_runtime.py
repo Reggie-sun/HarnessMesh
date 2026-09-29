@@ -7,6 +7,8 @@ from .receipts import implementation_identity
 
 PURPOSE = 'ISOLATED_IMAGE_ROUTE/v1'
 API_SPEC_SHA = '14e10cad0f3afc44f0f3796c2ae86c45e161c8a17ab2d54801c8c261a81df272'
+MINIMAX_SPEC_SHA = '24bc75a73bf32bde768f6aec13d333b215785fade08cb9b3c81134c9668031ed'
+MINIMAX_BASE = 'sha256:90744cff8f32887f075c47d747a173ff333e9e98801667af93c357fa9f5e28ff'
 
 
 def image_runtime(task, config_path):
@@ -29,7 +31,7 @@ def image_runtime(task, config_path):
             raise RouterError('IMAGE_ROUTE_MISMATCH')
         runtime_sha, version = CLAUDE_SHA256, CLAUDE_VERSION
         adapter = Path(image_claude.__file__)
-    else:
+    elif task['backend'] == 'codex':
         if task['profile'] != 'api-bounded' or not any(
                 ref['sha256'] == API_SPEC_SHA for ref in task['selected_refs']):
             raise RouterError('IMAGE_API_ACCEPTANCE_REQUIRED')
@@ -37,6 +39,17 @@ def image_runtime(task, config_path):
         adapter = Path(image_codex.__file__)
         helpers = {'image_codex.py': hash_bytes(adapter.read_bytes()),
                    'codex_image_rpc.py': hash_bytes(Path(codex_image_rpc.__file__).read_bytes())}
+    elif task['backend'] == 'minimax':
+        from .adapters import image_minimax
+        if ((task['model'], task['profile'], task['effort']) != ('MiniMax-M3', 'responses-bounded', 'provider-default')
+                or not any(ref['sha256'] == MINIMAX_SPEC_SHA for ref in task['selected_refs'])
+                or config['base_image'] != MINIMAX_BASE):
+            raise RouterError('IMAGE_MINIMAX_ACCEPTANCE_REQUIRED')
+        adapter = Path(image_minimax.__file__)
+        runtime_sha, version = hash_bytes(adapter.read_bytes()), 'minimax-responses/v1'
+        helpers = {'image_minimax.py': runtime_sha}
+    else:
+        raise RouterError('IMAGE_ROUTE_MISMATCH')
     if (config['runtime_sha256'] != runtime_sha or config['runtime_version'] != version
             or config['entry_sha256'] != hash_bytes(Path(container_entry.__file__).read_bytes())
             or config['image_entry_sha256'] != hash_bytes(Path(image_container_entry.__file__).read_bytes())
@@ -53,13 +66,16 @@ def image_runtime(task, config_path):
     from .transport import broker
     from . import image_process
     modules = [image_wire, image_output, image_process, broker]
-    if task['backend'] == 'codex':
+    if task['backend'] in ('codex', 'minimax'):
         from . import codex_image_wire
         from .transport import codex_broker
         modules.extend([codex_image_wire, codex_broker])
+        if task['backend'] == 'minimax':
+            from . import minimax_image_wire
+            modules.append(minimax_image_wire)
     policy = {Path(module.__file__).name: hash_bytes(Path(module.__file__).read_bytes()) for module in modules}
     policy['image_entry'] = config['image_entry_sha256']
-    policy['codex_helpers'] = helpers
+    policy['image_helpers'] = helpers
     return sandbox, {
         'runtime': {'sha256': runtime_sha, 'version': version},
         'image': {'sha256': sandbox.image.removeprefix('sha256:')},

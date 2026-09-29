@@ -8,7 +8,8 @@ import tempfile
 from .adapters.image_claude import build_image_invocation, docker_projection, visible_text
 from .contracts import RouterError, canonical_bytes, hash_bytes, strict_json
 from .image_budget import require_probe_budget, reserve_probe
-from .image_output import decode_image_claude, decode_image_codex
+from .image_output import decode_image_claude, decode_image_codex, decode_image_minimax
+from .image_contract import IMAGE_PROVIDERS
 from .image_probe import read_probe
 from .image_process import ImageProcessBudgets
 from .image_runtime import image_runtime
@@ -37,6 +38,20 @@ def _invocation(task, pngs, capability, directory):
             directory/'native', 'http://127.0.0.1:18765', capability, task, pngs, budgets)
         argv, env = docker_projection(invocation)
         return argv, env, invocation.stdin
+    if task['backend'] == 'minimax':
+        prompt = canonical_bytes({'model': task['model'], 'instructions': task['system_text'],
+            'input': [{'role': 'user', 'content': [{'type': 'input_text', 'text': visible_text(task)}] +
+                [{'type': 'input_image', 'image_url': 'data:image/png;base64,' + base64.b64encode(raw).decode('ascii'),
+                  'detail': 'high'} for raw in pngs]}],
+            'tools': [], 'tool_choice': 'none', 'stream': False, 'store': False,
+            'max_output_tokens': budgets.generation_tokens})
+        if len(prompt) > task['budgets']['payload_bytes']:
+            raise RouterError('IMAGE_PAYLOAD_LIMIT')
+        return ('/usr/local/bin/python3', '/opt/router/image_minimax.py'), {
+            'PATH': '/usr/bin:/bin', 'HOME': '/home/worker', 'TMPDIR': '/tmp', 'LANG': 'C.UTF-8',
+            'OPENAI_BASE_URL': 'http://127.0.0.1:18765', 'IMAGE_ROUTE_CAPABILITY': capability}, prompt
+    if task['backend'] != 'codex':
+        raise RouterError('IMAGE_ROUTE_MISMATCH')
     prompt = canonical_bytes({'model': task['model'], 'effort': task['effort'],
         'system_text': task['system_text'], 'task_text': visible_text(task),
         'png_b64': [base64.b64encode(raw).decode('ascii') for raw in pngs],
@@ -62,6 +77,7 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
     credential = ''
     fingerprint = None
     raw = canonical = None
+    original_response = None
     classification = 'INCOMPLETE'
     try:
         sealed = verify_image_seal(Path(manifest))
@@ -72,7 +88,7 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
         if cancel is not None and cancel.is_set():
             raise RouterError('IMAGE_CANCELLED')
         if upstream is None:
-            provider = 'openai' if task['backend'] == 'codex' else 'kimi'
+            provider = IMAGE_PROVIDERS[task['backend']]
             credential = load_credential(provider, credential_ref, project_root=Path(__file__).resolve().parents[2])
             fingerprint = credential_fingerprint(provider, credential)
             require_live_admission(store, task, manifest, probe_id, budget_id, fingerprint)
@@ -88,10 +104,14 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
             store.observe(run, {'kind': 'image-invocation/v1', 'upstream': value})
 
         def exchange(phase, data):
+            nonlocal original_response
             index = sum(x['path'].startswith('wire/'+phase+'-') for x in artifacts)
             artifacts.append(store.artifact(run, f'wire/{phase}-{index:03d}.bin', data,
                 secrets=(credential.encode(), broker.capability.encode()),
                 media_type='application/octet-stream', producer='image-broker'))
+            if task['backend'] == 'minimax' and phase == 'response':
+                # Broker already checked this body; artifacts may apply generic redaction.
+                original_response = data
 
         def before_request():
             if cancel is not None and cancel.is_set():
@@ -107,12 +127,12 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
 
         with tempfile.TemporaryDirectory(prefix='router-image-run-') as temporary:
             directory = Path(temporary)
-            if task['backend'] == 'codex':
+            if task['backend'] in ('codex', 'minimax'):
                 from .transport.codex_broker import CodexBroker
                 broker = CodexBroker(task, credential, upstream=upstream,
                     socket_path=directory/'broker.sock', before_request=before_request,
                     on_observation=observe, on_exchange=exchange)
-            else:
+            elif task['backend'] == 'kimi':
                 from .backends.kimi import profile
                 from .image_wire import validate_claude_image_request, validate_claude_image_response
                 from .transport.broker import Broker
@@ -126,6 +146,8 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
                     request_validator=lambda body: validate_claude_image_request(task, body, framing),
                     response_validator=lambda headers, data: validate_claude_image_response(task, headers, data),
                     max_request_bytes=task['budgets']['payload_bytes'])
+            else:
+                raise RouterError('IMAGE_ROUTE_MISMATCH')
             with broker:
                 argv, env, prompt = _invocation(task, pngs, broker.capability, directory)
                 process = sandbox.execute(argv, env, prompt, budgets, source=None,
@@ -145,14 +167,21 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
             raise RouterError('IMAGE_ROUTE_PIN_DRIFT')
         if task['backend'] == 'codex':
             raw, canonical = decode_image_codex(process.stdout, budgets.output_bytes, task=task)
-        else:
+        elif task['backend'] == 'minimax':
+            if original_response is None:
+                raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
+            raw, canonical = decode_image_minimax(process.stdout, budgets.output_bytes, task=task,
+                observation=observations[0], response_bytes=original_response)
+        elif task['backend'] == 'kimi':
             raw, canonical = decode_image_claude(process.stdout, budgets.output_bytes)
+        else:
+            raise RouterError('IMAGE_ROUTE_MISMATCH')
         if task['backend'] == 'codex':
             native = strict_json(process.stdout)
             proof = observations[0]['wire_proof']
             if (native['thread_id'] != proof['thread_id'] or native['turn_id'] != proof['turn_id']):
                 raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
-        else:
+        elif task['backend'] == 'kimi':
             events = [strict_json(line) for line in process.stdout.splitlines() if line.strip()]
             inits = [x for x in events if x.get('subtype') == 'init']
             if (len(inits) != 1 or inits[0].get('session_id') != observations[0]['input_proof']['session_id']

@@ -77,6 +77,14 @@ def test_image_task_round_trip_is_strict_and_detached_from_caller_mutations():
     assert task.to_dict() == expected
 
 
+def test_minimax_is_an_explicit_image_backend_without_inheriting_other_identity():
+    source = task_dict()
+    source.update(backend='minimax', profile='responses-bounded', model='MiniMax-M3', effort='provider-default')
+    assert ImageTaskContract.from_dict(source).to_dict() == source
+    with pytest.raises(RouterError):
+        TaskContract.from_dict(source)
+
+
 def test_unknown_fields_and_wrong_nested_shapes_are_rejected():
     changes = [
         lambda data: data.update({'read_paths': []}),
