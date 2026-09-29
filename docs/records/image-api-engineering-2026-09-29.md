@@ -1,5 +1,76 @@
 # Image API Engineering Record
 
+## Current Engineering Installation and Live Readiness
+
+2026-09-29 已完成本任务工程安装，受控视觉资格仍INCOMPLETE。Parent先保留round12/13/14全部失败与partial/full范围，再真实修复NR005的reasoning字段shape、string item身份与未验证native input先落盘。Round13实际提前结束170.423秒、无full clearance；round14完整scope672.329秒发现native-input capture最后触发；Parent实际ReceiptStore分别17 failed/3 passed、3 failed确认后修正。未重写原3份accepted Specs、旧receipts或Kimi两次OUTCOME_UNKNOWN，未追加第三次Kimi请求。
+
+Latest round15 named read-only `reviewer_max`完整critical scope，finding set为空，193/193 hashes前后一致。Snapshot `97a2cccd8c2284d97564c29b1b7aa30aecbffd0bd4e5d7cee1f41db422376bc0`；UTC13:04:51.288078537–13:09:46.278206754，294.990秒。Parent observation SHA `ef5e04b5a351e14123159c139649ef5dddb4550cbdfb8f1c4e30531c25648256`，不是Provider receipt，实际authenticated provider/model/cost仍null。Parent逐处检查diff、实落盘red-green、当前完整验证及同hash后裁决：无unresolved engineering finding，仅允许已授权clean官方安装。
+
+Fresh focused310 PASS（6.61s）、offline754 PASS/27 skip（13.18s）、full native/fake+containment779 PASS/2 skip（68.11s）、Ruff/diffcheck exit0。2 skip为既有Gemini配置条件。Round13旧full754 PASS/1 FAIL/2 skip的X状态断言失败日志保留；只修test按Linux真实terminal X/Z解释，不改supervisor/观察时间/预算或允许存活状态。原project schema/工具准入及human evidence不变。
+
+官方installer在clean source commit `1f0c11dc8249a6682476753244df6e3661259e9f`上实际exit0：source_dirty_at_install=false，66-source program `33e4512773ad0a56d2c617193633bf46ba3a067e920570b51b3918bc9823e904`；package `e89dbd601be3a21aa35c26e5f2425d96ab76c427ff403c52f0012990f90cc47b`；manifest `bde87fae43ecb489b86f4f21a5f3018298a8889aa07577c880396b93e5a8d46b`。Installed全部source/Skill/entry与manifest匹配，CLI version0.1.0。原default sandbox SHA `ed6313f89e1d1ee6e79a8e7a6cf9067c8ac143e7bf8533adb5f030e56e663b5c`未变；旧package和receipts保留，无手工替换installed源码或rollback。
+
+Private route configs在`~/.local/share/agent-subagent-router/image-routes/33e4512773ad0a56d2c617193633bf46ba3a067e920570b51b3918bc9823e904/`，0700/0600。Codex image仍`93a5c2a3…`/runtime0.154.0，Kimi image仍`58c7dfa8…`/Claude Code2.1.277实际Kimi route；没有新Docker build或伪称Anthropic Claude。用installed CLI、5份exact accepted refs及两个独立private state实际封存owned随机八图并执行native-only conformance：
+
+| Backend | Owned probe | Native/OS conformance | Linked native invocation |
+| --- | --- | --- | --- |
+| Codex | `e06d2550-9890-4421-a520-c459d59d4cbd` | `31dcf896-e910-4e2d-9eef-89c30e708b52` | `ccae88c1-3fe4-478b-815e-a9930913dabf` |
+| Kimi | `649b608e-eb13-4b00-aea4-a552a12c9164` | `9e553956-93c5-453a-8117-f10d7c3ba85f` | `b4e6e9cb-5855-4cdf-b3b8-e9faded53054` |
+
+两条canonical conformance均ENGINEERING_CONFORMANCE_COMPLETE，14/14实际OS checks=true；linked invocation均ENGINEERING_NATIVE_COMPLETE/synthetic-upstream、fake wire1、container_removed=true。实际八张128×128完整PNG、独立image IDs（重复像素仍不同ID）、fresh context与禁工具绑定成立，source=None，无project/candidate/host home/global auth mounts。Owned probe不含Jianji holdout/truth。Provider visual requests=0、formal requests=0、source_semantic=NOT_EVALUATED、semantic_metrics=null、authority=none/eligible=false，不能从fake输出比较签发视觉资格。
+
+已从实际Codex mapped API artifact冻结engineering accounting草案：7442 bytes，payload SHA `92ed7a4b0af76bee125066f0be431b8a052d026f9bebc4a8ac1b46e2f59cc163`，input_digest `aeb25a6db79412a58ce85fc5d3f62b8834df4070446b23259ccdf579e1df7a45`。按每body byte当一个text token、另8192 framing reserve及4096/image重复保守计入，input upper48402、generation2048；当前已观察public standard价格下该engineering payload bound USD0.151725。价格/图片来源分别为[OpenAI model](https://developers.openai.com/api/docs/models/gpt-5.4)与[image accounting](https://developers.openai.com/api/docs/guides/images-vision)，观察日期2026-09-29。此草案AWAITING_AUTHENTICATED_ACCOUNT，无credential fingerprint/account evidence/available credit，不是canonical AUTHORIZED budget receipt，也不授权未来未观察请求。
+
+剩余真实blocker：独立OpenAI应用API credential reference及当前认证账号额度/匹配fingerprint、Kimi当前认证额度和image budget、未来实际payload的正式冻结及canonical parent-account-observer receipts。Global Codex订阅/OAuth或本聊天不能替代。Live仍各一次/总两次、Codex USD1，无retry/fallback；host reservation ledger未创建或重置，formal cost authorization=0。只有这些门成立才进行真实capability；正式Jianji config/inputPlan/budgets、qualified route envelope、isolated actors及完整raw/mapping/joint/correspondence/可信execution/issuer证据仍须后续真实完成。
+
+Archive `~/.local/state/agent-subagent-router/image-route-final-install-20260929`保存新旧manifest、review observations、原日志、exact refs、两installed states与canonical原artifacts及readiness草案。当前自然停止于缺失外部账号/预算材料，不是再次请求安装权限或“继续”；engineering安装完成不构成M5-D2A PASS、真人资格或生产验收。Production、source admission和所有成功issuer继续BLOCKED。下方current标题和pending安装都是历史checkpoint。
+
+交付前再次使用installed owners读取ReceiptStore、验证全部关联artifacts/probe/seal及5份accepted refs；当前193/193 review paths仍匹配，完整source/entry/Skill/default config未漂移。实际结果保存为archive内`final-installed-integrity-observation-20260929.json`，其类型为Parent工程观察，不冒充Provider资格receipt；最终`final-checkpoint-manifest-20260929.json`只索引归档文件SHA和提交来源，不授予语义或产品authority。
+
+## Current Semantic Field Shape Repair
+
+Round11 snapshot `f8d9e53dcdca3e0932daf166173c23296dc1e7df9f70fc28b953077ee562c551`前后156/156一致；独立reviewer发现NR005 malformed Kimi start/JSON语义字段和Codex terminal-only summary可绕过分片核对并保存raw。Parent在冻结集合外实际ReceiptStore复现30 failed/15 passed，再在两个既有image wire owners验证string/list/typed summary形状；无scanner特例或旧project schema修改。Parent observation SHA `a12d26999e9ccc37bb5fa957bae76f37828c7ea87282c105789dd367b25ca325`独立标为native观察，不冒充canonical Provider receipt；实际模型/费用未知。
+
+Current program `0a433b27b7e6e0dc5e6d4485b15e881ba7e4a11ceb49b0a889370dfd3f74ec15`；focused234 PASS（3.92s）、offline688 PASS/27 skip（10.07s）、native/fake+containment713 PASS/2 skip（64.09s）、Ruff/diffcheck通过。实际凭据/通路capability/clean × array/object/string矩阵验证quarantine-only、artifacts不含可重组halves，正常string流及四种Kimi block字段正例保持。全套默认不访问Provider，2 skip为既有Gemini配置条件，不代表视觉验收。
+
+按已有任务内有限修复Self-Review，仅一次round12 full native read-only复核已dispatch，UTC12:07:57开始/wall900s；snapshot `dd8220a6e0a830175e1ee54716dd8e1ae20c6e7e61acfdfb7257a90e434950c8`、157 frozen paths，source/tests/Specs/Plan/acceptance/rules保持冻结至report。Archive `semantic-field-shape-review-round12-20260929`保存candidate/logs/snapshot；Kimi2/native1–11历史保留，未以重新命名恢复预算。有效复核/Parent裁决前不执行clean官方安装。
+
+Managed登记仍旧9f271cc/dirty=true/package52b1…，最新全66-source未安装；raw受管manifest、entry/Skill/完整package再次只读验证MATCH，原default config不改。无新商业visual/formal请求、真实API credential/current account缺失，actual cost null、所有source semantic指标NOT_EVALUATED；资格INCOMPLETE、production BLOCKED。通过工程门后持续official安装/installed双native/OS/fake及actual input accounting readiness；不能把fake/raw transport视为真实视觉或盲审资格。下方较早current标题均为历史。
+
+## Current Initial Semantic State Repair
+
+Round10 snapshot `6ddc33a408d3f836ed37755683102632ed99d08463165aaba076140cdc74569f`前后156/156一致，NR005暴露Codex reasoning added/created/in_progress未绑定初始状态。Parent实际ReceiptStore三位置red9 failed/9 passed确认，主动确认Kimi message_start预载thinking red3 failed/18 passed。当前两image wire owners拒绝prefilled初始语义状态，要求空初始output/summary/content后完整关联delta/done/terminal；旧project validator不变。正常完整流和已验证raw保持，无证明的流只保存quarantine。
+
+Fresh **focused188 PASS（3.55s）**、**offline627 PASS/27 skip（8.25s）**、**native/fake+containment652 PASS/2 skip（62.03s）**、Ruff/diffcheck exit0。仅一次有限round11 full read-only native复核已封存dispatch，snapshot SHA `f8d9e53dcdca3e0932daf166173c23296dc1e7df9f70fc28b953077ee562c551`、156 paths、program `6f34adfaf8d7d62a39e97385a55c288e08e10cf0310ac0d3d394f361ca99cb5a`，archive `initial-semantic-state-review-round11-20260929`。全部Kimi/native历史与消费保留，round10 Parent观察SHA `cfd0c944fbcfc7985894f4b2dc5d23d118d98838fbf0db9392496641f872a6f1`，并非Provider receipt；actual model/cost=null。有效复核及Parent裁决前final clean官方安装仍未执行；下方current描述为历史。
+
+## Current Typed Semantic Repair
+
+Round9 snapshot `6d45fc55b4f029869568bfc4d4e85a287b45095e378369039ab1a77cbe6b466f`前后155/155一致，仅剩NR005 signature_delta非语义thinking污染。Parent实际red2 failed/13 passed确认，并独立确认JSON text part同根因red2 failed/16 passed。Scanner现按type选实际语义字段，JSON完整路径按typed part区分；既有protocol/start/stop/native/identity/receipt owners保持，正常附加metadata不被当作语义流。
+
+Fresh **focused72 PASS**、**offline615 PASS/27 skip（7.77s）**、**native/fake+containment640 PASS/2 skip（59.67s）**、Ruff/diffcheck exit0。按acceptance owner有限Self-Review，仅一次round10 full read-only native review（900秒）已封存dispatch；snapshot `6ddc33a408d3f836ed37755683102632ed99d08463165aaba076140cdc74569f`、156 paths、program `02325a8d2da9c2e51dca0399837d1d49b2447b5cfa70956fd8490737dcf3c626`，archive `typed-semantic-review-round10-20260929`。全部Kimi/native历史保留；round9 Parent观察SHA `14e0eba9136c2fa975c9058d3b00ac716a0efd480ba43dd224b78560fa4584a5`，不是canonical Provider receipt，actual model/cost=null。无有效复核/Parent裁决前final clean官方安装仍未执行。下方current称谓是历史checkpoint。
+
+## Current Protocol Payload Repair
+
+2026-09-29 runtime权限已恢复。Round7 snapshot `63a65846dcb2bb7aa4007500471d9fbf8eb649a330dd4ca848378954f20fddcd`（157/157）和round8 `97f2182b4f526e69bbc36d68ab3a7a8420ff84d80bdafa603b38ba46d18151d9`（155/155）保留。NR-IMAGE-005继续暴露Kimi start/delta、未验证ID及aux同名thinking分组漏洞；Parent实际ReceiptStore red分别4 failed/2 passed、unknown-index3 failed/6 passed、nested2 failed/10 passed确认。NR006/007未发现剩余具体触发，不以先前tests通过关闭NR005。
+
+Current scanner单独重组两协议payload，递归按完整JSON路径检查，列表同字段顺序聚合；Kimi image owner校验唯一有序start、开放block/type/delta与完整stop。两backend native/upstream文本SHA与Codex reasoning terminal关联、HTTP failure metadata-only保持。最初nested修正造成incomplete分类回归1 failed/65 passed；Parent恢复列表聚合后全部66项相关测试通过，旧失败日志未删除。Fresh serial **offline609 PASS/27 skip（7.14s）**、**native/fake+containment634 PASS/2 skip（55.78s）**、Ruff/diffcheck exit0，未改timeout或降低断言。
+
+按acceptance owner任务内Self-Review，仅一次round9 full read-only `reviewer_max`（900秒）已dispatch，Kimi2次/native1–8全部历史保留。Frozen archive `protocol-payload-review-round9-20260929`，snapshot SHA `6d45fc55b4f029869568bfc4d4e85a287b45095e378369039ab1a77cbe6b466f`，155 paths、program `682a311cc7718e20f40ff87ed68519fe6dc4b18cf25f2ed3cadc1a841515a73d`。Required review及Parent裁决未完成前，final clean官方安装仍待执行；旧managed登记不作新验收。Parent观察记录归`image-route-final-install-20260929`，round8观察SHA `1644e18b9049a2bf0b8268df11fe9c4bb5094009eaee0f426954947f3d561d64`，并非Provider receipt；actual model/cost=null。
+
+真实visual/formal请求0。缺独立OpenAI应用credential reference与current authenticated account，后续accounting材料不能自行授权调用；capability及M5-D2A仍INCOMPLETE。权限、FFmpeg同步运行失败及下方pending round7均属较早历史；当前工程验证恢复，不代表视觉/语义资格。Production全部BLOCKED、authority=none/eligible=false，下一步无blocker才clean commit/官方安装/installed dual conformance，再准备actual probe accounting。
+
+## Current Interleaved Response Repair
+
+2026-09-29 当前runtime已实际恢复danger-full-access；原permission blocker为历史。Round5旧thread不再可见，保留DISPATCHED_NO_USABLE_REPORT及未知execution/cost；以同一named read-only `reviewer_max`的新thread执行剩余round6，snapshot SHA `39cbe8cc230b19c70621ae93ee829d8869adebf9421e25747a2e4983ac065335`，164/164路径前后匹配。该轮NR-IMAGE-005/006/007仍blocking：reasoning交错绕过leaf聚合、Kimi native结果未绑定上游正文、HTTP错误诊断分段可重组key。Parent独立red **5 failed/2 passed**确认，另两项reasoning关联red确认；不降低severity或以旧613 PASS抵消。
+
+Parent修复独立stream聚合、reasoning delta/done/terminal item关联、两backend共同native/upstream正文SHA，并移除所有HTTP失败body派生诊断；HTTP status/typed分类及classification/hash/length quarantine保留。新`test_image_response_binding.py`覆盖交错凭据/opaque capability、正常reasoning、非法summary关联、Kimi matching/mismatch及失败metadata-only。该文件及`test_unix_broker.py`为新增精确owned测试范围；原schema/report/tools、凭据/ReceiptStore/lifecycle/qualification owners不变。
+
+初次并行offline/full验证真实出现两项时序失败：顺序HTTP请求在前handler finally清理前得到429，以及超时kill后即时观察grandchild为R；没有宣称根因已修复。直接串行相关16项通过，停止并行执行后fresh全套 **offline597 PASS/27 skip（10.25s）**、**native/fake+containment622 PASS/2 skip（71.80s）**、focused127 PASS、Ruff/diffcheck通过，无timeout/断言放宽。前序失败日志完整保留；这些结果仅为工程证据。
+
+按任务内有限修复默认授权与acceptance owner Self-Review，增加仅一次round7 full re-review/wall900秒，Kimi2次/native1–6历史不重置。Frozen package `/home/reggie/.local/state/agent-subagent-router/interleaved-response-review-round7-20260929`，snapshot SHA `63a65846dcb2bb7aa4007500471d9fbf8eb649a330dd4ca848378954f20fddcd`、157路径、program `a9adad18be902a83676090718caee5ddce2219b0f208f0b9051dbd3ee193cfd2`，same profile/thread实际已dispatch。Pending required re-review/Parent裁决，不作安装验收；现有managed登记仍旧9f271cc/dirty52b1…。Final archive `/home/reggie/.local/state/agent-subagent-router/image-route-final-install-20260929`承接Parent观察/日志，native观察记录不是canonical Provider receipt；实际模型/费用null。
+
+Jianji恢复后fresh6 suites **129 PASS（95.66s）**、typecheck exit0；343文件新baseline前后一致，其他上传任务的source/tests变动保留。独立holdout再次verify-preparation exit0，648帧/18场景数量门满足，formal未开始。仍缺独立OpenAI应用credential reference/current authenticated account及完整输入成本材料，visual/formal请求0、capability/M5-D2A INCOMPLETE、authority=none/eligible=false、全部production guards BLOCKED。下方旧checkpoint均为历史，不覆盖本节最新状态。
+
 ## Current Native Fallback Checkpoint
 
 2026-09-29 用户明确要求连续Kimi故障后改用原生子代理。两个既有canonical OUTCOME_UNKNOWN invocation满足阈值，Parent未追加Kimi，按global SUBAGENTS的详细routing owner由一个named `reviewer_max`接手。Global/home/router AGENTS与source Skill仅保留指针；accepted Spec旧bytes不变，工程reviewer窄修订由原acceptance owner记录。该profile配置gpt-6-sol/max，实际authenticated provider/model未评估；native工程记录不是Kimi Docker receipt或blinded actor证据。

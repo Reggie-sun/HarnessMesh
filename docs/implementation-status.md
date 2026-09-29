@@ -1,5 +1,33 @@
 # Implementation Status
 
+## Current Engineering Installation — 2026-09-29
+
+Image/API工程修复已通过latest完整required native review及Parent裁决，无unresolved engineering finding。Clean source commit `1f0c11d`已由官方installation owner安装；66-source program `33e45127…`、package `e89dbd60…`、manifest `bde87fae…`，source_dirty_at_install=false，entry/Skill/源码及原default sandbox完整性核验成立。
+
+Fresh offline754 PASS/27 skip、native/fake+containment779 PASS/2 skip、focused310 PASS、Ruff/diffcheck通过。Installed Codex/Kimi owned八图各自14项实际OS检查及完整native/fake invocation通过、容器清理成立；均为ENGINEERING_CONFORMANCE_COMPLETE，非live capability。新visual/formal请求0；独立credential/current account及canonical budget仍缺，accounting仅AWAITING_AUTHENTICATED_ACCOUNT草案。Qualification INCOMPLETE、source semantic NOT_EVALUATED、production BLOCKED。最新receipts/安装/剩余门由[API record](records/image-api-engineering-2026-09-29.md#current-engineering-installation-and-live-readiness)独占，下方全部checkpoint为历史。
+
+## Semantic Field Shape Repair — 2026-09-29
+
+Current program0a433b27…收紧两image wire的typed语义字段形状，Parent实落盘red30 failed/15 passed确认后修正；focused234 PASS、offline688 PASS/27 skip、native/fake+containment713 PASS/2 skip、Ruff/diffcheck通过。Round12仅一次full read-only复核已封存dispatch（157 paths、900秒），所有历史消费保留。无unresolved blocker及Parent裁决前clean官方安装待执行；visual/formal请求0，真实API credential/current account缺失，qualification INCOMPLETE、production BLOCKED。最新证据及后续安装由 [API record](records/image-api-engineering-2026-09-29.md#current-semantic-field-shape-repair)独占，下方为历史。
+
+## Initial Semantic State Repair — 2026-09-29
+
+Current program6f34adfa…拒绝两image协议未绑定的prefilled初始语义状态，Parent实际ReceiptStore三种Codex及Kimi header负例确认后修正。Fresh offline627 PASS/27 skip、native/fake+containment652 PASS/2 skip、focused188 PASS、Ruff/diffcheck通过。仅一次round11 full read-only native复核已封存dispatch（156 paths、900秒、全部历史保留）；有效复核/Parent裁决前final clean官方安装待执行。Actualvisual/formal请求0、真实API credential/current account缺失，qualification INCOMPLETE、production BLOCKED。最新证据及后续安装由 [API record](records/image-api-engineering-2026-09-29.md#current-initial-semantic-state-repair) 独占，下方为历史。
+
+## Typed Semantic Repair — 2026-09-29
+
+Current program02325a8d…按SSE/JSON part type选择实际语义字段，Parent确认并修复NR005 signature/text part附加thinking污染。Fresh offline615 PASS/27 skip、native/fake+containment640 PASS/2 skip、focused72 PASS、Ruff/diffcheck通过。仅一次round10 full read-only native review已封存dispatch（156 paths、900秒、全部历史保留）；final clean官方安装仍待有效复核/Parent裁决。Visual/formal请求0，缺独立API credential/current account，qualification INCOMPLETE，production BLOCKED。最新证据与后续安装事实由 [API record](records/image-api-engineering-2026-09-29.md#current-typed-semantic-repair) 独占，下方为历史。
+
+## Protocol Payload Repair — 2026-09-29
+
+Current program682a311c…修复NR005 Kimi block关联与aux同名字段污染，真实ReceiptStore否定测试确认后转绿。Fresh offline609 PASS/27 skip、native/fake+containment634 PASS/2 skip、Ruff/diffcheck通过；一次有限round9 full native复核已封存dispatch，全部Kimi/native历史保留。Final clean官方安装仍待有效复核及Parent裁决，既有dirty安装不作验收。Actualvisual/formal请求0，缺独立API credential/current account，资格INCOMPLETE、production BLOCKED。Exact snapshots、失败与最新安装事实由 [API record](records/image-api-engineering-2026-09-29.md#current-protocol-payload-repair) 独占；下方状态均为较早历史。
+
+## Interleaved Response Repair — 2026-09-29
+
+权限实际恢复；round6在164/164未漂移snapshot上发现NR-IMAGE-005/006/007，Parent以5个实际red失败确认并修复reasoning stream/terminal、Kimi native/upstream文本绑定及HTTP失败metadata-only。Current program a9adad18…；fresh串行offline597 PASS/27 skip、native/fake+containment622 PASS/2 skip、Ruff/diffcheck通过。初次并行时序失败仍保留，无业务断言/timeout放宽。
+
+按已有任务内授权Self-Review，仅一次round7/wall900s full native re-review已dispatch，旧Kimi/native/无报告round5历史不重置。Review/Parent裁决尚待完成；official final installation未执行，旧dirty登记不作clean验收。视觉/正式资格及生产仍INCOMPLETE/BLOCKED；最新exact snapshots、验证及后续安装状态由 [API record](records/image-api-engineering-2026-09-29.md#current-interleaved-response-repair) 独占，下文较早状态均为历史。
+
 ## Native Fallback and Review Escalation — 2026-09-29
 
 用户新指令已落实至global详细routing owner及thin pointers，并真实使用一个named native reviewer接手两次失败的Kimi工程审查，无第三次Kimi调用。Native三轮推动修正credential/response/native/delivery/seal缺陷；最后NR-IMAGE-005分段通路修正后fresh offline576 PASS/27 skip、native/fake+containment601 PASS/2 skip、ruff/diffcheck通过，programSHA12271d7f…。
