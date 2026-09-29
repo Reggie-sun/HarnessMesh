@@ -1,5 +1,11 @@
 # Implementation Status
 
+## Current MiniMax and GPT Installation — 2026-09-29
+
+MiniMax显式image工程路线已实现并通过full round17、isolated typed修复/targeted round18与Parent裁决；fresh offline807 PASS、native/fake+containment831 PASS、Ruff/diffcheck通过。Clean `69f9a7d`已官方安装，68-source program `527a80ee…`，source_dirty_at_install=false；installed MiniMax/GPT各自14项实际OS检查、完整八图native/fake receipts及清理验证成立。后续未调用Kimi，旧历史不重写。
+
+应用已有MiniMax Key已只读核实；额度/成本/safe handoff/canonical预算及GPT实际受管视觉条件仍缺，真实visual/formal请求0、资格INCOMPLETE、source semantic NOT_EVALUATED、production BLOCKED。工程证明不代表视觉或生产资格，现行手动覆盖不变。当前exact receipts、安装身份、actual payload与真实阻碍由[API record](records/image-api-engineering-2026-09-29.md#current-minimax-and-gpt-engineering-installation)独占；下方为历史。
+
 ## Current Engineering Installation — 2026-09-29
 
 Image/API工程修复已通过latest完整required native review及Parent裁决，无unresolved engineering finding。Clean source commit `1f0c11d`已由官方installation owner安装；66-source program `33e45127…`、package `e89dbd60…`、manifest `bde87fae…`，source_dirty_at_install=false，entry/Skill/源码及原default sandbox完整性核验成立。

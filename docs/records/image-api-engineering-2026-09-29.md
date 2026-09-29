@@ -1,5 +1,28 @@
 # Image API Engineering Record
 
+## Current MiniMax and GPT Engineering Installation
+
+2026-09-29 用户已选择MiniMax/GPT并禁止后续Kimi调用。新增显式 `minimax / MiniMax-M3 / responses-bounded / provider-default`，经固定Python runner、sealed完整有序PNG、fresh context、禁工具、store/stream=false、generation≤2048及原Docker relay执行；唯一上游为应用保存的 `api.minimaxi.com/v1/responses`，不静默改到文档当前cn地址。复用原Responses broker、credential、ReceiptStore、secret quarantine及cleanup owners，不伪造Codex thread/turn或MiniMax cap echo，不改旧project工具合同。
+
+新分支round16用完900秒未取得terminal full report，记录INCOMPLETE且不取得full clearance；Parent确认并修复NR-MINIMAX-001的filtered artifact误作原始wire问题。Round17完整critical scope401.28秒、193/193一致，仅剩non-blocking NR-MINIMAX-002。Parent真实false→0否定测试失败后使用canonical JSON typed比较修复；按acceptance owner明确有限例外，round18定向111.76秒、211/211一致、finding set为空。两轮原预算已耗尽及一次例外均保留，历史Kimi2/native1–15不重置；实际authenticated reviewer provider/model/cost为null，native报告不是Provider receipt。Parent核对red-green及完整工程证据后裁决无unresolved engineering finding。
+
+Fresh focused68 PASS、offline807 PASS/28 skip、native/fake+containment831 PASS/4 skip，Ruff/diffcheck exit0；144项source/test/script/Skill绑定前后一致。四个skip为未启用历史Kimi image、旧Codex diagnostic及两个Gemini环境条件，本次MiniMax/GPT实际container pair均执行。原失败/import/observer脚本tuple错误记录保留，不作为视觉资格结果。Clean source commit `69f9a7d126366ccb0b32e948eb3307e76f373de4`已通过官方installer安装，source_dirty_at_install=false；68-source program `527a80ee30afe2c90df58396119bc58e8053c4d70be61ce18fef02845198a8eb`，package `28bc6ad7ee5f72c9f0058a65fcd4aef3811cad084ef2f709f4ecf7238d483a20`，manifest `5e87c15eee471700a8818de49c83bfcf46d3dd74b90283c3181bf97f63faaf6f`。原entry interpreter、default config及旧package/receipts保留，未手工替换installed源码。
+
+Installed CLI以六份exact refs、两个独立private state封存随机八图并运行native-only conformance：
+
+| Backend | Owned probe | OS conformance | Linked native invocation |
+| --- | --- | --- | --- |
+| MiniMax | `5c1a7731-f22a-4e32-b131-8726ff53996c` | `6a4b72b5-ed2c-4ae0-a462-178c67ec9e23` | `aaabea73-c901-41fa-9980-6526c254fbb6` |
+| GPT/Codex | `525ef53b-cafc-4a7d-abe8-749557006903` | `3e7847a9-bbf1-46c3-a205-be15c60a16ea` | `7efe2c7c-eddd-4ef9-8a25-694e3877149f` |
+
+两条canonical receipts均ENGINEERING_CONFORMANCE_COMPLETE、14/14实际OS checks=true；linked native均ENGINEERING_NATIVE_COMPLETE、fake wire1、container_removed=true。Parent用installed ReceiptStore/read_probe/verify_image_seal/image_runtime重新核验原artifacts、完整有序图片、六refs、source/Skill/entry和current pins，全部成立。Owned probe没有Jianji holdout/truth；source=None，无project/global auth/host home mount。这是实际隔离运行与fake upstream证明，真实视觉能力仍NOT_EVALUATED。
+
+应用MiniMax credential已存在；只读官方账号GET两次HTTP200及原api.minimaxi.com:443 TLS1.3/证书hostname观察成立，但前者未识别M3额度/API余额，后者没有HTTP或视觉内容。账号观察不是canonical预算；次数2已用完，未盲目重试。当前actual mapped八图payload已独立冻结到archive的`actual-payload-preparation.json`，MiniMax5958 bytes、GPT7526 bytes，generation2048；新input token/cost上界及authenticated credit仍null，classification=AWAITING_AUTHENTICATED_ACCOUNT_AND_ACCOUNTING，不能转成AUTHORIZED receipt。
+
+真实blocker是MiniMax-M3可核验额度/计费类别、safe credential handoff及accounting/canonical预算，以及GPT独立API credential/account或真正满足原hard cap的订阅视觉路线；软件连接正常不提供这些资格证明。MiniMax live仍硬拒绝IMAGE_MINIMAX_BUDGET_NOT_AUTHORIZED，付费授权0；GPT原一次/USD1上限不变、formal0、无retry/fallback/provider切换。Raw/mapping/joint/correspondence/可信issuer的正式执行条件尚未满足，model visual/formal请求0、semantic指标null/NOT_EVALUATED、authority=none/eligible=false，M5-D2A INCOMPLETE及production BLOCKED。
+
+本checkpoint归档为 `~/.local/state/agent-subagent-router/minimax-engineering-20260929`；旧sealed archives与历史结果不改。Router没有AOCI受管理对象/配置，不新建索引或伪称router AOCI验收；Jianji对应helper的官方增量维护由其原owner执行。专用capture skill不适用，本record及原implementation-status/plan承接。下方所有current/pending安装标题均为较早历史。
+
 ## Current Engineering Installation and Live Readiness
 
 2026-09-29 已完成本任务工程安装，受控视觉资格仍INCOMPLETE。Parent先保留round12/13/14全部失败与partial/full范围，再真实修复NR005的reasoning字段shape、string item身份与未验证native input先落盘。Round13实际提前结束170.423秒、无full clearance；round14完整scope672.329秒发现native-input capture最后触发；Parent实际ReceiptStore分别17 failed/3 passed、3 failed确认后修正。未重写原3份accepted Specs、旧receipts或Kimi两次OUTCOME_UNKNOWN，未追加第三次Kimi请求。
