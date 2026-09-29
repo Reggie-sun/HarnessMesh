@@ -1,7 +1,8 @@
 """Mechanical endpoint declarations, never a model's self-description."""
 import re
 
-from ..contracts import RouterError, strict_json
+from ..contracts import RouterError, hash_bytes, strict_json
+from ..receipts import redact_known_secrets
 
 
 def validate_request(profile, body: dict, *, allowed_tools=()):
@@ -25,7 +26,8 @@ def _identifier(value):
     return isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_.:-]{1,160}', value)
 
 
-def validate_response(profile, headers: dict, body: bytes, *, allow_tools=True) -> dict:
+def validate_response(profile, headers: dict, body: bytes, *, allow_tools=True, secrets=()) -> dict:
+    text_parts = []
     is_stream = 'text/event-stream' in headers.get('content-type', '')
     if is_stream:
         starts = []
@@ -45,6 +47,14 @@ def validate_response(profile, headers: dict, body: bytes, *, allow_tools=True) 
                 raise RouterError('IDENTITY_UNVERIFIED', 'content precedes identity')
             if event.get('type') == 'error':
                 raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+            if event.get('type') == 'content_block_start':
+                part = event.get('content_block', {})
+                if part.get('type') == 'text' and isinstance(part.get('text'), str):
+                    text_parts.append(part['text'])
+            if event.get('type') == 'content_block_delta':
+                delta = event.get('delta', {})
+                if delta.get('type') == 'text_delta' and isinstance(delta.get('text'), str):
+                    text_parts.append(delta['text'])
             if (not allow_tools and event.get('type') == 'content_block_start'
                     and event.get('content_block', {}).get('type') in ('tool_use', 'server_tool_use')):
                 raise RouterError('TOOL_POLICY_VIOLATION', 'reporting request cannot call tools')
@@ -63,6 +73,11 @@ def validate_response(profile, headers: dict, body: bytes, *, allow_tools=True) 
         message = strict_json(body)
     if not isinstance(message, dict) or not message.get('model'):
         raise RouterError('IDENTITY_UNVERIFIED', 'response model absent')
+    text_parts[:0] = [part['text'] for part in message.get('content', [])
+                     if isinstance(part, dict) and part.get('type') == 'text' and isinstance(part.get('text'), str)]
+    _, reflected = redact_known_secrets(''.join(text_parts).encode(), secrets)
+    if reflected:
+        raise RouterError('UPSTREAM_SECRET_REFLECTION')
     if message['model'] != profile.wire_model:
         raise RouterError('ROUTE_MISMATCH', 'upstream response model')
     if message.get('stop_reason') == 'max_tokens':
@@ -78,6 +93,7 @@ def validate_response(profile, headers: dict, body: bytes, *, allow_tools=True) 
         raise RouterError('UPSTREAM_PROTOCOL_ERROR')
     return {'classification': 'IDENTITY_VERIFIED', 'response_model': message['model'],
             'upstream_request_id': request_id, 'message_id': message['id'],
+            'response_output_sha256': hash_bytes(''.join(text_parts).encode()),
             'usage': {k: v for k, v in usage.items() if k in
                       ('input_tokens', 'output_tokens', 'cache_creation_input_tokens',
                        'cache_read_input_tokens') and type(v) is int and v >= 0},

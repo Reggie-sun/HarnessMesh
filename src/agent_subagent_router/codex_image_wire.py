@@ -7,7 +7,7 @@ import uuid
 
 from .adapters.image_claude import visible_text
 from .contracts import RouterError, canonical_bytes, hash_bytes, strict_json
-from .image_contract import ImageTaskContract, read_png
+from .image_contract import ImageTaskContract, _validate_png_bytes
 
 
 WIRE_VERSION = "codex-image-api-cap/v1"
@@ -156,9 +156,7 @@ def _validate_native_request(task, body):
             data = base64.b64decode(item["image_url"].partition(",")[2], validate=True)
         except (ValueError, TypeError, binascii.Error):
             _fail("IMAGE_BINDING_MISMATCH")
-        if (len(data) != descriptor["byte_length"] or hash_bytes(data) != descriptor["sha256"]
-                or read_png(descriptor) != data):
-            _fail("IMAGE_BINDING_MISMATCH")
+        _validate_png_bytes(data, descriptor)
         image_proof.append({
             key: descriptor[key]
             for key in ("image_id", "byte_length", "sha256", "width", "height")
@@ -207,6 +205,20 @@ def _response_id(value):
     return value
 
 
+def _validate_reasoning_fields(item):
+    """Use the same semantic shapes for initial, done and terminal items."""
+    summary, content = item.get('summary'), item.get('content')
+    if (not isinstance(summary, list) or any(
+            not isinstance(part, dict) or part.get('type') != 'summary_text'
+            or not isinstance(part.get('text'), str) for part in summary)
+            or (content is not None and (not isinstance(content, list) or any(
+                not isinstance(part, dict) or part.get('type') != 'reasoning_text'
+                or not isinstance(part.get('text'), str) for part in content)))
+            or (item.get('encrypted_content') is not None
+                and not isinstance(item['encrypted_content'], str))):
+        _fail('UPSTREAM_PROTOCOL_ERROR')
+
+
 def _validate_response_object(task, response, request_id, response_id=None):
     if type(response) is not dict:
         _fail("UPSTREAM_PROTOCOL_ERROR")
@@ -235,7 +247,10 @@ def _validate_response_object(task, response, request_id, response_id=None):
     for item in output:
         if type(item) is not dict:
             _fail("UPSTREAM_PROTOCOL_ERROR")
+        if not isinstance(item.get('id'), str) or not item['id']:
+            _fail('IDENTITY_UNVERIFIED')
         if item.get("type") == "reasoning":
+            _validate_reasoning_fields(item)
             continue
         if (item.get("type") != "message" or item.get("role") != "assistant"
                 or item.get("status") not in (None, "completed")):
@@ -293,6 +308,94 @@ def _parse_sse(data):
     return events
 
 
+def _validate_sse_output(events, output):
+    """Bind every message delta/done/item to the authenticated terminal item."""
+    opened, finished, parts, done = set(), set(), {}, set()
+    summaries, summary_done = {}, set()
+    for event in events:
+        kind = event['type']
+        if kind in ('response.reasoning_summary_text.delta', 'response.reasoning_summary_text.done'):
+            index, summary_index = event.get('output_index'), event.get('summary_index')
+            if (type(index) is not int or not 0 <= index < len(output)
+                    or index not in opened or index in finished):
+                _fail('UPSTREAM_PROTOCOL_ERROR')
+            item = output[index]
+            summary = item.get('summary')
+            if (item['type'] != 'reasoning' or event.get('item_id') != item.get('id')
+                    or type(summary) is not list or type(summary_index) is not int
+                    or not 0 <= summary_index < len(summary)):
+                _fail('IDENTITY_UNVERIFIED')
+            expected = summary[summary_index]
+            position = (index, summary_index)
+            if (not isinstance(expected, dict) or expected.get('type') != 'summary_text'
+                    or not isinstance(expected.get('text'), str) or position in summary_done):
+                _fail('UPSTREAM_PROTOCOL_ERROR')
+            if kind.endswith('.delta'):
+                summaries[position] = summaries.get(position, '') + event['delta']
+            elif event['text'] != summaries.get(position, '') or event['text'] != expected['text']:
+                _fail('UPSTREAM_PROTOCOL_ERROR')
+            else:
+                summary_done.add(position)
+            continue
+        if kind not in ('response.output_item.added', 'response.output_item.done',
+                        'response.content_part.added', 'response.content_part.done',
+                        'response.output_text.delta', 'response.output_text.done'):
+            continue
+        index = event.get('output_index')
+        if type(index) is not int or not 0 <= index < len(output):
+            _fail('UPSTREAM_PROTOCOL_ERROR')
+        item = output[index]
+        if kind.startswith('response.output_item.'):
+            actual = event['item']
+            if actual.get('id') != item.get('id') or actual.get('type') != item.get('type'):
+                _fail('IDENTITY_UNVERIFIED')
+            if kind.endswith('.added'):
+                if index in opened or index in finished:
+                    _fail('UPSTREAM_PROTOCOL_ERROR')
+                opened.add(index)
+                if item['type'] == 'message' and (
+                        actual.get('content') != [] or actual.get('status') != 'in_progress'):
+                    _fail('UPSTREAM_PROTOCOL_ERROR')
+                if item['type'] == 'reasoning' and (actual.get('summary') != []
+                        or actual.get('content') not in (None, [])):
+                    _fail('UPSTREAM_PROTOCOL_ERROR')
+            else:
+                if index not in opened or index in finished or actual != item:
+                    _fail('UPSTREAM_PROTOCOL_ERROR')
+                if item['type'] == 'message' and any(
+                        (index, p) not in done for p in range(len(item['content']))):
+                    _fail('UPSTREAM_PROTOCOL_ERROR')
+                finished.add(index)
+            continue
+        part_index = event.get('content_index')
+        if (item['type'] != 'message' or index not in opened or index in finished
+                or event.get('item_id') != item.get('id') or type(part_index) is not int
+                or not 0 <= part_index < len(item['content'])):
+            _fail('IDENTITY_UNVERIFIED')
+        position = (index, part_index)
+        expected = item['content'][part_index]
+        if kind == 'response.content_part.added':
+            if position in parts or dict(event['part'], text=expected['text']) != expected or event['part'].get('text') != '':
+                _fail('UPSTREAM_PROTOCOL_ERROR')
+            parts[position] = ''
+        elif kind == 'response.output_text.delta':
+            if position not in parts or position in done:
+                _fail('UPSTREAM_PROTOCOL_ERROR')
+            parts[position] += event['delta']
+        elif kind == 'response.output_text.done':
+            if (position not in parts or position in done or event['text'] != parts[position]
+                    or event['text'] != expected['text']):
+                _fail('UPSTREAM_PROTOCOL_ERROR')
+            done.add(position)
+        elif position not in done or event['part'] != expected:
+            _fail('UPSTREAM_PROTOCOL_ERROR')
+    for index, item in enumerate(output):
+        if (item['type'] == 'message' or index in opened) and index not in finished:
+            _fail('UPSTREAM_PROTOCOL_ERROR')
+    if any(position not in summary_done or position[0] not in finished for position in summaries):
+        _fail('UPSTREAM_PROTOCOL_ERROR')
+
+
 def _sse_response(task, data, request_id):
     events = _parse_sse(data)
     if events[0].get("type") != "response.created" or events[-1].get("type") != "response.completed":
@@ -334,6 +437,8 @@ def _sse_response(task, data, request_id):
                 created = True
             elif kind == "response.in_progress" and response.get("status") != "in_progress":
                 _fail("IDENTITY_UNVERIFIED")
+            if kind in ("response.created", "response.in_progress") and response.get("output") != []:
+                _fail("UPSTREAM_PROTOCOL_ERROR")
             if kind == "response.completed":
                 for item in response.get("output", []) if isinstance(response.get("output"), list) else []:
                     if isinstance(item, dict) and isinstance(item.get("id"), str):
@@ -359,6 +464,10 @@ def _sse_response(task, data, request_id):
             item = event.get("item")
             if type(item) is not dict or item.get("type") not in ("reasoning", "message"):
                 _fail("TOOL_POLICY_VIOLATION")
+            if not isinstance(item.get('id'), str) or not item['id']:
+                _fail('IDENTITY_UNVERIFIED')
+            if item['type'] == 'reasoning':
+                _validate_reasoning_fields(item)
             if item.get("type") == "message" and item.get("role") != "assistant":
                 _fail("TOOL_POLICY_VIOLATION")
         elif kind in ("response.content_part.added", "response.content_part.done"):
@@ -372,6 +481,7 @@ def _sse_response(task, data, request_id):
     if not terminal or response_id is None:
         _fail("IDENTITY_UNVERIFIED")
     result = _validate_response_object(task, events[-1]["response"], request_id, response_id)
+    _validate_sse_output(events, events[-1]['response']['output'])
     if item_ids:
         valid_item_ids = {
             item.get("id") for item in events[-1]["response"].get("output", [])

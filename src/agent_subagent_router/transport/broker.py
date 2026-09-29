@@ -19,6 +19,7 @@ from ..receipts import redact
 from .budget import reporting_request
 from .diagnostics import UpstreamFailure, failure_diagnostic
 from .identity import validate_request, validate_response
+from .response_secrets import validate_response_secrets
 
 
 class _BoundedHandlers:
@@ -147,6 +148,7 @@ class Broker:
         self._active = True
         self._inflight = False
         self._lock = threading.Lock()
+        self._delivery_lock = threading.RLock()
         self._last_activity = time.monotonic()
         self._upstream = upstream if upstream is not None else KimiUpstream(
             wall_seconds, on_activity=self._record_activity)
@@ -168,6 +170,15 @@ class Broker:
                 self.connection.settimeout(min(wall_seconds, 10))
 
             def reply(self, status, data, content_type='application/json'):
+                if status == 200:
+                    with broker._delivery_lock:
+                        with broker._lock:
+                            if not broker._active or time.monotonic() >= broker._deadline:
+                                raise RouterError('OUTCOME_UNKNOWN', 'revoked before delivery')
+                        return self.write_reply(status, data, content_type)
+                return self.write_reply(status, data, content_type)
+
+            def write_reply(self, status, data, content_type):
                 try:
                     self.send_response(status)
                     self.send_header('Content-Type', content_type)
@@ -309,36 +320,43 @@ class Broker:
                         on_exchange('request', raw)
                     observation['wire_started'] = True
                     status, upstream_headers, data = broker._upstream(self.path, headers, raw)
-                    if on_exchange is not None:
-                        on_exchange('response', data)
                     phase = 'RESPONSE_VALIDATION'
                     observation['http_status'] = status
-                    if status != 200:
-                        try:
-                            error = strict_json(data).get('error', {})
-                            if isinstance(error, dict):
-                                diagnostic = {key: value for key in ('type', 'code', 'message')
-                                              if isinstance(value := error.get(key), str)}
-                                # Redact before truncation so partial secrets cannot escape.
-                                safe, _ = redact(canonical_bytes(diagnostic),
-                                    (broker._credential.encode(), broker.capability.encode()))
-                                observation['upstream_error'] = {
-                                    key: value[:1024] for key, value in strict_json(safe).items()}
-                        except (RouterError, AttributeError):
-                            pass
+                    try:
+                        response_secrets = (broker._credential.encode(), broker.capability.encode())
+                        if status == 200:
+                            validate_response_secrets(upstream_headers, data, response_secrets)
+                            identity = validate_response(broker.profile, upstream_headers, data,
+                                allow_tools=allow_response_tools and observation.get('budget_phase') != 'FINAL_REPORT',
+                                secrets=response_secrets)
+                            safe, reflected = redact(canonical_bytes(identity), response_secrets)
+                            if reflected:
+                                raise RouterError('UPSTREAM_SECRET_REFLECTION')
+                            response_proof = response_validator(upstream_headers, data) if response_validator else {}
+                            if (generation_tokens is not None
+                                    and identity['usage'].get('output_tokens', 0) > body['max_tokens']):
+                                raise RouterError('UPSTREAM_GENERATION_LIMIT')
+                    except RouterError as exc:
+                        if on_exchange is not None:
+                            on_exchange('response-quarantined', canonical_bytes({
+                                'classification': exc.code, 'sha256': hashlib.sha256(data).hexdigest(),
+                                'byte_length': len(data)}))
+                        raise
+                    if on_exchange is not None:
+                        if status == 200:
+                            on_exchange('response', data)
+                        else:
+                            on_exchange('response-quarantined', canonical_bytes({
+                                'classification': 'UPSTREAM_HTTP_ERROR', 'sha256': hashlib.sha256(data).hexdigest(),
+                                'byte_length': len(data)}))
                     if 300 <= status < 400:
                         raise RouterError('UPSTREAM_REDIRECT')
                     if status in (401, 403):
                         raise RouterError('CREDENTIAL_OR_ENTITLEMENT_REJECTED')
                     if status != 200:
                         raise RouterError('UPSTREAM_HTTP_ERROR')
-                    observation.update(validate_response(broker.profile, upstream_headers, data,
-                        allow_tools=allow_response_tools and observation.get('budget_phase') != 'FINAL_REPORT'))
-                    if response_validator is not None:
-                        observation.update(response_validator(upstream_headers, data))
-                    if (generation_tokens is not None
-                            and observation['usage'].get('output_tokens', 0) > body['max_tokens']):
-                        raise RouterError('UPSTREAM_GENERATION_LIMIT')
+                    observation.update(strict_json(safe))
+                    observation.update(response_proof)
                     observation['proof'] = broker._proof
                     with broker._lock:
                         active = broker._active and time.monotonic() < broker._deadline
@@ -352,7 +370,7 @@ class Broker:
                         observation['transport_error'] = exc.diagnostic
                         if exc.http_status is not None:
                             observation['http_status'] = exc.http_status
-                    if exc.code == 'UPSTREAM_GENERATION_LIMIT' or response_validator is not None:
+                    if exc.code in ('UPSTREAM_GENERATION_LIMIT', 'UPSTREAM_SECRET_REFLECTION') or response_validator is not None:
                         broker.revoke()
                     self.reply(502, canonical_bytes({'error': exc.code}))
                 except Exception as exc:
@@ -416,15 +434,18 @@ class Broker:
     def observations(self):
         with self._lock:
             source = self._frozen_observations if self._frozen_observations is not None else self._observations
-            return json.loads(json.dumps(source))
+            data, _ = redact(canonical_bytes(source),
+                             (self._credential.encode(), self.capability.encode()))
+            return strict_json(data)
 
     def __enter__(self):
         self._thread.start()
         return self
 
     def revoke(self):
-        with self._lock:
-            self._active = False
+        with self._delivery_lock:
+            with self._lock:
+                self._active = False
         if hasattr(self._upstream, 'close'):
             self._upstream.close()
 

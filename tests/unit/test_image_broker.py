@@ -65,7 +65,7 @@ def test_image_guard_zero_wire_rejection_and_no_tools(tool_response):
         assert sent == [] and broker.observations == []
         assert post(broker, body) == (502 if tool_response else 200)
         assert len(sent) == 1
-    assert [x[0] for x in exchanges] == ["request", "response"]
+    assert [x[0] for x in exchanges] == ["request", "response-quarantined" if tool_response else "response"]
     assert broker.observations[0]["classification"] == (
         "TOOL_POLICY_VIOLATION" if tool_response else "IDENTITY_VERIFIED"
     )

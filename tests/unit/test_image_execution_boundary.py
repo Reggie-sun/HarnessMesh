@@ -95,3 +95,59 @@ def test_native_summary_preserves_sealed_user_images_and_matching_output(tmp_pat
     user['content'][1]['url'] = user['content'][2]['url']
     with pytest.raises(RouterError, match='IMAGE_BINDING_MISMATCH'):
         decode_image_codex(canonical_bytes(data), 10000, task=task)
+
+
+@pytest.mark.parametrize('matching', [True, False])
+@pytest.mark.parametrize('upstream_classification', ['IDENTITY_VERIFIED', 'UPSTREAM_SECRET_REFLECTION'])
+@pytest.mark.parametrize('contaminated', [False, True])
+def test_native_output_must_match_authenticated_response_text(tmp_path, monkeypatch, matching, upstream_classification, contaminated):
+    import base64
+    from types import SimpleNamespace
+    from test_codex_image_wire import request_fixture
+    from agent_subagent_router import image_run
+    from agent_subagent_router.adapters.image_claude import visible_text
+    from agent_subagent_router.contracts import hash_bytes
+    from agent_subagent_router.receipts import ReceiptStore
+    from agent_subagent_router.transport import codex_broker
+    task, _, pngs = request_fixture(tmp_path)
+    data = native_result()
+    model_text = '{"frames":["sk-offline-image-test-only"]}' if contaminated else '{"frames":[]}'
+    data['rpc'][2]['params']['item']['text'] = model_text
+    user = {'type': 'userMessage', 'id': 'native-user', 'clientId': None,
+        'content': [{'type': 'text', 'text': visible_text(task), 'text_elements': []}] + [
+            {'type': 'image', 'detail': 'high', 'url': 'data:image/png;base64,'+base64.b64encode(raw).decode()}
+            for raw in pngs]}
+    data['rpc'].insert(2, {'method': 'item/completed', 'params': {
+        'threadId': 'thread-1', 'turnId': 'turn-1', 'item': user}})
+    class FakeBroker:
+        capability = 'synthetic-capability'
+        rejections = []
+        observations = [{'classification': upstream_classification, 'wire_started': True,
+            'wire_proof': {'thread_id': 'thread-1', 'turn_id': 'turn-1'},
+            'response_output_sha256': hash_bytes(model_text.encode() if matching else b'{"frames":[1]}')}]
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def revoke(self): pass
+        def last_activity(self): return 0
+    class FakeSandbox:
+        def execute(self, *a, **k):
+            assert k['source'] is None
+            return SimpleNamespace(stdout=canonical_bytes(data), stderr=b'', reason='exited',
+                                   exit_code=0, truncated=False, duration_seconds=0)
+    sealed = {'task': task, 'pins': {}, 'images': [{'blob_path': x['path']} for x in task['images']]}
+    manifest = tmp_path/'manifest.json'
+    manifest.write_bytes(canonical_bytes(sealed))
+    monkeypatch.setattr(image_run, 'verify_image_seal', lambda _: sealed)
+    monkeypatch.setattr(image_run, 'image_runtime', lambda *a: (FakeSandbox(), {}))
+    monkeypatch.setattr(codex_broker, 'CodexBroker', FakeBroker)
+    store = ReceiptStore(tmp_path/'runs')
+    receipt = image_run.run_image_contract(manifest, store, sandbox_config=tmp_path/'config',
+                                          upstream=lambda *a: None)
+    expected = ('IMAGE_NATIVE_EXECUTION_INCOMPLETE' if upstream_classification != 'IDENTITY_VERIFIED'
+                else 'IMAGE_NATIVE_ASSOCIATION_MISMATCH' if not matching
+                else 'UPSTREAM_SECRET_REFLECTION' if contaminated else 'ENGINEERING_NATIVE_COMPLETE')
+    assert receipt['classification'] == expected
+    if expected != 'ENGINEERING_NATIVE_COMPLETE':
+        assert all(x['path'] not in ('model-raw.json', 'model-canonical.json') for x in receipt['artifacts'])
+    assert receipt['authority'] == 'none' and receipt['eligible'] is False

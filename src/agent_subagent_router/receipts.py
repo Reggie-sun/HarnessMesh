@@ -44,13 +44,29 @@ def atomic_json(path: Path, value: dict, *, exclusive: bool = True):
         Path(temporary).unlink(missing_ok=True)
 
 
-def redact(data: bytes, secrets=()) -> tuple[bytes, int]:
+def redact_known_secrets(data: bytes, secrets=()) -> tuple[bytes, int]:
     count = 0
     for secret in sorted(set(secrets), key=len, reverse=True):
         if not secret:
             continue
         count += data.count(secret)
         data = data.replace(secret, b'[REDACTED]')
+        # JSON/SSE strings can legally spell a known ASCII key with Unicode escapes.
+        if secret.isascii() and b'\\u' in data:
+            parts = []
+            for value in secret:
+                digits = f'{value:04x}'.encode()
+                escaped = b'\\\\u' + b''.join(
+                    b'[' + bytes([c, c - 32]) + b']' if 97 <= c <= 102 else bytes([c])
+                    for c in digits)
+                parts.append(b'(?:' + re.escape(bytes([value])) + b'|' + escaped + b')')
+            data, encoded = re.subn(b''.join(parts), b'[REDACTED]', data)
+            count += encoded
+    return data, count
+
+
+def redact(data: bytes, secrets=()) -> tuple[bytes, int]:
+    data, count = redact_known_secrets(data, secrets)
     data, generic = re.subn(rb'(?i)(authorization["\s:]+(?:bearer\s+)?)[^\s"\\]+',
                             rb'\1[REDACTED]', data)
     return data, count+generic

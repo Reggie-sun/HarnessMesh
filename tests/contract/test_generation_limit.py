@@ -17,7 +17,7 @@ def test_wire_generation_cap_preserves_model_and_effort(requested, expected):
     def upstream(path, headers, raw):
         sent.append(json.loads(raw))
         return 200, {}, response()
-    with Broker(profile('worker'), 'fake', request_limit=2, wall_seconds=30,
+    with Broker(profile('worker'), 'generation-key-sentinel', request_limit=2, wall_seconds=30,
                 upstream=upstream, generation_tokens=4096) as broker:
         payload = adaptive_body(requested)
         assert post(broker, payload)[0] == 200
@@ -43,7 +43,7 @@ def test_truncated_generation_never_delivered_or_continued(stream):
     def upstream(*args):
         sent.append(args)
         return 200, headers, raw
-    with Broker(profile('worker'), 'fake', request_limit=4, wall_seconds=30,
+    with Broker(profile('worker'), 'generation-key-sentinel', request_limit=4, wall_seconds=30,
                 upstream=upstream, generation_tokens=4096) as broker:
         status, data = post(broker, adaptive_body())
         assert status == 502 and b'UPSTREAM_GENERATION_LIMIT' in data
@@ -76,7 +76,7 @@ def test_upstream_cannot_claim_usage_above_cap_and_still_deliver():
     def upstream(*args):
         sent.append(args)
         return 200, {}, json.dumps(message).encode()
-    with Broker(profile('worker'), 'fake', request_limit=3, wall_seconds=30,
+    with Broker(profile('worker'), 'generation-key-sentinel', request_limit=3, wall_seconds=30,
                 upstream=upstream, generation_tokens=4096) as broker:
         status, data = post(broker, adaptive_body())
         assert status == 502 and b'UPSTREAM_GENERATION_LIMIT' in data

@@ -176,6 +176,17 @@ def require_native_generation_bound(body: dict, maximum: int) -> int:
     return cap
 
 
+def _validate_semantic_block(block):
+    if not isinstance(block, dict):
+        raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+    fields = {'text': ('text',), 'thinking': ('thinking',), 'redacted_thinking': ('data',)}
+    required = fields.get(block.get('type'))
+    if required is None or any(not isinstance(block.get(field), str) for field in required):
+        raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+    if block['type'] == 'thinking' and 'signature' in block and not isinstance(block['signature'], str):
+        raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+
+
 def validate_claude_image_response(task, headers, raw):
     from .backends.kimi import profile
     from .transport.identity import validate_response
@@ -186,10 +197,43 @@ def validate_claude_image_response(task, headers, raw):
             data = b'\n'.join(line[5:].lstrip() for line in block.splitlines() if line.startswith(b'data:'))
             if data:
                 events.append(strict_json(data))
+        blocks, closed = {}, set()
+        for event in events:
+            kind = event.get('type')
+            if kind == 'message_start' and event.get('message', {}).get('content') != []:
+                raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+            if kind in ('content_block_start', 'content_block_delta', 'content_block_stop'):
+                index = event.get('index')
+                if type(index) is not int or index < 0:
+                    raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+                if kind == 'content_block_start':
+                    block = event.get('content_block', {})
+                    _validate_semantic_block(block)
+                    if index != len(blocks):
+                        raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+                    blocks[index] = block['type']
+                elif index not in blocks or index in closed:
+                    raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+                elif kind == 'content_block_stop':
+                    closed.add(index)
+                else:
+                    delta = event.get('delta', {})
+                    fields = {'text_delta': ('text', 'text'), 'thinking_delta': ('thinking', 'thinking'),
+                              'signature_delta': ('thinking', 'signature')}
+                    expected = fields.get(delta.get('type'))
+                    if expected is None or blocks[index] != expected[0] or not isinstance(delta.get(expected[1]), str):
+                        raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+        if not events or events[-1].get('type') != 'message_stop' or closed != set(blocks):
+            raise RouterError('UPSTREAM_PROTOCOL_ERROR')
         deltas = [x.get('delta', {}) for x in events if x.get('type') == 'message_delta']
         reason = next((x.get('stop_reason') for x in reversed(deltas) if x.get('stop_reason')), None)
     else:
-        reason = strict_json(raw).get('stop_reason')
+        message = strict_json(raw)
+        if not isinstance(message.get('content'), list):
+            raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+        for block in message['content']:
+            _validate_semantic_block(block)
+        reason = message.get('stop_reason')
     if (reason != 'end_turn' or not {'input_tokens', 'output_tokens'}.issubset(proof['usage'])
             or proof['usage']['output_tokens'] > task['budgets']['generation_tokens']):
         raise RouterError('IMAGE_COMPLETION_UNPROVEN')

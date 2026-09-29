@@ -3,7 +3,23 @@ import os
 import pytest
 
 from agent_subagent_router.contracts import RouterError, hash_bytes
-from agent_subagent_router.receipts import ReceiptStore
+from agent_subagent_router.receipts import ReceiptStore, redact
+
+
+@pytest.mark.parametrize('mode', ['lower', 'upper', 'mixed'])
+def test_known_secret_json_unicode_escapes_are_redacted(tmp_path, mode):
+    secret = b'body-key-SENTINEL'
+    encoded = b''.join((bytes([c]) if mode == 'mixed' and i % 2 else
+                       f'\\u{c:04X}'.encode() if mode == 'upper' else f'\\u{c:04x}'.encode())
+                      for i, c in enumerate(secret))
+    raw = b'{"value":"' + encoded + b'"}'
+    safe, count = redact(raw, (secret,))
+    assert safe == b'{"value":"[REDACTED]"}' and count == 1
+    store = ReceiptStore(tmp_path/'runs')
+    run = store.create('p', 't')
+    artifact = store.artifact(run, 'wire.json', raw, secrets=(secret,))
+    assert (run/'wire.json').read_bytes() == safe
+    assert artifact['representation'] == 'redacted'
 
 
 def test_private_atomic_receipt_and_redacted_hashes(tmp_path):

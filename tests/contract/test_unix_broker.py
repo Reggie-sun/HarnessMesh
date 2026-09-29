@@ -21,7 +21,7 @@ def test_private_unix_broker_has_no_tcp_listener_and_removes_socket(tmp_path):
     assert not path.exists()
 
 
-def test_upstream_rejection_preserves_sanitized_diagnostic():
+def test_upstream_rejection_preserves_status_without_body_diagnostic():
     payload = {'model': 'k3', 'thinking': {'type': 'adaptive'},
                'output_config': {'effort': 'max'}}
     def upstream(*args):
@@ -37,6 +37,8 @@ def test_upstream_rejection_preserves_sanitized_diagnostic():
         response.read()
         conn.close()
     observation = broker.observations[0]
-    assert observation['upstream_error']['type'] == 'permission_error'
-    assert 'plan unavailable' in observation['upstream_error']['message']
+    assert observation['http_status'] == 403
+    assert observation['classification'] == 'CREDENTIAL_OR_ENTITLEMENT_REJECTED'
+    assert 'upstream_error' not in observation
+    assert 'plan unavailable' not in str(observation)
     assert 'SENTINEL-KEY' not in str(observation)

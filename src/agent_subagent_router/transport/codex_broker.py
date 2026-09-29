@@ -22,8 +22,9 @@ from ..codex_image_wire import (
 )
 from ..contracts import RouterError, canonical_bytes, hash_bytes, strict_json
 from ..image_contract import ImageTaskContract
-from ..receipts import redact
+from ..receipts import redact, redact_known_secrets
 from .broker import _BoundedHandlers
+from .response_secrets import validate_response_secrets
 
 
 _ENDPOINT_PATH = "/v1/responses"
@@ -363,11 +364,15 @@ class CodexBroker:
     def _forward(self, raw):
         if not isinstance(raw, bytes) or not raw or len(raw) > self._payload_limit:
             raise RouterError("IMAGE_PAYLOAD_LIMIT")
-        body = strict_json(raw)
-        if type(body) is not dict:
-            raise RouterError("IMAGE_PROJECTION_MISMATCH")
-        self._exchange("native-request", raw)
-        actual, proof = map_codex_image_request(self.task, body)
+        try:
+            body = strict_json(raw)
+            if type(body) is not dict:
+                raise RouterError("IMAGE_PROJECTION_MISMATCH")
+            actual, proof = map_codex_image_request(self.task, body)
+        except RouterError as exc:
+            self._exchange('native-request-quarantined', canonical_bytes({
+                'classification': exc.code, 'sha256': hash_bytes(raw), 'byte_length': len(raw)}))
+            raise
         if len(actual) > self._payload_limit:
             raise RouterError("IMAGE_PAYLOAD_LIMIT")
         with self._lock:
@@ -405,6 +410,7 @@ class CodexBroker:
             with self._lock:
                 if not self._active or time.monotonic() >= self._deadline:
                     raise RouterError("CAPABILITY_REVOKED")
+            self._exchange("native-request", raw)
             self._exchange("request", actual)
             upstream_headers = {
                 "Authorization": "Bearer " + self._credential,
@@ -421,7 +427,24 @@ class CodexBroker:
             observation["http_status"] = status
             if not isinstance(response, bytes) or len(response) > self._output_limit:
                 raise RouterError("UPSTREAM_OUTPUT_LIMIT")
-            self._exchange("response", response)
+            try:
+                if 300 <= status < 400:
+                    raise RouterError('UPSTREAM_REDIRECT')
+                if status != 200:
+                    code = 'CREDENTIAL_OR_ENTITLEMENT_REJECTED' if status in (401, 403) else 'UPSTREAM_HTTP_ERROR'
+                    raise RouterError(code)
+                response_secrets = (self._credential.encode(), self.capability.encode())
+                validate_response_secrets(response_headers, response, response_secrets)
+                if status == 200:
+                    response_proof = validate_codex_image_response(self.task, response_headers, response)
+                    _, reflected = redact_known_secrets(response_proof['text'].encode(), response_secrets)
+                    if reflected:
+                        raise RouterError('UPSTREAM_SECRET_REFLECTION')
+            except RouterError as exc:
+                self._exchange('response-quarantined', canonical_bytes({
+                    'classification': exc.code, 'sha256': hash_bytes(response), 'byte_length': len(response)}))
+                raise
+            self._exchange('response', response)
             with self._lock:
                 if not self._active or time.monotonic() >= self._deadline:
                     raise RouterError("CAPABILITY_REVOKED")
@@ -430,15 +453,13 @@ class CodexBroker:
             if status != 200:
                 code = "CREDENTIAL_OR_ENTITLEMENT_REJECTED" if status in (401, 403) else "UPSTREAM_HTTP_ERROR"
                 raise RouterError(code)
-            response_proof = validate_codex_image_response(
-                self.task, response_headers, response
-            )
             with self._lock:
                 if not self._active or time.monotonic() >= self._deadline:
                     raise RouterError("CAPABILITY_REVOKED")
                 observation.update({
                     "classification": "IDENTITY_VERIFIED",
                     "response_sha256": hash_bytes(response),
+                    "response_output_sha256": hash_bytes(response_proof['text'].encode('utf-8')),
                     "response_request_id": response_proof["request_id"],
                     "response_id": response_proof["response_id"],
                     "response_model": response_proof["model"],

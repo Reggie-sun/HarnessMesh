@@ -9,10 +9,123 @@ import pytest
 import agent_subagent_router.transport.codex_broker as codex_broker
 from agent_subagent_router.contracts import RouterError, canonical_bytes, strict_json
 from agent_subagent_router.transport.codex_broker import CodexBroker, _CodexUpstream
-from test_codex_image_wire import _completed, request_fixture
+from test_codex_image_wire import _completed, _sse_bytes, _sse_events, request_fixture
 
 
 API_KEY = "sk-proj-" + "P" * 32
+
+
+@pytest.mark.parametrize('stream', [False, True])
+@pytest.mark.parametrize('secret_kind', ['credential', 'capability'])
+@pytest.mark.parametrize('escaped', [False, True])
+def test_response_body_secret_is_quarantined_before_delivery(tmp_path, stream, secret_kind, escaped):
+    task, native, _ = request_fixture(tmp_path)
+    def upstream(*args):
+        secret = API_KEY if secret_kind == 'credential' else broker.capability
+        text = json.dumps({'value': secret})
+        def wire(raw):
+            return raw.replace(secret.encode(), ''.join(f'\\u{ord(c):04x}' for c in secret).encode()) if escaped else raw
+        if not stream:
+            response = _completed(task)
+            response['output'][1]['content'][0]['text'] = text
+            return 200, {'content-type': 'application/json', 'x-request-id': 'req_safe'}, wire(canonical_bytes(response))
+        events = _sse_events(task)
+        for event in events:
+            if event['type'].endswith('output_text.delta'):
+                event['delta'] = text
+            if event['type'].endswith('output_text.done'):
+                event['text'] = text
+            if 'part' in event and event['type'].endswith('.done'):
+                event['part']['text'] = text
+            if 'item' in event and event['type'].endswith('.done'):
+                event['item']['content'][0]['text'] = text
+        events[-1]['response']['output'][1]['content'][0]['text'] = text
+        return 200, {'content-type': 'text/event-stream', 'x-request-id': 'req_safe'}, wire(_sse_bytes(events))
+    with CodexBroker(task, API_KEY, upstream=upstream) as broker:
+        status, payload = _post(broker, native)
+    assert status == 502
+    assert API_KEY.encode() not in payload and broker.capability.encode() not in payload
+    assert broker._active is False
+    assert broker.observations[0]['classification'] == 'UPSTREAM_SECRET_REFLECTION'
+
+
+@pytest.mark.parametrize('stream', [False, True])
+@pytest.mark.parametrize('secret_kind', ['credential', 'capability', 'clean'])
+def test_split_response_parts_are_checked_before_delivery_and_capture(tmp_path, stream, secret_kind):
+    task, native, _ = request_fixture(tmp_path)
+    captured = []
+    def upstream(*args):
+        secret = API_KEY if secret_kind == 'credential' else broker.capability if secret_kind == 'capability' else 'safe-value'
+        cut = len(secret) // 2
+        pieces = ['{"value":"' + secret[:cut], secret[cut:] + '"}']
+        response = _completed(task)
+        item = response['output'][1]
+        item['content'] = [{'type': 'output_text', 'text': text} for text in pieces]
+        if not stream:
+            raw = canonical_bytes(response)
+            headers = {'content-type': 'application/json', 'x-request-id': 'req_safe'}
+        else:
+            rid = response['id']
+            events = [{'type': 'response.created', 'response': dict(response, status='in_progress', output=[])},
+                      {'type': 'response.output_item.added', 'response_id': rid, 'output_index': 1,
+                       'item': dict(item, status='in_progress', content=[])}]
+            for index, part in enumerate(item['content']):
+                pos = {'response_id': rid, 'item_id': item['id'], 'output_index': 1, 'content_index': index}
+                events += [{'type': 'response.content_part.added', **pos, 'part': dict(part, text='')},
+                           {'type': 'response.output_text.delta', **pos, 'delta': part['text']},
+                           {'type': 'response.output_text.done', **pos, 'text': part['text']},
+                           {'type': 'response.content_part.done', **pos, 'part': part}]
+            events += [{'type': 'response.output_item.done', 'response_id': rid, 'output_index': 1, 'item': item},
+                       {'type': 'response.completed', 'response': response}]
+            raw = _sse_bytes(events)
+            headers = {'content-type': 'text/event-stream', 'x-request-id': 'req_safe'}
+        assert secret.encode() not in raw
+        return 200, headers, raw
+    with CodexBroker(task, API_KEY, upstream=upstream,
+                     on_exchange=lambda phase, data: captured.append((phase, data))) as broker:
+        status, payload = _post(broker, native)
+    if secret_kind == 'clean':
+        assert status == 200 and captured[-1][0] == 'response'
+    else:
+        assert status == 502 and broker._active is False
+        assert broker.observations[0]['classification'] == 'UPSTREAM_SECRET_REFLECTION'
+        assert captured[-1][0] == 'response-quarantined'
+        assert set(strict_json(captured[-1][1])) == {'classification', 'sha256', 'byte_length'}
+        assert API_KEY.encode() not in payload and broker.capability.encode() not in payload
+
+
+@pytest.mark.parametrize('ending', ['incomplete', 'error', 'truncated', 'http-error'])
+def test_partial_response_secrets_never_enter_artifacts(tmp_path, ending):
+    task, native, _ = request_fixture(tmp_path)
+    captured = []
+    def upstream(*args):
+        cut = len(API_KEY)//2
+        response = _completed(task)
+        response['output'][1]['content'] = [{'type': 'output_text', 'text': piece}
+                                           for piece in (API_KEY[:cut], API_KEY[cut:])]
+        if ending in ('incomplete', 'http-error'):
+            response['status'] = 'incomplete'
+            raw = canonical_bytes(response)
+            content_type = 'application/json'
+        else:
+            events = _sse_events(task)[:1]
+            events += [{'type': 'response.output_text.delta', 'response_id': response['id'], 'delta': piece}
+                       for piece in (API_KEY[:cut], API_KEY[cut:])]
+            if ending == 'error':
+                events += [{'type': 'error', 'code': 'server_error'}]
+            raw = _sse_bytes(events)
+            content_type = 'text/event-stream'
+        assert API_KEY.encode() not in raw
+        return 503 if ending == 'http-error' else 200, {'content-type': content_type, 'x-request-id': 'req_safe'}, raw
+    with CodexBroker(task, API_KEY, upstream=upstream,
+                     on_exchange=lambda phase, data: captured.append((phase, data))) as broker:
+        status, payload = _post(broker, native)
+    assert status == 502 and broker._active is False
+    assert broker.observations[0]['classification'] == (
+        'UPSTREAM_HTTP_ERROR' if ending == 'http-error' else 'UPSTREAM_SECRET_REFLECTION')
+    assert captured[-1][0] == 'response-quarantined'
+    assert set(strict_json(captured[-1][1])) == {'classification', 'sha256', 'byte_length'}
+    assert API_KEY.encode() not in payload
 
 
 def _post(broker, value, *, path="/v1/responses", capability=None):
@@ -105,9 +218,44 @@ def test_invalid_native_request_never_reaches_authenticated_upstream(tmp_path):
 
     assert status == 400
     assert calls == []
-    assert exchanges == [("native-request", canonical_bytes(native))]
+    assert len(exchanges) == 1 and exchanges[0][0] == 'native-request-quarantined'
+    assert set(strict_json(exchanges[0][1])) == {'classification', 'sha256', 'byte_length'}
     assert "IMAGE_ROUTE_MISMATCH" in broker.rejections
     assert capability not in json.dumps(broker.observations)
+
+
+@pytest.mark.parametrize('secret_kind', ['credential', 'capability', 'clean'])
+def test_rejected_native_input_persists_only_metadata(tmp_path, secret_kind):
+    from agent_subagent_router.receipts import ReceiptStore
+    task, native, _ = request_fixture(tmp_path)
+    store = ReceiptStore(tmp_path/'runs')
+    run = store.create('engineering-input-capture', 'invalid-input')
+    calls, artifacts = [], []
+    def capture(phase, data):
+        artifacts.append(store.artifact(run, 'wire/'+phase+'.bin', data,
+                                       secrets=(API_KEY.encode(), broker.capability.encode()), producer='image-broker'))
+    with CodexBroker(task, API_KEY, upstream=lambda *args: calls.append(args), on_exchange=capture) as broker:
+        secret = API_KEY if secret_kind == 'credential' else broker.capability if secret_kind == 'capability' else 'ordinary-invalid-input'
+        cut = len(secret)//2
+        native['instructions'] = secret[:cut]
+        native['input'][0]['content'][0]['text'] = secret[cut:]
+        status, _ = _post(broker, native)
+    assert status == 400 and calls == []
+    assert len(artifacts) == 1 and artifacts[0]['path'] == 'wire/native-request-quarantined.bin'
+    saved = (run/artifacts[0]['path']).read_bytes()
+    assert set(strict_json(saved)) == {'classification', 'sha256', 'byte_length'}
+    assert secret[:cut].encode() not in saved and secret[cut:].encode() not in saved
+
+
+def test_preflight_failure_does_not_capture_native_input(tmp_path):
+    task, native, _ = request_fixture(tmp_path)
+    calls, captures = [], []
+    def deny():
+        raise RouterError('IMAGE_ACCOUNT_BUDGET_UNVERIFIED')
+    with CodexBroker(task, API_KEY, upstream=lambda *args: calls.append(args), before_request=deny,
+                     on_exchange=lambda phase, data: captures.append((phase, data))) as broker:
+        status, _ = _post(broker, native)
+    assert status == 409 and not calls and not captures
 
 
 def test_seal_is_reverified_before_upstream_and_failure_revokes_capability(tmp_path):

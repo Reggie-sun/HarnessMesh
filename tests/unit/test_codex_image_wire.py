@@ -211,6 +211,16 @@ def test_native_request_maps_only_the_sealed_generation_cap(tmp_path):
     assert proof["images"][0]["sha256"] == proof["images"][2]["sha256"]
 
 
+def test_sealed_native_images_do_not_depend_on_original_paths(tmp_path):
+    from pathlib import Path
+    task, body, _ = request_fixture(tmp_path)
+    for descriptor in task['images']:
+        Path(descriptor['path']).unlink(missing_ok=True)
+    actual, proof = map_codex_image_request(task, body)
+    assert strict_json(actual)['input'] == body['input']
+    assert len(proof['images']) == len(task['images'])
+
+
 def test_native_window_framing_uses_thread_scoped_window_and_cache_key(tmp_path):
     task, body, _ = request_fixture(tmp_path)
     turn = strict_json(body["client_metadata"]["x-codex-turn-metadata"])
@@ -418,30 +428,63 @@ def test_response_rejects_duplicate_json_keys(tmp_path):
         validate_codex_image_response(task, _headers(), data)
 
 
+def _sse_events(task):
+    response = _completed(task)
+    response_id = response['id']
+    item = response['output'][1]
+    part = item['content'][0]
+    position = {'response_id': response_id, 'item_id': item['id'],
+                'output_index': 1, 'content_index': 0}
+    return [
+        {'type': 'response.created', 'response': dict(response, status='in_progress', output=[])},
+        {'type': 'response.output_item.added', 'response_id': response_id, 'output_index': 1,
+         'item': dict(item, status='in_progress', content=[])},
+        {'type': 'response.content_part.added', **position, 'part': dict(part, text='')},
+        {'type': 'response.output_text.delta', **position, 'delta': part['text']},
+        {'type': 'response.output_text.done', **position, 'text': part['text']},
+        {'type': 'response.content_part.done', **position, 'part': copy.deepcopy(part)},
+        {'type': 'response.output_item.done', 'response_id': response_id, 'output_index': 1,
+         'item': copy.deepcopy(item)},
+        {'type': 'response.completed', 'response': response}]
+
+
+def _sse_bytes(events):
+    return b''.join(b'event: '+x['type'].encode()+b'\ndata: '+canonical_bytes(x)+b'\n\n'
+                    for x in events)
+
+
+@pytest.mark.parametrize('attack', ['delta', 'text-done', 'part-done', 'item-done', 'terminal',
+                                  'missing-done', 'wrong-index', 'duplicate-done'])
+def test_stream_text_and_item_parts_must_match_authenticated_terminal(tmp_path, attack):
+    task, _, _ = request_fixture(tmp_path)
+    events = _sse_events(task)
+    other = '{"same":false}'
+    if attack == 'delta':
+        events[3]['delta'] = other
+    elif attack == 'text-done':
+        events[4]['text'] = other
+    elif attack == 'part-done':
+        events[5]['part']['text'] = other
+    elif attack == 'item-done':
+        events[6]['item']['content'][0]['text'] = other
+    elif attack == 'terminal':
+        events[-1]['response']['output'][1]['content'][0]['text'] = other
+    elif attack == 'missing-done':
+        events.pop(4)
+    elif attack == 'wrong-index':
+        events[3]['output_index'] = 0
+    else:
+        events.insert(5, copy.deepcopy(events[4]))
+    with pytest.raises(RouterError):
+        validate_codex_image_response(task, {'content-type': 'text/event-stream',
+                                           'x-request-id': 'req_sse'}, _sse_bytes(events))
+
+
 def test_sse_events_must_keep_one_response_id_and_end_completed(tmp_path):
     task, _, _ = request_fixture(tmp_path)
     completed = _completed(task)
     response_id = completed["id"]
-    events = [
-        {
-            "type": "response.created",
-            "response": {
-                "id": response_id,
-                "status": "in_progress",
-                "model": task["model"],
-                "max_output_tokens": 2048,
-            },
-        },
-        {
-            "type": "response.output_text.delta",
-            "response_id": response_id,
-            "item_id": "msg_answer",
-            "output_index": 0,
-            "content_index": 0,
-            "delta": "{",
-        },
-        {"type": "response.completed", "response": completed},
-    ]
+    events = _sse_events(task)
     data = b"".join(
         b"event: " + event["type"].encode() + b"\ndata: " + canonical_bytes(event) + b"\n\n"
         for event in events

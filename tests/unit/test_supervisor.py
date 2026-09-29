@@ -33,10 +33,10 @@ def test_timeout_kills_process_group_including_grandchild(tmp_path):
     result = run(tmp_path, code, wall=.3)
     assert result.reason == 'timeout' and result.exit_code is not None
     pid = int(pidfile.read_text())
-    # A killed orphan may briefly be a zombie until the host init reaps it.
+    # A killed orphan can be dead (X) or a zombie (Z) before host init reaps it.
     stat = Path(f'/proc/{pid}/stat')
     try:
-        assert stat.read_text().split()[2] == 'Z'
+        assert stat.read_text().split()[2] in ('Z', 'X')
     except (FileNotFoundError, ProcessLookupError):
         # procfs can return ESRCH if init reaps the process between open and read.
         pass

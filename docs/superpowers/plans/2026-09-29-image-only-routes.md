@@ -1,5 +1,55 @@
 # Sealed Image Input Routes Implementation Plan
 
+## Native Input Capture Repair
+
+按[native input capture续行修订](../../records/architecture-spec-acceptance.md#native-input-capture-repair-continuation)修复同一M5：非法native request只保存有界metadata，合法raw在mapping及所有admission/preflight门后捕获。实际ReceiptStore red3 failed确认，既有正常wire三段证据保留，增加preflight拒绝零raw/零upstream验证。Round14已真实完成完整scope但仍有该confirmed blocker；fresh全套验证后仅一次round15 full review/wall900秒（可复用本人检查过且hash未变的独立证据），历史不重置。最新review及Parent裁决成立才clean official installation、installed双路线conformance和actual accounting；credential/account/formal及产品门不放宽，结果归API record。
+
+## Initial Reasoning Shape and Identity Repair
+
+按[initial reasoning shape/identity续行修订](../../records/architecture-spec-acceptance.md#initial-reasoning-shape-and-identity-repair-continuation)修复同一M5。统一私有reasoning shape helper覆盖initial/done/terminal，并要求nonempty string item身份；真实17 failed/3 passed作为red证据，保留nullable/opaque正例。Round13提前结束且无full clearance的历史不重写；fresh全套验证后仅一次round14 full review/wall900秒，最新有效完整审查及Parent裁决通过才clean commit、official install、installed双路线验证和实际payload accounting。真实账户/credential门不满足保持零商业请求INCOMPLETE；Self-Review及历史由acceptance owner绑定，结果归API record。
+
+## Reasoning Content and Nullable Metadata Repair
+
+按[reasoning content/nullable续行修订](../../records/architecture-spec-acceptance.md#reasoning-content-and-nullable-metadata-repair-continuation)继续同一M5：terminal reasoning.content形状、空initial content及opened/done关联在既有wire owner验证；opaque encrypted_content在既有scanner按同item重组，absent/null/string保持兼容。Parent实际ReceiptStore red19 failed/7 passed后fresh全套native/OS/offline/Ruff/diff，再以当前日志/primary schema摘录封存仅一次round13 full read-only review/wall900秒；历史不重置。无unresolved blocker后执行clean commit、official install、installed双路线conformance及actual payload accounting；真实credential/account缺失时保持零商业请求INCOMPLETE，不能替代正式资格或产品门。Self-Review由已有acceptance owner绑定，结果归API record。
+
+## Semantic Field Shape Repair
+
+按[semantic field shape续行修订](../../records/architecture-spec-acceptance.md#semantic-field-shape-repair-continuation)继续同一M5。Parent实际ReceiptStore已确认malformed initial/terminal fields持久化风险，在两既有image wire owners验证typed语义字段形状，保留正常字符串/metadata/旧project协议；用SSE/JSON × array/object/string × credential/capability/clean及完整native/OS验证。仅一次round12 full read-only复核、wall900秒，历史不重置；无unresolved blocker后立即clean commit、official installation、installed dual conformance与实际payload accounting readiness。缺真实credential/account时保持零商业请求与INCOMPLETE；预算、原owners和生产门不变。Self-Review由既有acceptance owner绑定，结果仍归API record。
+
+## Initial Semantic State Repair
+
+按[initial semantic state续行修订](../../records/architecture-spec-acceptance.md#initial-semantic-state-repair-continuation)继续同一M5：两image wire owners拒绝无法绑定的prefilled初始语义状态，Codex created/in_progress output与added reasoning summary、Kimi message_start content均要求为空；完整后续流正常。实际ReceiptStore三位置及Kimi header否定测试red→green，再fresh full/offline/native/OS/Ruff/diff。仅一次round11 full review（900秒、历史不重置）后，无unresolved blocker才clean官方安装及installed dual conformance。Self-Review保持accepted Spec bytes、原owners、旧project协议、visual各一次/总两次、OpenAI USD1、formal0及生产禁止；结果由API record独占。
+
+## Typed Semantic Payload Repair
+
+按[typed semantic payload续行修订](../../records/architecture-spec-acceptance.md#typed-semantic-payload-repair-continuation)继续同一M5：SSE字段由对应type精确选择，JSON递归路径包含part type，阻止signature/text part的非语义thinking污染重组。实际ReceiptStore SSE与JSON否定测试先red再验证credential/capability/clean、失败分类及完整回归。Fresh完整验证后仅一次round10 full review（900秒、历史保留），无unresolved blocker才clean commit/official install/installed dual conformance。Self-Review保持原owners、安全门、visual各一次/总两次、OpenAI USD1、formal0及生产禁止；不改变accepted Spec bytes，结果仍归API record。
+
+## Protocol Payload Repair
+
+按[protocol payload续行修订](../../records/architecture-spec-acceptance.md#protocol-payload-repair-continuation)继续同一M5：实际Kimi/Codex协议payload独立重组，递归检查使用完整JSON路径，避免aux同名叶字段污染流。ReceiptStore负例先确认red，再验证credential/capability拒绝、clean通过及旧失败响应分类/落盘回归。Fresh完整工程验证后，仅一次round9 full review（900秒，历史不重置），无unresolved blocker后继续clean commit/official install/installed dual conformance。Self-Review不改变原owner、安全门、visual各一次/总两次、OpenAI USD1、formal0与生产禁止；结果仍由API record独占。
+
+## Protocol Block Repair
+
+按[protocol block续行修订](../../records/architecture-spec-acceptance.md#protocol-block-repair-continuation)继续同一M5：scanner以两协议实际关联字段分组，Kimi start/delta同block统一，并在既有image wire owner核对block start/delta/stop。实际ReceiptStore负例覆盖credential/capability分片与unknown index，正常流保持。Parent fresh完整工程验证后进行仅一次round8 full review（900秒，所有历史保留），随后按无unresolved blocker的原门clean commit/official install/installed dual conformance。
+
+Self-Review明确只修已证实安全缺口；旧project协议及credential/ReceiptStore/qualification/lifecycle owners保持，不改变visual各一次/总两次、OpenAI USD1、formal0及生产禁止。Runtime与结果仍归API record；计划完成不是停止点。
+
+## Interleaved Response Repair
+
+当前scope按[有限续行修订](../../records/architecture-spec-acceptance.md#interleaved-output-repair-continuation)继续：NR-IMAGE-005独立reasoning stream重组/terminal关联，NR-IMAGE-006两backend native/upstream文本摘要一致，NR-IMAGE-007失败响应metadata-only。保留HTTP status/typed错误，移除不可靠的body派生diagnostic；旧project schema/report/工具路径不变。Parent已实际复现后修正，执行fresh full/offline/native/OS/Ruff/diff，再封存同一profile仅一次round7 full review（900秒，历史不重置）。
+
+无unresolved blocker及snapshot漂移才scoped commit、official install、installed双native/OS/fake校验；account/成本材料真实成立后才有限visual probe。Self-Review：改变的是已授权安全修复和有证据的有限工程复核，不放宽视觉各一次/总两次、OpenAI USD1、formal0、blinded actors或产品门。运行结果仍由既有API record独占；下方较早checkpoint均为历史，当前状态以该owner最新记录为准。
+
+## Bounded Response Repair Continuation
+
+按最新global任务内授权和[acceptance owner](../../records/architecture-spec-acceptance.md#task-bounded-repair-authorization)，完成NR-IMAGE-005的reasoning与失败响应修复：新`transport/response_secrets.py`只负责在协议验收前核对JSON/SSE已解码字段的known-secret分段；双broker在交付或raw artifact前调用，不能完整验证的响应只保存quarantine metadata。现有credential、ReceiptStore、identity、qualification与生命周期owner保持。
+
+Parent先以thinking、error、truncated、incomplete、HTTP failure否定测试复现，再运行fresh offline/native+containment/Ruff/diff。按新冻结源码/规则/accepted refs进行同一reviewer full re-review，最多round5/6、各900秒，历史计数不重置；随后无unresolved blocker才scoped clean commit并official install、执行installed native/OS/fake gate。真实视觉/account/cost/formal/生产边界未授权放宽。Self-Review覆盖输入/输出持久化、正常分段兼容、否定测试、有限修复预算及安装门；最新结果仍由既有record owner独占维护。
+
+## Authorized Continuation
+
+用户在完成的NR-IMAGE-005修正与review package上回复“继续完成任务”，批准上一条请求中的额外一次同一native reviewer只读复核及通过门后的安装；授权由既有acceptance owner绑定。M5继续：核对原三轮历史/current hashes → round4/extra1of1 → Parent裁决 → 仅owned code clean commit → official installation owner → installed entry/Skill/runtime/image/native/OS receipts检查。保留此前601 PASS的exact candidate证据；若源码改变则重新验证及按有限review门处理。最新运行结果由API record承接，不重置Kimi/native历史轮数、formal预算或产品状态。
+
 ## User Directed Review Routing Amendment
 
 用户于2026-09-29明确要求连续Kimi故障后使用原生子代理；窄修订由 [acceptance owner](../../records/architecture-spec-acceptance.md#user-directed-engineering-review-fallback) 绑定。沿用本计划：Parent维护global详细routing owner及thin pointers，封存当前candidate/source、accepted refs与已有native verification；两次真实transport failure后以一个read-only `reviewer_max`接手credential/TLS/wire/budget/qualification边界。初审最多一次、修复后的必要re-review最多两次；全部findings由Parent逐项裁决，semantic fix需fresh verification。

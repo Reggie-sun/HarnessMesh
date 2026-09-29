@@ -6,13 +6,14 @@ from pathlib import Path
 import tempfile
 
 from .adapters.image_claude import build_image_invocation, docker_projection, visible_text
-from .contracts import RouterError, canonical_bytes, strict_json
+from .contracts import RouterError, canonical_bytes, hash_bytes, strict_json
 from .image_budget import require_probe_budget, reserve_probe
 from .image_output import decode_image_claude, decode_image_codex
 from .image_probe import read_probe
 from .image_process import ImageProcessBudgets
 from .image_runtime import image_runtime
 from .image_seal import verify_image_seal
+from .receipts import redact_known_secrets
 from .transport.credentials import credential_fingerprint, load_credential
 
 
@@ -157,7 +158,11 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
             if (len(inits) != 1 or inits[0].get('session_id') != observations[0]['input_proof']['session_id']
                     or inits[0].get('skills') != []):
                 raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
+        if hash_bytes(raw) != observations[0].get('response_output_sha256'):
+            raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
         secrets = (credential.encode(), broker.capability.encode())
+        if any(redact_known_secrets(data, secrets)[1] for data in (raw, canonical)):
+            raise RouterError('UPSTREAM_SECRET_REFLECTION')
         artifacts.append(store.artifact(run, 'model-raw.json', raw, media_type='application/json', secrets=secrets))
         artifacts.append(store.artifact(run, 'model-canonical.json', canonical, media_type='application/json', secrets=secrets))
         classification = 'ENGINEERING_NATIVE_COMPLETE' if upstream is not None else 'IMAGE_NATIVE_COMPLETE'
