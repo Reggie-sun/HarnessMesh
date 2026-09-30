@@ -489,8 +489,16 @@ class CodexBroker:
                     if reflected:
                         raise RouterError('UPSTREAM_SECRET_REFLECTION')
             except RouterError as exc:
+                diagnostic = {}
+                if self.task['backend'] == 'minimax':
+                    from ..minimax_image_wire import RESPONSE_ISSUES
+                    if type(exc.detail) is str and exc.detail in RESPONSE_ISSUES:
+                        diagnostic['response_issue'] = exc.detail
+                        with self._lock:
+                            observation.update(diagnostic)
                 self._exchange('response-quarantined', canonical_bytes({
-                    'classification': exc.code, 'sha256': hash_bytes(response), 'byte_length': len(response)}))
+                    'classification': exc.code, 'sha256': hash_bytes(response),
+                    'byte_length': len(response), **diagnostic}))
                 raise
             self._exchange('response', response)
             with self._lock:

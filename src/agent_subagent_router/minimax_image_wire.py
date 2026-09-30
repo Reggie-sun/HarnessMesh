@@ -24,10 +24,16 @@ _REQUEST_FIELDS = {
     "store",
     "max_output_tokens",
 }
+RESPONSE_ISSUES = frozenset({
+    "DUPLICATE_HEADER", "REQUEST_ID_MISSING", "REQUEST_ID_CONFLICT", "REQUEST_ID_INVALID",
+    "RESPONSE_ID_INVALID", "REQUEST_ID_MISMATCH", "RESPONSE_OBJECT_INVALID",
+    "RESPONSE_NOT_COMPLETED", "MODEL_MISMATCH", "STORAGE_NOT_FALSE", "RESPONSE_ERROR",
+    "RESPONSE_INCOMPLETE", "ITEM_ID_INVALID",
+})
 
 
-def _fail(code="IMAGE_PROJECTION_MISMATCH"):
-    raise RouterError(code)
+def _fail(code="IMAGE_PROJECTION_MISMATCH", issue=""):
+    raise RouterError(code, issue)
 
 
 def _validate_minimax_request(task, body):
@@ -145,15 +151,15 @@ def _headers(headers):
             _fail("UPSTREAM_PROTOCOL_ERROR")
         key = name.lower()
         if key in lowered:
-            _fail("IDENTITY_UNVERIFIED")
+            _fail("IDENTITY_UNVERIFIED", "DUPLICATE_HEADER")
         lowered[key] = value
     request_ids = [lowered[name] for name in ("x-request-id", "request-id") if name in lowered]
-    if (
-        not request_ids
-        or len(set(request_ids)) != 1
-        or not _REQUEST_ID.fullmatch(request_ids[0])
-    ):
-        _fail("IDENTITY_UNVERIFIED")
+    if not request_ids:
+        _fail("IDENTITY_UNVERIFIED", "REQUEST_ID_MISSING")
+    if len(set(request_ids)) != 1:
+        _fail("IDENTITY_UNVERIFIED", "REQUEST_ID_CONFLICT")
+    if not _REQUEST_ID.fullmatch(request_ids[0]):
+        _fail("IDENTITY_UNVERIFIED", "REQUEST_ID_INVALID")
     content_type = lowered.get("content-type", "").split(";", 1)[0].strip().lower()
     if content_type != "application/json":
         _fail("UPSTREAM_PROTOCOL_ERROR")
@@ -230,18 +236,21 @@ def validate_minimax_image_response(task: dict, headers: dict, data: bytes) -> d
         _fail("UPSTREAM_PROTOCOL_ERROR")
     response_id = response.get("id")
     if not _opaque_id(response_id):
-        _fail("IDENTITY_UNVERIFIED")
+        _fail("IDENTITY_UNVERIFIED", "RESPONSE_ID_INVALID")
     if response.get("request_id") is not None and response["request_id"] != request_id:
-        _fail("IDENTITY_UNVERIFIED")
-    if (
-        response.get("object") != "response"
-        or response.get("status") != "completed"
-        or response.get("model") != contract["model"]
-        or response.get("store") is not False
-        or response.get("error") is not None
-        or response.get("incomplete_details") is not None
-    ):
-        _fail("IDENTITY_UNVERIFIED")
+        _fail("IDENTITY_UNVERIFIED", "REQUEST_ID_MISMATCH")
+    if response.get("object") != "response":
+        _fail("IDENTITY_UNVERIFIED", "RESPONSE_OBJECT_INVALID")
+    if response.get("status") != "completed":
+        _fail("IDENTITY_UNVERIFIED", "RESPONSE_NOT_COMPLETED")
+    if response.get("model") != contract["model"]:
+        _fail("IDENTITY_UNVERIFIED", "MODEL_MISMATCH")
+    if response.get("store") is not False:
+        _fail("IDENTITY_UNVERIFIED", "STORAGE_NOT_FALSE")
+    if response.get("error") is not None:
+        _fail("IDENTITY_UNVERIFIED", "RESPONSE_ERROR")
+    if response.get("incomplete_details") is not None:
+        _fail("IDENTITY_UNVERIFIED", "RESPONSE_INCOMPLETE")
     cap = contract["budgets"]["generation_tokens"]
     echoed_cap = response.get("max_output_tokens")
     if "max_output_tokens" in response and (type(echoed_cap) is not int or echoed_cap < 1
@@ -268,7 +277,7 @@ def validate_minimax_image_response(task: dict, headers: dict, data: bytes) -> d
     text_parts = []
     for item in output:
         if type(item) is not dict or not _opaque_id(item.get("id")):
-            _fail("IDENTITY_UNVERIFIED")
+            _fail("IDENTITY_UNVERIFIED", "ITEM_ID_INVALID")
         if item.get("type") == "reasoning":
             _validate_reasoning(item)
         elif item.get("type") == "message":

@@ -315,3 +315,29 @@ def test_checks_response_request_identity_and_bounded_ascii_response_id(tmp_path
         response = _response(task, response_id=identifier)
         with pytest.raises(RouterError):
             validate_minimax_image_response(task, _headers(), canonical_bytes(response))
+
+
+@pytest.mark.parametrize("field,value,issue", [
+    ("model", "other-model", "MODEL_MISMATCH"),
+    ("status", "incomplete", "RESPONSE_NOT_COMPLETED"),
+    ("store", True, "STORAGE_NOT_FALSE"),
+    ("id", "", "RESPONSE_ID_INVALID"),
+    ("request_id", "other-request", "REQUEST_ID_MISMATCH"),
+])
+def test_identity_rejection_has_fixed_non_value_diagnostic(tmp_path, field, value, issue):
+    task, _, _ = _task_and_request(tmp_path)
+    response = _response(task)
+    response[field] = value
+    with pytest.raises(RouterError) as caught:
+        validate_minimax_image_response(task, _headers(), canonical_bytes(response))
+    assert caught.value.code == "IDENTITY_UNVERIFIED"
+    assert caught.value.detail == issue
+
+
+def test_missing_request_id_has_fixed_diagnostic_without_response_output(tmp_path):
+    task, _, _ = _task_and_request(tmp_path)
+    with pytest.raises(RouterError) as caught:
+        validate_minimax_image_response(task, {"content-type": "application/json"},
+                                        canonical_bytes(_response(task)))
+    assert caught.value.code == "IDENTITY_UNVERIFIED"
+    assert caught.value.detail == "REQUEST_ID_MISSING"

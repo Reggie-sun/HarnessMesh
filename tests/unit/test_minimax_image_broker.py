@@ -107,6 +107,38 @@ def test_minimax_fixed_tls_host_is_used_without_provider_fallback(monkeypatch):
         _CodexUpstream(1, 1000, backend='other')
 
 
+def test_minimax_failure_receipt_projects_only_static_issue(tmp_path):
+    task, body = fixture(tmp_path)
+    captures = []
+    with CodexBroker(task, KEY, upstream=lambda *args: (
+        200, {'content-type': 'application/json'}, canonical_bytes(response(task))),
+            on_exchange=lambda phase, raw: captures.append((phase, raw))) as broker:
+        status, raw = post(broker, body)
+    assert status == 502 and strict_json(raw) == {'error': 'IDENTITY_UNVERIFIED'}
+    assert broker.observations[0]['response_issue'] == 'REQUEST_ID_MISSING'
+    quarantined = [strict_json(raw) for phase, raw in captures if phase == 'response-quarantined']
+    assert quarantined[0]['response_issue'] == 'REQUEST_ID_MISSING'
+    assert not any(phase == 'response' for phase, _ in captures)
+
+
+def test_minimax_arbitrary_exception_detail_is_not_projected(tmp_path, monkeypatch):
+    from agent_subagent_router import minimax_image_wire
+    task, body = fixture(tmp_path)
+    captures = []
+    def reject(*args):
+        raise RouterError('IDENTITY_UNVERIFIED', 'private-provider-data')
+    monkeypatch.setattr(minimax_image_wire, 'validate_minimax_image_response', reject)
+    with CodexBroker(task, KEY, upstream=lambda *args: (
+        200, {'content-type': 'application/json', 'x-request-id': 'safe-id'},
+        canonical_bytes(response(task))),
+            on_exchange=lambda phase, raw: captures.append((phase, raw))) as broker:
+        status, _ = post(broker, body)
+    assert status == 502
+    assert 'response_issue' not in broker.observations[0]
+    assert b'private-provider-data' not in canonical_bytes(broker.observations)
+    assert all(b'private-provider-data' not in raw for _, raw in captures)
+
+
 @pytest.mark.parametrize('tamper', ['request', 'response_hash', 'response_object', 'store_type'])
 def test_minimax_native_envelope_must_match_independent_wire_bytes(tmp_path, tamper):
     task, body = fixture(tmp_path)

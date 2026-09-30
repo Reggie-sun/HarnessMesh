@@ -1,5 +1,13 @@
 # HarnessMesh Architecture Spec Acceptance
 
+## Full Acceptance Diagnostic Repair — 2026-10-01
+
+用户继续“完整验收”，按此前明确router修复/安装及任务内合同默认授权，Parent Self-Review接受新diagnostic Spec SHA `fed55c84f62d14cb4eeb4dd57f02d435b5e3d7b6711b89f17bec7cbd200b98db`（`docs/superpowers/specs/2026-10-01-image-response-diagnostics.md`）和Plan SHA `a4626b941f02f4fba6905191154ec1480df1bd9599d83740f816a1052d544d26`（同目录plans）；不声称用户逐字批准SHA。只记录固定拒绝标签，保留原identity/storage/completion/secret/qualification拒绝与隔离，不输出真实字段/正文，不新增formal执行权。
+
+原真实MiniMax receipt `c5ab6f78-77a0-4441-83a6-fcf609369cfb` / `IDENTITY_UNVERIFIED` 原因UNKNOWN不重写。新静态诊断已red 7 FAIL/47 PASS，再focused54 PASS，offline967 PASS/34 skip、显式native+containment997 PASS/4环境skip，Ruff/diff通过。Stable snapshot保存在私有 `full-acceptance-20260930T192147Z/router-source-snapshot.json`；Parent按base §9 G2判断 `KIMI_REVIEW_NOT_REQUIRED`：用户未要求Kimi且禁止；未改credential/TLS/secret guard/permissions/准入/恢复/发表owner；任意exception detail拒绝、原split/escaped/header反射优先隔离及native边界有实际覆盖，新投影只含静态allowlist无untrusted值，不存在已证实关键后果/实质verification gap。没有叠加reviewer或重置历史轮次；原生mapper只读核对另一独立GPT目录范围，不是视觉actor。
+
+通过官方installer后才执行新sealed一次MiniMax诊断；不重放旧probe、不自动追加或改模型。GPT当前REST及应用原生model/list均无精确6.1sol，formal和Jianji产品仍BLOCKED。真实新结果由原image工程record更新，不以测试或这个绑定签发视觉资格。
+
 ## Explicit Model Verification
 
 用户本次明确“验证”，Parent任务内Self-Review接受 `docs/superpowers/specs/2026-09-30-explicit-image-model-verification.md` SHA `8260d928b4ba0daac524f90a62fd18a8ce01e84f40a9c2ef1f74fcf8622df0e0`。新增显式catalog-only canonical观察，旧quota及恢复ledger不重置，不自动追加请求；新probe/hash/ref/Docker与每probe一次GET先消费仍成立。Fresh验证及Risk Gate判断、clean官方安装后执行一次真实GET；支持所选image才发一次该probe capability。用户Kimi禁令继续适用，无正式真值或生产授权。
