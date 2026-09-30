@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Current Explicit Model Verification
+
+2026-09-30 已按用户“验证”安装clean `ba795e4` catalog-only新入口，program `75b65f99…`；offline959 PASS、full native978 PASS/12 skip、最终所选三路线与新CLI否定24 PASS、Ruff/diff通过。Installed6.1sol八图fake/14项OS及完整性成立。一次真实认证目录返回7个模型、gpt-6.1-sol匹配0，canonical model receipt INCOMPLETE；quota0/provider0/formal0，不换模型或重查。预算不是blocker，当前是所选模型未获账号目录证明；M5-D2A INCOMPLETE、产品BLOCKED。Exact证据由[原record](records/image-api-engineering-2026-09-29.md#current-explicit-model-verification)独占，下方条目为历史。
+
 ## Current Unrestricted Image Spending — 2026-09-30
 
 已按用户最新指令取消本任务新MiniMax/subscription image请求的余额/成本/budget receipt要求及金额/token/任务累计调用上限。Clean `458e9f2`官方安装，program `550e606a…`，三新policy路线实际八图native/fake/各14项OS及清理成立；旧seal/receipts不变，单次超时/bytes/隔离/no-replay和真实资格门保持。Fresh offline938/full native968 PASS、4环境skip、Jianji265 PASS/typecheck/AOCI对齐；Parent Risk Gate本次不触发新独立review，旧历史保持。

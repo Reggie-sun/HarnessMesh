@@ -1,5 +1,17 @@
 # Image API Engineering Record
 
+## Current Explicit Model Verification
+
+2026-09-30 用户明确“验证”。[catalog-only修订](../superpowers/specs/2026-09-30-explicit-image-model-verification.md) accepted SHA `8260d928b4ba0daac524f90a62fd18a8ce01e84f40a9c2ef1f74fcf8622df0e0`，在原subscription_account/image_budget/CLI新增显式 `observe-image-subscription --verify-model`；不查额度、不重置旧quota/recovery ledger，新owned probe一次目录提交。Canonical model receipt与原account历史分开，真实/合成来源不可互换；没有改变credential/TLS/Docker/秘密保护、付费unknown不重放或产品owner。
+
+工程red实际8 failed/10 passed；补充CLI负例最初因断言stdout而失败3项，修正为原stderr后成立，不冒充业务回归。Fresh offline959 PASS/34 deselected；full native/fake+containment978 PASS/12环境skip，随后当前最终测试24 PASS含三条所选路线真实Docker/native14项OS检查。Ruff/diff通过；首次module Ruff/installer因环境缺模块失败，原失败保留，改用现有ruff入口及明确PYTHONPATH的官方installer后成功，没有Provider重试。Parent原architecture §9判断本slice为KIMI_REVIEW_NOT_REQUIRED：复用旧固定HTTPS/credential/secret/receipt，无新critical权限，否定及实际native覆盖改变边界；用户Kimi禁令生效，未发新review，历史Kimi2/native1–24不重置。Named只读code_mapper独立核对RPC与HTTP目录schema差异，该调查不证明远端能力。
+
+Clean `ba795e4ab91247f4a02bf313a2eaffac4ab4e921` 官方安装，program `75b65f99252e24ba0d4364243d40762c785a899b755b3cf3640db19267661c65`、source_dirty_at_install=false；installed source/entry/Skill全部匹配。新6.1sol probe `d4f94b74-c987-4422-94db-3af140ca2708`、conformance `ca6b87c3-bb97-43b9-9912-2f9552aecaa2`、native `8779de31-7754-47ee-ae9e-c462d42a2cdc`，八图工程raw/mapped/native绑定、14/14 OS checks及container_removed=true。仅fake证明，无正式真值。
+
+随后installed CLI执行一次真实目录GET，UTC `2026-09-30T09:37:57.859415+00:00`，canonical model receipt `b7816587-9d0d-45b5-bdbe-59b8dee07fd1`：authenticated=true、catalog_model_count=7、matched_model_count=0、model=gpt-6.1-sol、image_input_supported=false、classification=INCOMPLETE。原owner重新核验receipt/artifact、seal/pins/conformance，model准入确定性拒绝SUBSCRIPTION_MODEL_UNVERIFIED。所选模型未列入当前认证目录，不能解释为永久不支持或未经验证的HTTP/RPC schema已等价。没有quota GET、refresh、generation、第二次catalog、模型切换或任何credential输出；本次catalog1/quota0/provider0/formal0，capability NOT_EVALUATED、费用null。
+
+私有工程/安装/真实收据及Parent完整性观察归 `/home/reggie/.local/state/agent-subagent-router/explicit-model-verification-20260930`，旧archives/receipts不变。自然停止于所选模型未获当前账号目录证明；下一步须使此明确所选模型获得实际账号路线证明，或由用户明确修改选择，不能自动fallback。MiniMax真实capability及正式execution owner/隔离A-B/完整raw-mapping-joint-correspondence尚未成立，M5-D2A仍INCOMPLETE，authority=none/eligible=false及全部production BLOCKED。
+
 ## Current Unrestricted Image Spending
 
 2026-09-30用户明确“预算不用管,也不应该设限制”。新accepted修订SHA `f96a2fa0ed47e96810c46cda8c221694690badc64689661dbabe4826e0b345eb`已实施并官方安装：MiniMax/subscription新seal使用spending_policy=unrestricted，不需要余额、input accounting、费用证明或probe-budget receipt，不设金额、生成/观测token及任务累计调用总量上限。MiniMax不再受新请求financial拒绝门阻断；Codex quota不再参与新policy准入。旧seal、ledger、account/budget receipts与失败保持原样，不回写新政策。
