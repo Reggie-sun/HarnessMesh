@@ -1,5 +1,15 @@
 # HarnessMesh Architecture Spec Acceptance
 
+## Task Authorized Account Response Projection Repair
+
+2026-09-30 b120f40已经clean官方安装且四tuple installed native/fake/14项OS核验成立。首次真实quota GET被UPSTREAM_SECRET_REFLECTION拒绝，receipt `f287b749-4246-4cf0-9b40-61b8fe8bd7b5`、account_queries=1/provider_requests=0，catalog未启动。原raw未保存，具体反射项未知，不重写失败。Primary OpenAI0.154.0类型支持quota顶层account_id；Parent合成实测正常匹配字段也被原guard拒绝，五项red失败、四项拒绝positive保持。
+
+Parent按任务内默认授权Self-Review接受 `docs/superpowers/specs/2026-09-30-subscription-account-projection-repair.md` SHA `7e96271ee259ba2f04d16d72b7d4766c8ef703f05c218fb9f6fca227b91a6d81`。只在固定quota endpoint验证并剔除匹配account_id，再保持其余secret guard；image broker不变。显式--recover-account-projection需要新sealed SHA、原同store的真实失败、strict1/0计数、同model/fingerprint及新一次不可恢复ledger；默认once不恢复，换state无权，unknown失败不进入恢复。额度查询总quota≤2/catalog≤1，generationonce未消耗/formal0/MiniMax live0不变；不是自动retry或预算reset。
+
+Fresh否定/compatibility及完整native验证后，同一read-only reviewer_max round24最多一次、wall600秒，复用其亲自检查且hash不变的完整critical边界，重点新projection/显式恢复的credential/authority/budget/CLI/receipt。保留Kimi2/native1–23、已耗GET及旧receipt；Parent裁决无unresolved blocker后clean官方安装、新installed tuple conformance及显式一次恢复。没有自动round25或再次quota恢复；后续拒绝需真实调查，不降低标准或切换provider。
+
+Self-Review覆盖credential只在host、raw不落盘/账号不输出、canonical owners和不可恢复历史、known read-only响应分类及paidunknown禁止重放。有限修订属于原“修复blocker并安装”目标，不涉及生产/真实source或无限费用。
+
 ## Drain Recovery Association Repair
 
 Round22在178组原件/副本和program `b438007c329e11bd23fb3b4857748b90c98efb1841326738bcc953a2b2b371f5` 一致的完整必要scope上结束，486.82秒；复用同一reviewer亲自审阅且hash未变的边界。Parent独立复现NR-CODEX-SUB22-01：OBSERVATION_DRAIN_TIMEOUT恢复对象缺backend/model/profile等，qualifier抛KeyError而丢失未知结果的调用关联，三种profiles真实red均失败；CONFIRMED。真实broker/fake upstream的stall测试另确认一次wire后drain timeout及revoke成立，未发真实请求。

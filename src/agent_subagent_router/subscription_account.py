@@ -48,9 +48,14 @@ def _get(path, credential):
         raw = bytes(raw)
         if response.status != 200 or len(raw) > 1024 * 1024:
             raise RouterError('SUBSCRIPTION_ACCOUNT_UNVERIFIED')
-        if redact_known_secrets(raw, tuple(x.encode() for x in credential.secret_values))[1]:
+        value = strict_json(raw)
+        if path == QUOTA_PATH and isinstance(value, dict) and 'account_id' in value:
+            if type(value['account_id']) is not str or value['account_id'] != credential.account_id:
+                raise RouterError('SUBSCRIPTION_ACCOUNT_UNVERIFIED')
+            value = {k: v for k, v in value.items() if k != 'account_id'}
+        if redact_known_secrets(canonical_bytes(value), tuple(x.encode() for x in credential.secret_values))[1]:
             raise RouterError('UPSTREAM_SECRET_REFLECTION')
-        return strict_json(raw), hash_bytes(raw)
+        return value, hash_bytes(raw)
     except RouterError:
         raise
     except Exception:
@@ -61,7 +66,7 @@ def _get(path, credential):
         connection.close()
 
 
-def observe_subscription_account(store, reference, model, *, getter=None):
+def observe_subscription_account(store, reference, model, *, getter=None, recover_projection=False):
     """At most one GET per fixed endpoint; public facts omit all account secrets."""
     run = store.create('router-image', 'subscription-account')
     facts, artifacts, queries, fingerprint = None, [], 0, None
@@ -75,7 +80,8 @@ def observe_subscription_account(store, reference, model, *, getter=None):
         get = getter or _get
         if getter is None:
             from .image_budget import reserve_subscription_account_observation
-            reserve_subscription_account_observation(run.name)
+            reserve_subscription_account_observation(run.name, store=store,
+                recover_projection=recover_projection, fingerprint=fingerprint, model=model)
         queries += 1
         quota, quota_hash = get(QUOTA_PATH, credential)
         queries += 1

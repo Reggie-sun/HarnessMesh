@@ -1,5 +1,9 @@
 # Sealed Image Input Routes Implementation Plan
 
+## Account Response Projection Repair
+
+按[新窄修订](../specs/2026-09-30-subscription-account-projection-repair.md)继续同一目标：正常quota account_id仅在host匹配验证后移除，其他反射仍拒绝；明确CLI恢复flag/new Spec ref/prior canonical failed receipt及独立once ledger，不改变旧budget/history。19项projection/negative/typed receipt/state/once tests通过，继续fresh完整native验证和仅一次同一named read-only round24/wall600、Parent裁决、clean官方安装和installed新tuple，再显式已封存的一次只读恢复。原真实首次原因未知，保留拒绝及generation0；不重试未知paid调用。Self-Review按原owners、有限总quota2/catalog1和全部产品禁止完成，本plan不是停止点。
+
 ## Drain Recovery Continuation
 
 Round22的已复现drain恢复缺字段按[有限修复记录](../../records/architecture-spec-acceptance.md#drain-recovery-association-repair)处理：原run保留native pending/unknown/no-replay，恢复投影补齐route并将未知wire次数留null；原qualifier保留cause和linked invocation签发INCOMPLETE。三profiles真实red及实际broker/fake callback stall、迟到输出否定验证后fresh全套工程检查，仅一次同一named reviewer_max round23/wall300。沿用本人已检查且hash未变的完整critical边界，不扩大live/formal/产品scope；Self-Review已核对原owners与未知结果语义，Parent裁决后继续clean官方安装。

@@ -62,6 +62,7 @@ def main(argv=None):
     image_account = commands.add_parser('observe-image-subscription', help='One readonly quota/catalog observation and frozen probe budget')
     image_account.add_argument('--probe', required=True)
     image_account.add_argument('--credential-ref', type=Path, required=True)
+    image_account.add_argument('--recover-account-projection', action='store_true')
     run = commands.add_parser('run', help='Run only a qualified sealed route')
     run.add_argument('--contract', type=Path, required=True)
     run.add_argument('--backend', required=True)
@@ -140,8 +141,13 @@ def main(argv=None):
                         or image_runtime(task, args.sandbox_config)[1] != probe['pins']):
                     raise RouterError('IMAGE_ROUTE_MISMATCH')
                 require_conformance(store, probe, task)
+                if args.recover_account_projection:
+                    from .image_budget import ACCOUNT_PROJECTION_SPEC_SHA
+                    if not any(ref['sha256'] == ACCOUNT_PROJECTION_SPEC_SHA for ref in task['selected_refs']):
+                        raise RouterError('SUBSCRIPTION_RECOVERY_ACCEPTANCE_REQUIRED')
                 output = observe_subscription_account(store,
-                    read_credential_reference('codex-subscription', args.credential_ref), task['model'])
+                    read_credential_reference('codex-subscription', args.credential_ref), task['model'],
+                    recover_projection=args.recover_account_projection)
                 if output['classification'] == 'AUTHENTICATED_ACCOUNT_READY':
                     output = authorize_subscription_probe(store, args.probe, output['invocation_id'])
                 code = 0 if output['classification'] == 'AUTHORIZED' else 2

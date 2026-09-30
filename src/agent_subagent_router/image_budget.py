@@ -10,6 +10,8 @@ from .receipts import atomic_json
 from .image_contract import IMAGE_PROVIDERS
 from .transport.credentials import owner_home
 
+ACCOUNT_PROJECTION_SPEC_SHA = '7e96271ee259ba2f04d16d72b7d4766c8ef703f05c218fb9f6fca227b91a6d81'
+
 
 def input_digest(task):
     from .adapters.image_claude import visible_text
@@ -190,11 +192,36 @@ def authorize_subscription_probe(store, probe_id, observation_id):
     return record
 
 
-def reserve_subscription_account_observation(invocation_id):
+def reserve_subscription_account_observation(invocation_id, *, store=None,
+        recover_projection=False, fingerprint=None, model=None):
     root = probe_reservation_root()
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
     if root.is_symlink() or root.stat().st_mode & 0o077 or root.stat().st_uid != os.getuid():
         raise RouterError('UNSAFE_STATE')
+    if recover_projection:
+        from .contracts import strict_json
+        try:
+            original = strict_json((root/(SUBSCRIPTION_SPEC_SHA + '-account.json')).read_bytes())
+            previous = store.read(original['invocation_id'])
+            expected = {'kind': 'codex-subscription-account/v1',
+                'classification': 'UPSTREAM_SECRET_REFLECTION', 'account_queries': 1,
+                'provider_requests': 0, 'evidence_kind': 'authenticated-https-account',
+                'credential_fingerprint': fingerprint, 'model': model}
+            if (original['spec_sha256'] != SUBSCRIPTION_SPEC_SHA
+                    or not fingerprint or not model
+                    or any(type(previous.get(k)) is not type(v) or previous.get(k) != v
+                           for k, v in expected.items())):
+                raise ValueError()
+        except (AttributeError, KeyError, OSError, TypeError, ValueError, RouterError):
+            raise RouterError('SUBSCRIPTION_RECOVERY_NOT_AUTHORIZED') from None
+        try:
+            atomic_json(root/(ACCOUNT_PROJECTION_SPEC_SHA + '-account.json'), {
+                'spec_sha256': ACCOUNT_PROJECTION_SPEC_SHA, 'invocation_id': invocation_id,
+                'previous_invocation_id': previous['invocation_id'],
+                'quota_query_limit': 1, 'catalog_query_limit': 1})
+        except FileExistsError:
+            raise RouterError('SUBSCRIPTION_ACCOUNT_OBSERVATION_CONSUMED') from None
+        return
     try:
         atomic_json(root/(SUBSCRIPTION_SPEC_SHA + '-account.json'), {
             'spec_sha256': SUBSCRIPTION_SPEC_SHA, 'invocation_id': invocation_id,

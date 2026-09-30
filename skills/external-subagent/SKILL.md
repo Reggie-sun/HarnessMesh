@@ -85,6 +85,8 @@ Parent 用 `candidate-test --invocation <id> --argv-json <exact-argv.json>` 在�
 
 用户明确使用Codex订阅时，独立tuple为 `codex / subscription-bounded / gpt-6.1-sol 或 gpt-6-luna / high`；当前正式组合为MiniMax+gpt-6.1-sol，gpt-6-luna可单独选择，不自动fallback；旧gpt-6-sol只保留显式兼容和历史证据。需绑定accepted subscription amendment，credential provider为 `codex-subscription`，仅canonical owner读取OS UID home下`.config/jianji/codex/auth.json`并核对access-token account claim与本文件account_id一致；无OpenAI Key前提，不读取global Codex auth、不login/refresh/复制token。其他userData布局拒绝，不搜索同名auth。Docker只收opaque capability。
 
+仅accepted account-projection repair允许显式 `observe-image-subscription --recover-account-projection`；需sealed新Spec SHA、同store原真实quota反射拒绝、同model/fingerprint、原once ledger及独立一次recovery ledger。默认一次门不恢复；quota总≤2/catalog总≤1，无自动retry。匹配quota account_id只在host核对并移除，tokens及其他位置反射仍拒绝，原image broker扫描不变。
+
 订阅profile的pre-request generation cap=null，observed output limit=2048不能冒充upstream hard cap。`observe-image-subscription --probe <owned-id> --credential-ref <private-reference>`按固定host的quota/catalog各一次生成canonical account/budget证据；失效登录零查询，缺真实额度/图片权限零model。真实capability仅once、wall180/idle90及原bytes上限，OS UID host ledger不随HOME/state恢复；未知token/cost保持null。工程probe、fake或订阅模型名称均不构成视觉资格，formal预算和产品授权不继承。
 
 `qualify-image-route --native-only`只生成本地fake/实际Docker conformance，不证明模型视觉能力；真实 `--live` 仍必须有独立credential reference、当前认证账号、frozen input accounting和canonical预算。MiniMax当前费用授权为0、budget gate硬拒绝，正式image请求也无费用授权；不得以prepared probe、API连通或native conformance绕过。具体image输入、固定TLS endpoint、hard cap、receipt与资格语义由accepted image Specs和source owners独占；不使用旧MiniMax runner、host CLI或global Codex OAuth回退。
