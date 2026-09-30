@@ -14,9 +14,15 @@ class ImageProcessBudgets:
     context_bytes: int
     generation_tokens: int | None
     observed_output_tokens_limit: int | None = None
+    spending_policy: str | None = None
 
     def __post_init__(self):
-        if self.generation_tokens is None:
+        if self.spending_policy == 'unrestricted':
+            if self.generation_tokens is not None or self.observed_output_tokens_limit is not None:
+                raise RouterError('INVALID_IMAGE_PROCESS_BUDGET')
+        elif self.spending_policy is not None:
+            raise RouterError('INVALID_IMAGE_PROCESS_BUDGET')
+        elif self.generation_tokens is None:
             if type(self.observed_output_tokens_limit) is not int or self.observed_output_tokens_limit != 2048:
                 raise RouterError('INVALID_IMAGE_PROCESS_BUDGET')
         elif self.observed_output_tokens_limit is not None:
@@ -37,5 +43,7 @@ class ImageProcessBudgets:
 
     @classmethod
     def from_task(cls, task):
+        from .image_contract import unrestricted_spending
         value = task['budgets']
-        return cls(**{name: value[name] for name in cls.__dataclass_fields__ if name in value})
+        return cls(**{name: value[name] for name in cls.__dataclass_fields__ if name in value},
+                   spending_policy='unrestricted' if unrestricted_spending(task) else None)

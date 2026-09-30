@@ -2,12 +2,13 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 import os
+import re
 from pathlib import Path
 
 from .contracts import RouterError, canonical_bytes, hash_bytes
 from .image_runtime import API_SPEC_SHA, SUBSCRIPTION_SPEC_SHA
 from .receipts import atomic_json
-from .image_contract import IMAGE_PROVIDERS
+from .image_contract import IMAGE_PROVIDERS, unrestricted_spending, UNRESTRICTED_SPENDING_SPEC_SHA
 from .transport.credentials import owner_home
 
 ACCOUNT_PROJECTION_SPEC_SHA = '7e96271ee259ba2f04d16d72b7d4766c8ef703f05c218fb9f6fca227b91a6d81'
@@ -23,6 +24,10 @@ def input_digest(task):
 
 
 def require_probe_budget(store, identifier, task, fingerprint):
+    if unrestricted_spending(task):
+        if task['backend'] == 'codex':
+            _require_model_image_evidence(store, identifier, task, fingerprint)
+        return {'spending_policy': 'unrestricted', 'cost_upper_bound_usd': None}
     if task.get('backend') == 'codex' and task.get('profile') == 'subscription-bounded':
         return _require_subscription_budget(store, identifier, task, fingerprint)
     # MiniMax engineering is authorized; its authenticated accounting/budget is not yet frozen.
@@ -99,6 +104,39 @@ def require_probe_budget(store, identifier, task, fingerprint):
     except (KeyError, TypeError, ValueError, ArithmeticError, StopIteration, OSError):
         raise RouterError('IMAGE_ACCOUNT_BUDGET_UNVERIFIED') from None
     return record
+
+
+def _require_model_image_evidence(store, identifier, task, fingerprint):
+    """Authenticated model support remains independent from credit/quota."""
+    from .contracts import strict_json
+    paths = [store.root/identifier/'invocation-receipt.json'] if identifier else sorted(
+        store.root.glob('*/invocation-receipt.json'))
+    for path in paths:
+        try:
+            record = store.read(path.parent.name)
+            if (record.get('kind') != 'codex-subscription-account/v1'
+                    or record.get('evidence_kind') != 'authenticated-https-account'
+                    or record.get('classification') not in ('AUTHENTICATED_ACCOUNT_READY', 'INCOMPLETE')
+                    or record.get('model') != task['model']
+                    or record.get('credential_fingerprint') != fingerprint
+                    or type(record.get('account_queries')) is not int or record['account_queries'] != 2
+                    or type(record.get('provider_requests')) is not int or record['provider_requests'] != 0):
+                continue
+            artifact = next(x for x in record['artifacts'] if x['path'] == 'account-evidence.json')
+            facts = strict_json((path.parent/artifact['path']).read_bytes())
+            age = (datetime.now(timezone.utc) - datetime.fromisoformat(facts['observed_at'])).total_seconds()
+            if (artifact['producer'] == 'subscription-account-observer'
+                    and facts['authenticated'] is True and facts['image_input_supported'] is True
+                    and facts['credential_fingerprint'] == fingerprint
+                    and facts['provider'] == 'codex-subscription' and facts['model'] == task['model']
+                    and facts['catalog_source'] == 'https://chatgpt.com/backend-api/codex/models?client_version=0.154.0'
+                    and isinstance(facts['catalog_sha256'], str)
+                    and re.fullmatch(r'[0-9a-f]{64}', facts['catalog_sha256'])
+                    and 0 <= age <= 86400):
+                return record
+        except (RouterError, KeyError, TypeError, ValueError, StopIteration, OSError):
+            continue
+    raise RouterError('SUBSCRIPTION_MODEL_UNVERIFIED')
 
 
 def _require_subscription_budget(store, identifier, task, fingerprint):
@@ -236,19 +274,25 @@ def probe_reservation_root():
     return owner_home()/'.local/state/agent-subagent-router/image-probe-reservations'
 
 
-def reserve_probe(store, backend, invocation_id, *, profile=None):
+def reserve_probe(store, backend, invocation_id, *, profile=None, task=None, probe_id=None):
     # One durable reservation per approved amendment/backend, never per arbitrary
     # taskId. Recreating a fixture or run cannot restore consumed authorization.
-    if backend not in ('kimi', 'codex'):
+    unmetered = task is not None and unrestricted_spending(task)
+    if unmetered and (not isinstance(probe_id, str) or not probe_id or task['backend'] != backend):
+        raise RouterError('IMAGE_PROBE_BINDING_MISMATCH')
+    if not unmetered and backend not in ('kimi', 'codex'):
         raise RouterError('IMAGE_ROUTE_MISMATCH')
     root = probe_reservation_root()
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
     if root.is_symlink() or root.stat().st_mode & 0o077 or root.stat().st_uid != os.getuid():
         raise RouterError('UNSAFE_STATE')
-    spec = SUBSCRIPTION_SPEC_SHA if backend == 'codex' and profile == 'subscription-bounded' else API_SPEC_SHA
-    path = root/(spec + '-' + backend + '.json')
+    spec = UNRESTRICTED_SPENDING_SPEC_SHA if unmetered else (
+        SUBSCRIPTION_SPEC_SHA if backend == 'codex' and profile == 'subscription-bounded' else API_SPEC_SHA)
+    key = backend + '-' + hash_bytes(probe_id.encode()) if unmetered else backend
+    path = root/(spec + '-' + key + '.json')
     try:
         atomic_json(path, {'spec_sha256': spec, 'backend': backend,
-                          'invocation_id': invocation_id, 'request_limit': 1})
+                          'invocation_id': invocation_id, 'request_limit': 1,
+                          **({'spending_policy': 'unrestricted', 'probe_id': probe_id} if unmetered else {})})
     except FileExistsError:
-        raise RouterError('IMAGE_PROBE_BUDGET_CONSUMED') from None
+        raise RouterError('IMAGE_PROBE_ALREADY_SUBMITTED' if unmetered else 'IMAGE_PROBE_BUDGET_CONSUMED') from None

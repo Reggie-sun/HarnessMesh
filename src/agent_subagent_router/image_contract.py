@@ -18,6 +18,24 @@ IMAGE_TASK_SCHEMA = 'image-task/v1'
 IMAGE_OUTPUT_PROTOCOL = 'JSON_OBJECT/v1'
 IMAGE_CONTEXT_POLICY = 'FRESH_SEALED_INPUT/v1'
 IMAGE_PROVIDERS = MappingProxyType({'kimi': 'kimi', 'codex': 'openai', 'minimax': 'minimax'})
+UNRESTRICTED_SPENDING_SPEC_SHA = 'f96a2fa0ed47e96810c46cda8c221694690badc64689661dbabe4826e0b345eb'
+
+
+def unrestricted_spending(task) -> bool:
+    policy = task.get('metadata', {}).get('spending_policy')
+    if policy is None:
+        return False
+    if policy != 'unrestricted':
+        raise RouterError('IMAGE_SPENDING_POLICY_INVALID')
+    route = (task['backend'], task['profile'], task['model'], task['effort'])
+    if route not in (('minimax', 'responses-bounded', 'MiniMax-M3', 'provider-default'),
+            ('codex', 'subscription-bounded', 'gpt-6.1-sol', 'high'),
+            ('codex', 'subscription-bounded', 'gpt-6-luna', 'high')):
+        raise RouterError('IMAGE_ROUTE_MISMATCH')
+    if not any(ref['sha256'] == UNRESTRICTED_SPENDING_SPEC_SHA and ref['accepted'] is True
+               for ref in task['selected_refs']):
+        raise RouterError('IMAGE_SPENDING_ACCEPTANCE_REQUIRED')
+    return True
 
 
 def image_provider(task) -> str:
@@ -178,14 +196,19 @@ def _validate_refs(value: Any) -> list[dict[str, Any]]:
 
 def _validate_budgets(
     value: Any, images: list[dict[str, Any]], prompt_bytes: int, *, subscription: bool = False,
+    unrestricted: bool = False,
 ) -> dict[str, Any]:
     fields = _BUDGET_FIELDS | {'observed_output_tokens_limit'} if subscription else _BUDGET_FIELDS
     if type(value) is not dict or set(value) != fields:
         _fail('INVALID_CONTRACT', 'image budgets have missing or unknown fields')
+    observed = None if unrestricted else 2048
     if subscription and (value['generation_tokens'] is not None
-            or type(value['observed_output_tokens_limit']) is not int
-            or value['observed_output_tokens_limit'] != 2048):
+            or type(value['observed_output_tokens_limit']) is not type(observed)
+            or value['observed_output_tokens_limit'] != observed):
         _fail('INVALID_CONTRACT', 'subscription hard generation cap must be null')
+    if unrestricted and (value['generation_tokens'] is not None or value['request_limit'] != 1
+            or type(value['request_limit']) is not int):
+        _fail('INVALID_CONTRACT', 'unrestricted spending keeps single-submission protocol')
 
     integer_limits = {
         'max_images': (1, MAX_IMAGES),
@@ -198,7 +221,7 @@ def _validate_budgets(
     }
     budgets = dict(value)
     for name, (minimum, maximum) in integer_limits.items():
-        if subscription and name == 'generation_tokens':
+        if (subscription or unrestricted) and name == 'generation_tokens':
             continue
         item = budgets[name]
         if not _is_int(item) or not minimum <= item <= maximum:
@@ -289,7 +312,8 @@ class ImageTaskContract:
         refs = _validate_refs(data['selected_refs'])
         metadata = _safe_metadata(data['metadata'])
         budgets = _validate_budgets(data['budgets'], images, prompt_bytes,
-            subscription=backend == 'codex' and profile == 'subscription-bounded')
+            subscription=backend == 'codex' and profile == 'subscription-bounded',
+            unrestricted=unrestricted_spending(data | {'metadata': metadata, 'selected_refs': refs}))
         return cls(
             schema=IMAGE_TASK_SCHEMA,
             parent_session_id=parent_session_id,

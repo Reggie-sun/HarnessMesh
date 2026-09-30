@@ -9,7 +9,7 @@ from .adapters.image_claude import build_image_invocation, docker_projection, vi
 from .contracts import RouterError, canonical_bytes, hash_bytes, strict_json
 from .image_budget import require_probe_budget, reserve_probe
 from .image_output import decode_image_claude, decode_image_codex, decode_image_minimax
-from .image_contract import image_provider
+from .image_contract import image_provider, unrestricted_spending
 from .image_probe import read_probe
 from .image_process import ImageProcessBudgets
 from .image_runtime import image_runtime
@@ -22,7 +22,8 @@ def require_live_admission(store, task, manifest, probe_id, budget_id, fingerpri
     # This amendment authorizes one router-owned capability probe per backend.
     # Formal/project requests still have no monetary authorization.
     if not probe_id:
-        raise RouterError('IMAGE_FORMAL_BUDGET_NOT_AUTHORIZED')
+        raise RouterError('IMAGE_FORMAL_EXECUTION_UNAVAILABLE' if unrestricted_spending(task)
+                          else 'IMAGE_FORMAL_BUDGET_NOT_AUTHORIZED')
     probe, _ = read_probe(store, probe_id, manifest)
     from .image_conformance import require_conformance
     require_conformance(store, probe, task)
@@ -44,7 +45,7 @@ def _invocation(task, pngs, capability, directory):
                 [{'type': 'input_image', 'image_url': 'data:image/png;base64,' + base64.b64encode(raw).decode('ascii'),
                   'detail': 'high'} for raw in pngs]}],
             'tools': [], 'tool_choice': 'none', 'stream': False, 'store': False,
-            'max_output_tokens': budgets.generation_tokens})
+            **({'max_output_tokens': budgets.generation_tokens} if budgets.generation_tokens is not None else {})})
         if len(prompt) > task['budgets']['payload_bytes']:
             raise RouterError('IMAGE_PAYLOAD_LIMIT')
         return ('/usr/local/bin/python3', '/opt/router/image_minimax.py'), {
@@ -132,7 +133,8 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
                 raise RouterError('IMAGE_ROUTE_PIN_DRIFT')
             if upstream is None:
                 require_live_admission(store, task, manifest, probe_id, budget_id, fingerprint)
-                reserve_probe(store, task['backend'], run.name, profile=task['profile'])
+                reserve_probe(store, task['backend'], run.name, profile=task['profile'],
+                              task=task, probe_id=probe_id)
 
         with tempfile.TemporaryDirectory(prefix='router-image-run-') as temporary:
             directory = Path(temporary)
@@ -213,6 +215,7 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
                 'profile': task['profile'], 'effort': task['effort'],
                 'credential_fingerprint': fingerprint, 'wire_requests': None,
                 'actual_cost_usd': None, 'source_semantic': 'NOT_EVALUATED',
+                **({'spending_policy': 'unrestricted'} if unrestricted_spending(task) else {}),
                 'authority': 'none', 'eligible': False}
         if broker is not None:
             observations, rejections = broker.observations, broker.rejections
@@ -224,6 +227,7 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
         'effort': task['effort'] if task else None, 'wire_requests': wire,
         'credential_fingerprint': fingerprint if upstream is None and credential else None,
         'probe_id': probe_id, 'budget_id': budget_id, 'upstream': observations, 'rejections': rejections,
+        **({'spending_policy': 'unrestricted'} if task and unrestricted_spending(task) else {}),
         'container_removed': removed, 'native': {'exit_code': process.exit_code,
             'reason': process.reason, 'duration_seconds': process.duration_seconds,
             'truncated': process.truncated} if process else None,

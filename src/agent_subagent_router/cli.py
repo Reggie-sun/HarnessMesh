@@ -47,6 +47,8 @@ def main(argv=None):
     image_probe.add_argument('--refs-json', type=Path, required=True)
     image_probe.add_argument('--model', required=True)
     image_probe.add_argument('--profile', required=True)
+    image_probe.add_argument('--unrestricted-spending', action='store_true',
+        help='New accepted image policy without financial or token caps')
     image_probe.add_argument('--effort', required=True)
     image_qualify = commands.add_parser('qualify-image-route', help='Image capability gate, distinct from project routes')
     image_qualify.add_argument('--probe', required=True)
@@ -55,7 +57,7 @@ def main(argv=None):
     image_mode.add_argument('--live', action='store_true')
     image_qualify.add_argument('--credential-ref', type=Path)
     image_qualify.add_argument('--budget-receipt')
-    image_run = commands.add_parser('run-images', help='Image execution; formal budget remains blocked')
+    image_run = commands.add_parser('run-images', help='Image execution; formal execution owner remains unavailable')
     image_run.add_argument('--contract', type=Path, required=True)
     image_run.add_argument('--live', action='store_true', required=True)
     image_run.add_argument('--credential-ref', type=Path, required=True)
@@ -155,7 +157,8 @@ def main(argv=None):
                 from .image_probe import prepare_probe
                 output = prepare_probe(store, backend=args.backend, model=args.model,
                     profile=args.profile, effort=args.effort,
-                    refs=strict_json(args.refs_json.read_bytes()), sandbox_config=args.sandbox_config)
+                    refs=strict_json(args.refs_json.read_bytes()), sandbox_config=args.sandbox_config,
+                    unrestricted=args.unrestricted_spending)
                 code = 0
             elif args.command == 'qualify-image-route':
                 if args.native_only:

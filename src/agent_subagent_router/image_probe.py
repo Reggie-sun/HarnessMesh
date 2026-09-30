@@ -37,7 +37,7 @@ def _png(shape, color, position):
             + chunk(b'IDAT', zlib.compress(rows)) + chunk(b'IEND', b''))
 
 
-def prepare_probe(store, *, backend, model, profile, effort, refs, sandbox_config):
+def prepare_probe(store, *, backend, model, profile, effort, refs, sandbox_config, unrestricted=False):
     run = store.create('router-image-capability', 'prepare-' + backend)
     images, rubric, artifacts = [], [], []
     first = None
@@ -69,6 +69,11 @@ def prepare_probe(store, *, backend, model, profile, effort, refs, sandbox_confi
                         'context_bytes': 1024 * 1024, 'generation_tokens': 2048}}
     if backend == 'codex' and profile == 'subscription-bounded':
         task['budgets'].update(generation_tokens=None, observed_output_tokens_limit=2048)
+    if unrestricted:
+        task['metadata']['spending_policy'] = 'unrestricted'
+        task['budgets']['generation_tokens'] = None
+        if backend == 'codex':
+            task['budgets']['observed_output_tokens_limit'] = None
     inspected = inspect_images(task, store.root.parent/'image-contracts', sandbox_config=sandbox_config)
     path = Path(inspected['manifest'])
     artifacts.append(store.artifact(run, 'rubric.json', canonical_bytes({'images': rubric}),
@@ -92,9 +97,12 @@ def read_probe(store, identifier, manifest_path):
         raise RouterError('IMAGE_PROBE_BINDING_MISMATCH')
     sealed = verify_image_seal(path)
     task = sealed['task']
-    generation = None if task['backend'] == 'codex' and task['profile'] == 'subscription-bounded' else 2048
+    from .image_contract import unrestricted_spending
+    unmetered = unrestricted_spending(task)
+    generation = None if unmetered or (task['backend'] == 'codex' and task['profile'] == 'subscription-bounded') else 2048
+    metadata = {'purpose': 'capability', **({'spending_policy': 'unrestricted'} if unmetered else {})}
     if (task['system_text'] != SYSTEM or task['task_text'] != TASK
-            or task['metadata'] != {'purpose': 'capability'} or len(task['images']) != 8
+            or task['metadata'] != metadata or len(task['images']) != 8
             or task['budgets']['generation_tokens'] != generation or task['budgets']['request_limit'] != 1):
         raise RouterError('IMAGE_PROBE_BINDING_MISMATCH')
     rubric = strict_json((store.root/identifier/'rubric.json').read_bytes())

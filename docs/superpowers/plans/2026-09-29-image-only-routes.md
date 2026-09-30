@@ -1,5 +1,15 @@
 # Sealed Image Input Routes Implementation Plan
 
+## User Directed Unrestricted Spending
+
+按[费用修订](../specs/2026-09-30-image-unrestricted-spending.md)（accepted SHA `f96a2fa0ed47e96810c46cda8c221694690badc64689661dbabe4826e0b345eb`）继续当前任务，旧条款保留为历史。目标：新sealed MiniMax/subscription请求不需余额/成本/budget receipt，不设金额/token/任务累计调用总量上限；身份、图片权限、真实资格和产品禁止不变。
+
+1. 原image_contract、image_process、image_probe/CLI新增显式spending_policy=unrestricted及accepted-ref/tuple/null-cap校验；原image_budget拆出cost-free admission与per-owned-probe no-replay。原image_run/minimax_image_wire/codex_image_wire取消新policy的token拒绝，receipt标明policy；其余生命周期/typed协议保持。
+2. 新 `tests/unit/test_image_unrestricted_spending.py`验证旧budget门red、新无余额/费用门、missing-ref/错tuple、null cap/no upstream cap、usage>2048/typed-invalid、旧cap/once兼容、新per-probe一次/unknown不重放、Codex image权限与formal owner仍拒绝；fresh offline/native Docker/containment/Ruff/diff。无需修改Docker helper或建立第二owner。
+3. Critical implementation gate按accepted architecture §9判断；沿用既有Kimi故障native接手和一个named reviewer，保持历史轮次，基于本次新授权最多一次初审及两次有依据修复复核，每次600秒，无机械追加。Parent裁决后scoped clean commit、官方安装、installed新policy八图/OS/probe raw proof。任何真实capability仍先满足身份/图片门；当前catalog未证明6.1sol，不能因去掉费用门就伪造视觉通过。
+
+Self-Review已核对新授权、旧seal compatibility、canonical owner/no-replay、formal未实施入口与全部产品边界；此plan不是停止点，不重复索要用户批准。
+
 ## Account Response Projection Repair
 
 按[新窄修订](../specs/2026-09-30-subscription-account-projection-repair.md)继续同一目标：正常quota account_id仅在host匹配验证后移除，其他反射仍拒绝；明确CLI恢复flag/new Spec ref/prior canonical failed receipt及独立once ledger，不改变旧budget/history。19项projection/negative/typed receipt/state/once tests通过，继续fresh完整native验证和仅一次同一named read-only round24/wall600、Parent裁决、clean官方安装和installed新tuple，再显式已封存的一次只读恢复。原真实首次原因未知，保留拒绝及generation0；不重试未知paid调用。Self-Review按原owners、有限总quota2/catalog1和全部产品禁止完成，本plan不是停止点。

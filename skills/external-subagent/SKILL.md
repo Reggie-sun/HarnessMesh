@@ -81,6 +81,8 @@ Parent 用 `candidate-test --invocation <id> --argv-json <exact-argv.json>` 在�
 
 ### Isolated Image Routes
 
+当前M5-D2A用户明确不设费用预算。新seal只有绑定accepted `2026-09-30-image-unrestricted-spending.md`并显式`prepare-image-probe --unrestricted-spending`时采用metadata spending_policy=unrestricted，适用MiniMax-M3及Codex subscription 6.1sol/luna。不需余额、input accounting、费用预算receipt，不设金额/token/任务累计调用上限；原seal/receipt/host ledgers和下方旧预算条款保留历史。每owned probe一次提交用于no-replay，单次wall/idle、bytes、凭据、Docker、图片身份、取消/secret guards不变。Codex图片权限仍须canonical证据，去掉quota门不把无图像证明改成qualified；formal执行owner缺失与费用授权分开报告。此policy不应用Kimi project tasks，不自动retry/refresh/fallback或启用产品。
+
 独立 `image-task/v1` 不继承project task的工具、profile或额度。只有current task明确选择、exact accepted image amendments和单独image config成立时，才使用 `prepare-image-probe`、`qualify-image-route` 或 `run-images`。MiniMax tuple为 `minimax / responses-bounded / MiniMax-M3 / provider-default`，GPT API tuple保持原合同；未知backend拒绝，不将旧Kimi runtime/receipt改名复用。
 
 用户明确使用Codex订阅时，独立tuple为 `codex / subscription-bounded / gpt-6.1-sol 或 gpt-6-luna / high`；当前正式组合为MiniMax+gpt-6.1-sol，gpt-6-luna可单独选择，不自动fallback；旧gpt-6-sol只保留显式兼容和历史证据。需绑定accepted subscription amendment，credential provider为 `codex-subscription`，仅canonical owner读取OS UID home下`.config/jianji/codex/auth.json`并核对access-token account claim与本文件account_id一致；无OpenAI Key前提，不读取global Codex auth、不login/refresh/复制token。其他userData布局拒绝，不搜索同名auth。Docker只收opaque capability。

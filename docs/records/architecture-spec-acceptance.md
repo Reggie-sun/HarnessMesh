@@ -1,5 +1,13 @@
 # HarnessMesh Architecture Spec Acceptance
 
+## User Directed Unrestricted Image Spending
+
+2026-09-30用户明确“预算不用管,也不应该设限制”，直接取代本任务新image调用的费用授权0、quota/cost/accounting prerequisite及backend累计once/token2048上限，不更改历史seal或receipt。Parent Self-Review接受 `docs/superpowers/specs/2026-09-30-image-unrestricted-spending.md` SHA `f96a2fa0ed47e96810c46cda8c221694690badc64689661dbabe4826e0b345eb`，适用MiniMax-M3和应用独立subscription 6.1sol/luna，原plan自动承接。
+
+新policy只改变spending层；Docker/凭据/模型图片身份、exact输入、一invocation一次提交/no-replay、超时/取消/秘密扫描、独立truth/hard semantic gates及产品禁止不放宽。Codex quota不再是门，图片支持仍须canonical证据；未实施formal owner拒绝与费用无关。Unknown actual token/cost保留null，不伪造余额。
+
+本轮verification后判断原critical Risk Gate；如触发，仅沿用一个named read-only native reviewer接手历史Kimi2次故障，round25起累计不重置，本次新授权最多三轮有依据复核（每轮600秒），不是费用额度或自动重试许可。Parent保存exact snapshots并裁决；安装和live资格仍分开。
+
 ## Task Authorized Account Response Projection Repair
 
 2026-09-30 b120f40已经clean官方安装且四tuple installed native/fake/14项OS核验成立。首次真实quota GET被UPSTREAM_SECRET_REFLECTION拒绝，receipt `f287b749-4246-4cf0-9b40-61b8fe8bd7b5`、account_queries=1/provider_requests=0，catalog未启动。原raw未保存，具体反射项未知，不重写失败。Primary OpenAI0.154.0类型支持quota顶层account_id；Parent合成实测正常匹配字段也被原guard拒绝，五项red失败、四项拒绝positive保持。

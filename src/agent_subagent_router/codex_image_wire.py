@@ -252,7 +252,7 @@ def _validate_response_object(task, response, request_id, response_id=None):
     output_tokens = usage.get("output_tokens")
     cap = task['budgets']['observed_output_tokens_limit'] if subscription else task["budgets"]["generation_tokens"]
     if (type(input_tokens) is not int or input_tokens < 0 or type(output_tokens) is not int
-            or output_tokens < 0 or output_tokens > cap):
+            or output_tokens < 0 or (cap is not None and output_tokens > cap)):
         _fail("IMAGE_GENERATION_LIMIT")
     output = response.get("output")
     if type(output) is not list or not output:

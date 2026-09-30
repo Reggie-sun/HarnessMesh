@@ -3,6 +3,7 @@ from .image_probe import compare_probe, read_probe
 from .image_run import run_image_contract
 from .image_seal import verify_image_seal
 from pathlib import Path
+from .image_contract import unrestricted_spending
 
 
 def qualify_image_route(store, probe_id, *, sandbox_config, credential_ref=None, budget_id=None,
@@ -25,6 +26,7 @@ def qualify_image_route(store, probe_id, *, sandbox_config, credential_ref=None,
         'backend': invocation['backend'], 'model': invocation['model'],
         'profile': invocation['profile'], 'effort': invocation['effort'],
         'credential_fingerprint': invocation['credential_fingerprint'],
+        **({'spending_policy': 'unrestricted'} if unrestricted_spending(task) else {}),
         'envelope': {'images': 8, 'width': 128, 'height': 128,
             'generation_tokens': task['budgets']['generation_tokens'], 'context': 'owned-probe-only',
             **({'observed_output_tokens_limit': task['budgets']['observed_output_tokens_limit']}

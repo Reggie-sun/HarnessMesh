@@ -31,7 +31,7 @@ def _fail(code="IMAGE_PROJECTION_MISMATCH"):
 
 
 def _validate_minimax_request(task, body):
-    if type(body) is not dict or set(body) != _REQUEST_FIELDS:
+    if type(body) is not dict:
         _fail()
     if (
         task["backend"] != "minimax"
@@ -42,7 +42,10 @@ def _validate_minimax_request(task, body):
     ):
         _fail("IMAGE_ROUTE_MISMATCH")
     cap = task["budgets"]["generation_tokens"]
-    if cap > MAX_MINIMAX_IMAGE_TOKENS:
+    fields = _REQUEST_FIELDS - {'max_output_tokens'} if cap is None else _REQUEST_FIELDS
+    if set(body) != fields:
+        _fail()
+    if cap is not None and cap > MAX_MINIMAX_IMAGE_TOKENS:
         _fail("IMAGE_GENERATION_LIMIT")
     if (
         body["model"] != task["model"]
@@ -52,8 +55,8 @@ def _validate_minimax_request(task, body):
         or body["tool_choice"] != "none"
         or body["stream"] is not False
         or body["store"] is not False
-        or type(body["max_output_tokens"]) is not int
-        or body["max_output_tokens"] != cap
+        or (cap is not None and (type(body["max_output_tokens"]) is not int
+                                or body["max_output_tokens"] != cap))
     ):
         _fail("IMAGE_ROUTE_MISMATCH")
 
@@ -241,7 +244,8 @@ def validate_minimax_image_response(task: dict, headers: dict, data: bytes) -> d
         _fail("IDENTITY_UNVERIFIED")
     cap = contract["budgets"]["generation_tokens"]
     echoed_cap = response.get("max_output_tokens")
-    if "max_output_tokens" in response and (type(echoed_cap) is not int or echoed_cap != cap):
+    if "max_output_tokens" in response and (type(echoed_cap) is not int or echoed_cap < 1
+            or (cap is not None and echoed_cap != cap)):
         _fail("IMAGE_GENERATION_LIMIT")
 
     usage = response.get("usage")
@@ -254,7 +258,7 @@ def validate_minimax_image_response(task: dict, headers: dict, data: bytes) -> d
         or input_tokens < 0
         or type(output_tokens) is not int
         or output_tokens < 0
-        or output_tokens > cap
+        or (cap is not None and output_tokens > cap)
     ):
         _fail("IMAGE_GENERATION_LIMIT")
 
