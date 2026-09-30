@@ -1,5 +1,13 @@
 # HarnessMesh Architecture Spec Acceptance
 
+## MiniMax Generation Diagnostics — 2026-10-01
+
+用户“继续优化”延续当前router修复/安装授权。Parent Self-Review接受Spec `docs/superpowers/specs/2026-10-01-minimax-generation-diagnostics.md` SHA `78869cb97752497a52555f803b24c95cd63592472b3d678150612fcfa1e6b7e2`、Plan `docs/superpowers/plans/2026-10-01-minimax-generation-diagnostics.md` SHA `85c22b3c391beed927cf543ae6e7e7dfd6b0fc83cdbe40b2abad1a649ec31be9`；不称用户逐字批准SHA。唯一wire owner只增加六个static拒绝标签，原classification、finite/unrestricted条件及秘密检查/隔离保持。
+
+Red13FAIL/73PASS，focused114PASS，offline999PASS/35skip，明确native/fake+containment1030PASS/4环境skip，Ruff/diff通过。Parent在stable candidate按base§9判断KIMI_REVIEW_NOT_REQUIRED：没有用户review要求或新critical consequence；拒绝范围逻辑同等，任意detail/分段secret及hash-only隔离有回归，未改身份、凭据、权限或发表owner，不存在剩余重大验证缺口。原生只读code_mapper核对unrestricted可达分支，未读取真实body、不充当reviewer/视觉actor；Kimi禁令及历史27轮保持。
+
+下一步仅clean官方安装、新pins八图/14OS及一次新sealed诊断。旧真实9d17dda4错误字段仍UNKNOWN，不回填；有具体新证据才另行设计兼容修复，不盲目重试/切换模型。正式qualification和生产门不变。
+
 ## Documented MiniMax Identity Repair — 2026-10-01
 
 用户继续完整验收，Parent按已授权router修复/安装及任务内默认授权Self-Review接受新Spec `docs/superpowers/specs/2026-10-01-minimax-response-identity.md` SHA `e1faad6a4d15bf1b52f21efe3eba85265f3fd0e3166ec15e3f2ab262d7c6df8b` 与Plan SHA `0d2d6f912c32ee0df9dd212af812857163c08e3e13068352f39c08e18d4ad2de`；不称用户逐字批准SHA。原header-only合同及历史sealed receipts保持；新exact-ref才允许documented response body ID，在fixed TLS、actual request/response SHA、精确MiniMax-M3、storage/completion/secret/tools组合门下绑定。真实headers证据及明确来源由原broker/decoder独占，不合成来源。

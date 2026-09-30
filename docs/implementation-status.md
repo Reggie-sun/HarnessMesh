@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Generation Diagnostics Candidate — 2026-10-01
+
+新增六个固定拒绝标签，保持原协议门和输出隔离。Red13FAIL→focused114PASS，offline999PASS，明确native+containment1030PASS/4环境skip，Ruff/diff通过；Parent Risk Gate未触发新独立review。此处仅工程candidate，clean安装、新tuple及一次真实诊断结果由[原record](records/image-api-engineering-2026-09-29.md#generation-diagnostics-candidate--2026-10-01)承接。GPT精确模型、formal owner及真值资格仍缺，PRODUCT_DISABLED；旧结果保持历史。
+
 ## Full Acceptance Installed Checkpoint — 2026-10-01
 
 Documented MiniMax identity及headers秘密保护已通过required三轮原生复核、Parent裁决与fresh full native1017PASS，clean303017c经官方安装，69-source program f7773d43…核验一致。Installed新八图fake/14项OS成立；一次真实新能力请求HTTP200后仍被IMAGE_GENERATION_LIMIT拒绝，INCOMPLETE、未放行输出。没有重放或额外调用；预算已解除，拒绝具体cap/usage字段未能从metadata确定。GPT应用独立目录精确6.1sol仍0，formal owner与全真值退出证据未成立，M5-D2A INCOMPLETE、生产BLOCKED。完整receipt/安装证据由[原record](records/image-api-engineering-2026-09-29.md#full-acceptance-installed-result--2026-10-01)独占，下方candidate/pending状态是历史。

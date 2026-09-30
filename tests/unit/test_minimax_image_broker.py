@@ -139,6 +139,35 @@ def test_minimax_arbitrary_exception_detail_is_not_projected(tmp_path, monkeypat
     assert all(b'private-provider-data' not in raw for _, raw in captures)
 
 
+@pytest.mark.parametrize('field,value,issue', [
+    ('max_output_tokens', None, 'CAP_ECHO_NULL'),
+    ('max_output_tokens', False, 'CAP_ECHO_INVALID'),
+    ('max_output_tokens', 4096, 'CAP_ECHO_MISMATCH'),
+    ('input_tokens', None, 'INPUT_USAGE_INVALID'),
+    ('output_tokens', None, 'OUTPUT_USAGE_INVALID'),
+    ('output_tokens', 2049, 'OUTPUT_OVER_CAP'),
+])
+def test_generation_diagnostic_is_static_and_response_remains_quarantined(tmp_path, field, value, issue):
+    task, body = fixture(tmp_path)
+    value_response = response(task)
+    if field == 'max_output_tokens':
+        value_response[field] = value
+    else:
+        value_response['usage'][field] = value
+    captures = []
+    with CodexBroker(task, KEY, upstream=lambda *args: (
+            200, {'content-type': 'application/json', 'x-request-id': 'actual-request'},
+            canonical_bytes(value_response)),
+            on_exchange=lambda phase, raw: captures.append((phase, raw))) as broker:
+        status, raw = post(broker, body)
+    assert status == 502 and strict_json(raw) == {'error': 'IMAGE_GENERATION_LIMIT'}
+    assert broker.observations[0]['response_issue'] == issue
+    quarantined = [strict_json(raw) for phase, raw in captures if phase == 'response-quarantined']
+    assert quarantined[0]['response_issue'] == issue
+    assert set(quarantined[0]) == {'classification', 'sha256', 'byte_length', 'response_issue'}
+    assert not any(phase == 'response' for phase, _ in captures)
+
+
 def test_new_body_identity_is_bound_in_broker_and_native_decoder(tmp_path):
     from test_minimax_image_wire import allow_response_identity
     task, body = fixture(tmp_path)

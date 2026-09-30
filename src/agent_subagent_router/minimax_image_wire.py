@@ -30,6 +30,8 @@ RESPONSE_ISSUES = frozenset({
     "RESPONSE_ID_INVALID", "REQUEST_ID_MISMATCH", "RESPONSE_OBJECT_INVALID",
     "RESPONSE_NOT_COMPLETED", "MODEL_MISMATCH", "STORAGE_NOT_FALSE", "RESPONSE_ERROR",
     "RESPONSE_INCOMPLETE", "ITEM_ID_INVALID",
+    "CAP_ECHO_NULL", "CAP_ECHO_INVALID", "CAP_ECHO_MISMATCH",
+    "INPUT_USAGE_INVALID", "OUTPUT_USAGE_INVALID", "OUTPUT_OVER_CAP",
 })
 
 
@@ -265,23 +267,25 @@ def validate_minimax_image_response(task: dict, headers: dict, data: bytes) -> d
         _fail("IDENTITY_UNVERIFIED", "RESPONSE_INCOMPLETE")
     cap = contract["budgets"]["generation_tokens"]
     echoed_cap = response.get("max_output_tokens")
-    if "max_output_tokens" in response and (type(echoed_cap) is not int or echoed_cap < 1
-            or (cap is not None and echoed_cap != cap)):
-        _fail("IMAGE_GENERATION_LIMIT")
+    if "max_output_tokens" in response:
+        if echoed_cap is None:
+            _fail("IMAGE_GENERATION_LIMIT", "CAP_ECHO_NULL")
+        if type(echoed_cap) is not int or echoed_cap < 1:
+            _fail("IMAGE_GENERATION_LIMIT", "CAP_ECHO_INVALID")
+        if cap is not None and echoed_cap != cap:
+            _fail("IMAGE_GENERATION_LIMIT", "CAP_ECHO_MISMATCH")
 
     usage = response.get("usage")
     if type(usage) is not dict:
         _fail("UPSTREAM_PROTOCOL_ERROR")
     input_tokens = usage.get("input_tokens")
     output_tokens = usage.get("output_tokens")
-    if (
-        type(input_tokens) is not int
-        or input_tokens < 0
-        or type(output_tokens) is not int
-        or output_tokens < 0
-        or (cap is not None and output_tokens > cap)
-    ):
-        _fail("IMAGE_GENERATION_LIMIT")
+    if type(input_tokens) is not int or input_tokens < 0:
+        _fail("IMAGE_GENERATION_LIMIT", "INPUT_USAGE_INVALID")
+    if type(output_tokens) is not int or output_tokens < 0:
+        _fail("IMAGE_GENERATION_LIMIT", "OUTPUT_USAGE_INVALID")
+    if cap is not None and output_tokens > cap:
+        _fail("IMAGE_GENERATION_LIMIT", "OUTPUT_OVER_CAP")
 
     output = response.get("output")
     if type(output) is not list or not output:

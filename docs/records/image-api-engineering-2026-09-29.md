@@ -1,5 +1,11 @@
 # Image API Engineering Record
 
+## Generation Diagnostics Candidate — 2026-10-01
+
+用户继续优化后，Parent在原minimax_image_wire/broker tests增加固定cap/usage拒绝标签；原错误分类、finite/unrestricted PASS/FAIL、秘密保护与隔离不变。Red13FAIL/73PASS→focused114PASS，fresh offline999PASS/35skip、显式native/fake+containment1030PASS/4环境skip（85.78s）、Ruff/diff通过。Exact accepted Spec/Plan及一次Risk Gate由[原acceptance owner](architecture-spec-acceptance.md#minimax-generation-diagnostics--2026-10-01)绑定；只读mapper提供分支核对，不能替代Parent或真值资格。
+
+本轮证据目录 `/home/reggie/.local/state/jianji-source-fact-qualification/response-optimization-20261001` 保存red/green/offline/native日志与stable快照。至该candidate新Provider请求0，旧9d17dda4分类不改，未装或未真实调用不得声称新的视觉结果。GPT所选精确6.1sol目录缺失仍为上轮证据，本轮无新查询。正式requests0、所有未评估指标null/NOT_EVALUATED，M5-D2A INCOMPLETE，PRODUCT_DISABLED和全部生产BLOCKED。
+
 ## Full Acceptance Installed Result — 2026-10-01
 
 Required三轮工程复核与Parent裁决完成后，clean `303017c380f8046e96b7d0b42411efee18b3d017` 经官方installation owner安装，source_dirty_at_install=false；program `f7773d43ed73cb6c3a7a8d6f71650c5c511a2db039c663a94b096e5b979c7b62`，69份installed源码、entry及Skill核验一致。Accepted Spec/Plan与历史review见[原绑定](architecture-spec-acceptance.md#documented-minimax-identity-repair--2026-10-01)，不手改installed源码或旧封存。

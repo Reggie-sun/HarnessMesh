@@ -351,6 +351,28 @@ def allow_response_identity(task):
                                  'sha256': IDENTITY_SPEC_SHA, 'accepted': True})
 
 
+@pytest.mark.parametrize('field,value,issue', [
+    ('max_output_tokens', None, 'CAP_ECHO_NULL'),
+    ('max_output_tokens', True, 'CAP_ECHO_INVALID'),
+    ('max_output_tokens', 0, 'CAP_ECHO_INVALID'),
+    ('max_output_tokens', 4096, 'CAP_ECHO_MISMATCH'),
+    ('input_tokens', None, 'INPUT_USAGE_INVALID'),
+    ('output_tokens', True, 'OUTPUT_USAGE_INVALID'),
+    ('output_tokens', 2049, 'OUTPUT_OVER_CAP'),
+])
+def test_generation_rejection_has_static_issue_without_changing_error(tmp_path, field, value, issue):
+    task, _, _ = _task_and_request(tmp_path)
+    response = _response(task)
+    if field == 'max_output_tokens':
+        response[field] = value
+    else:
+        response['usage'][field] = value
+    with pytest.raises(RouterError) as error:
+        validate_minimax_image_response(task, _headers(), canonical_bytes(response))
+    assert error.value.code == 'IMAGE_GENERATION_LIMIT'
+    assert error.value.detail == issue
+
+
 def test_new_seal_binds_documented_response_id_without_claiming_header(tmp_path):
     task, _, _ = _task_and_request(tmp_path)
     allow_response_identity(task)
