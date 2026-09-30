@@ -1,5 +1,32 @@
 # Image API Engineering Record
 
+## Current Codex Subscription and GPT 6.1 Installation
+
+2026-09-30 用户选择应用独立ChatGPT登录，正式pair MiniMax + `gpt-6.1-sol`，`gpt-6-luna`独立可选；没有OpenAI Key要求、Kimi调用或自动fallback。原API/旧6sol证据和预算保持历史。New subscription-bounded profile通过canonical image contract/seal、应用credential projection、fixed ChatGPT HTTPS broker、Docker、完整有序PNG、fresh context/tools=[]、native/response绑定及原ReceiptStore执行。JWT账号关联实际先于请求验证；不读写global Codex auth，不复制token，不建立第二credential store。Token upstream hard cap=null、observed output limit2048，request_limit1/wall180/idle90；USD成本未可核验为null，不把订阅或wall限制伪装为硬token/费用保证。
+
+First installed `b120f409fa236fd1d890448c45b56b654e7602f6`的真实quota observation为 `f287b749-4246-4cf0-9b40-61b8fe8bd7b5` / UPSTREAM_SECRET_REFLECTION / account_queries1 / provider_requests0。原raw未保存，具体秘密反射字段unknown，不断言正常account_id是该真实失败的唯一原因。Parent以固定quota协议及合成负例确认过度拒绝可能，经Self-Review先接受[独立投影修订](../superpowers/specs/2026-09-30-subscription-account-projection-repair.md)，SHA `7e96271ee259ba2f04d16d72b7d4766c8ef703f05c218fb9f6fca227b91a6d81`，再生成原plan增量。只允许quota顶层account_id exact匹配后在内存剔除；错类型/身份、其余token/account内容、catalog反射和image正文继续拒绝。Explicit recovery需原canonical失败、同model/fingerprint、精确queries1/provider0和独立UID-host once ledger；不得以换state、合成receipt或unknown结果绕过。两quota/一catalog总上限，原生成once不变。
+
+Fresh verification：projection原行为 **5 FAIL/4 PASS**、修复focused **19 PASS**；offline **910 PASS/31 deselected（13.59s）**，native/fake+containment **937 PASS/4环境skip（66.77s）**，Ruff/diffcheck exit0。Skip仅旧Kimi image、旧Codex diagnostic和两个Gemini环境条件，MiniMax/API/6.1sol/6sol/luna真实Docker/fake用例成立。Review round21–24累计历史保持，最后round24 critical read-only snapshot SHA `9a0257d098f6475d7b719ea36f2d2741174449f2ebee1e7fe11fb315328a2d76`，210原路径及副本420 hashes前后匹配，69-source program匹配；实际513.63秒terminal finding set为空。Parent独立裁决无unresolved engineering finding；reviewer实际provider/model/cost=null，不充当Provider qualification receipt或blinded actor。
+
+Clean `2f1e52b833403436d1be5ac32c56fc5af287a7e5`已通过官方owner安装，source_dirty_at_install=false。Program `24e17d2d2e29da97876e974bb6e68e5079d16cd5702266bb87cd8ebd0a8d42db`，package `d48b45504bd4566676617e606f3bfdc864596cc064a443c53cb090481a02772c`，manifest SHA `860475df6d455c7d58225bd5eb311e4d19d50c74ede11821d7bd41b30ceffc22`；entry SHA `ebdd275a65cc45802e86045f901c7ec5748e7c54b12ebd524114e9e89f77517c`，Skill SHA `6f919efc60a1274ac91e13a3dd9dd893bf8260b88d970fb971cfef7b547e52b4`。Parent `_check_existing`及全部源码bytes核对成立，原defaultconfig/interpreter、旧package与receipts保留。实际installed四路线完整八图native/fake、各14/14 OS检查、container_removed=true：
+
+| Model / profile | Owned probe | Conformance receipt | Linked native receipt |
+| --- | --- | --- | --- |
+| MiniMax-M3 / responses-bounded | `47b65ee4-6b60-4d6d-bcd0-4284d0e7de67` | `682fc858-b06f-4c32-a9f2-bae0aaa459e3` | `1cf60a36-c706-43bf-8223-00f51d56e50a` |
+| gpt-5.4 / api-bounded (historical route verification) | `b52e439d-2993-4eaa-92a8-e6fc604ce1f5` | `aa790c49-3c4d-4767-826c-f038f325bcec` | `2c3faf07-7fd0-4064-b1cb-4557936ae187` |
+| gpt-6.1-sol / subscription-bounded | `afc12f45-98d1-4b65-bf87-48b0525b1d6d` | `11718aba-0539-4915-bf06-865189b2111c` | `532153f1-ccf5-4f14-99ec-9525df1005b9` |
+| gpt-6-luna / subscription-bounded | `d4ee25e0-d39f-48f9-ae1b-1983f24aed04` | `a256501e-f51a-4973-bebc-fc4b95757545` | `40aba076-ed2a-4a97-9cd0-8c19aaa8bbd2` |
+
+Parent通过原read_probe/verify_image_seal/image_runtime/require_conformance/ReceiptStore核验，fake wire各1、真实generation0。观察脚本一度把state父目录当ReceiptStore root而遭UNSAFE_STATE；改为原CLI使用的state/runs后验证成立，未chmod现存目录或改owner，这不是视觉失败。
+
+Installed CLI按explicit `--recover-account-projection`执行唯一恢复，UTC08:00:31–08:00:34，account receipt **`ad63d78c-5bbc-4a0c-a9ec-ced6bd1acacb` / INCOMPLETE**。Canonical whitelisted evidence：authenticated=true、quota_available=true、model=gpt-6.1-sol、image_input_supported=false；quota raw SHA `f42b6567f6832c194c25bd91b5441fe1a60d4e7b269dc02a04cf4deb68584b5a`，catalog raw SHA `ce1423856bf77d4c3ca25e0cbc2a89a3825573d236ad25b0c647e04dbf6e658c`。原raw/账号标识不落盘、不输出。恢复本次两个GET，累计两个quota GET/一个catalog GET；已用完account观察预算，原失败及两host ledgers不变。认证目录不能证明所选model image支持，不能推出远端一定不支持；当前 **SELECTED_MODEL_IMAGE_ENTITLEMENT_UNVERIFIED**，没有签发AUTHORIZED budget或启动capability。No extra GET/retry/refresh/fallback。Login/额度现已确认，不继续称为缺OpenAI Key。
+
+Private archive `/home/reggie/.local/state/agent-subagent-router/codex-subscription-continuation-20260930`承接reviews/red-green/fresh tests，`projection-repair/`承接新官方安装、四route state/refs/probes/artifacts、Parent完整性观察和真实account receipt。Sol复用原canonical state，原失败未隐藏；real provider/capability请求0、formal0、actual_cost_usd=null。MiniMax authenticated accounting/canonical预算仍缺，live授权0；独立M5 holdout准备不等于资格，未执行正式A/B。M5-D2A INCOMPLETE、source_semantic NOT_EVALUATED、authority=none/eligible=false和全部production BLOCKED，现行手动覆盖保持。真正停止原因是所选model权限及MiniMax真实预算等外部门；计划、review和安装完成不能替代它们。无专用capture skill，原record为checkpoint owner。
+
+Jianji final fresh typecheck exit0、12 suites264 PASS（44.14s），两repo diffcheck exit0；该侧本任务仅phase/plan docs更新，未改生产逻辑。AOCI Verify/Check exit1，Guide exit0但complete=false，仅foreign qianchuan-page-contract.ts code_stale；本任务AI managed owners不变、docs为observe，未接管其他owner源码/索引。Router没有AOCI配置，不制造新治理owner。
+
+其他owner后续维护过期条目，stable重新执行Jianji AOCI Verify/Check/Guide均exit0、governance_aligned=true/Guide complete=true/findings=[]；原失败观察保留。本任务不提交其他owner的AOCI资产；全仓索引对齐不替代live或semantic资格。
+
 ## Current MiniMax and GPT Engineering Installation
 
 2026-09-29 用户已选择MiniMax/GPT并禁止后续Kimi调用。新增显式 `minimax / MiniMax-M3 / responses-bounded / provider-default`，经固定Python runner、sealed完整有序PNG、fresh context、禁工具、store/stream=false、generation≤2048及原Docker relay执行；唯一上游为应用保存的 `api.minimaxi.com/v1/responses`，不静默改到文档当前cn地址。复用原Responses broker、credential、ReceiptStore、secret quarantine及cleanup owners，不伪造Codex thread/turn或MiniMax cap echo，不改旧project工具合同。

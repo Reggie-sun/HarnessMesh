@@ -1,5 +1,11 @@
 # Implementation Status
 
+## Current Codex Subscription and GPT 6.1 Installation — 2026-09-30
+
+显式应用ChatGPT subscription image路线已实施，用户所选正式搭配为MiniMax + `gpt-6.1-sol`、`gpt-6-luna`单独可选。Fresh offline910 PASS、native/fake+containment937 PASS及required round24/Parent裁决成立；clean `2f1e52b`官方安装，69-source program `24e17d2d…`，source_dirty_at_install=false。Installed四路线各14项OS检查、完整八图native/fake与container cleanup成立，旧API/Kimi历史和原config保留，未追加Kimi。
+
+真实应用登录认证/额度已确认；一次显式quota投影恢复后，认证catalog未能证明所选6.1sol的image输入，account receipt INCOMPLETE，未签发预算。真实visual/formal请求0，capability NOT_EVALUATED；MiniMax accounting/canonical预算也仍缺。无自动重试/刷新/切换，M5-D2A INCOMPLETE、全部production BLOCKED，手动覆盖不变。Exact安装、review、receipts和剩余门由[原record](records/image-api-engineering-2026-09-29.md#current-codex-subscription-and-gpt-61-installation)独占，下方为历史。
+
 ## Current MiniMax and GPT Installation — 2026-09-29
 
 MiniMax显式image工程路线已实现并通过full round17、isolated typed修复/targeted round18与Parent裁决；fresh offline807 PASS、native/fake+containment831 PASS、Ruff/diffcheck通过。Clean `69f9a7d`已官方安装，68-source program `527a80ee…`，source_dirty_at_install=false；installed MiniMax/GPT各自14项实际OS检查、完整八图native/fake receipts及清理验证成立。后续未调用Kimi，旧历史不重写。
