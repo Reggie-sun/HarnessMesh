@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Unset Cap Compatibility Candidate — 2026-10-01
+
+Generation诊断已clean官方安装并以一次真实新请求确认CAP_ECHO_NULL，旧结果保持。新exact-ref/unrestricted/null cap兼容已red-green和fresh offline1014/native+containment1045PASS、4环境skip、Ruff/diff验证，Parent Gate未触发独立review；待clean安装/new tuple/一次真实验证。全部证据由[原record](records/image-api-engineering-2026-09-29.md#unset-cap-compatibility-candidate--2026-10-01)维护；GPT、formal及产品仍BLOCKED。
+
 ## Generation Diagnostics Candidate — 2026-10-01
 
 新增六个固定拒绝标签，保持原协议门和输出隔离。Red13FAIL→focused114PASS，offline999PASS，明确native+containment1030PASS/4环境skip，Ruff/diff通过；Parent Risk Gate未触发新独立review。此处仅工程candidate，clean安装、新tuple及一次真实诊断结果由[原record](records/image-api-engineering-2026-09-29.md#generation-diagnostics-candidate--2026-10-01)承接。GPT精确模型、formal owner及真值资格仍缺，PRODUCT_DISABLED；旧结果保持历史。

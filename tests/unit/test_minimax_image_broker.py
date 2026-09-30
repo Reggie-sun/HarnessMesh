@@ -168,6 +168,32 @@ def test_generation_diagnostic_is_static_and_response_remains_quarantined(tmp_pa
     assert not any(phase == 'response' for phase, _ in captures)
 
 
+@pytest.mark.parametrize('secret', [False, True])
+def test_new_null_echo_keeps_broker_binding_and_secret_guard(tmp_path, secret):
+    from test_image_unrestricted_spending import fixture as unrestricted_fixture
+    from test_minimax_image_wire import allow_unset_cap
+    task, body = unrestricted_fixture(tmp_path, 'minimax')
+    allow_unset_cap(task)
+    value = response(task, KEY if secret else '{"ok":true}')
+    value['max_output_tokens'] = None
+    captures = []
+    with CodexBroker(task, KEY, upstream=lambda *args: (
+            200, {'content-type': 'application/json', 'x-request-id': 'actual-request'},
+            canonical_bytes(value)),
+            on_exchange=lambda phase, raw: captures.append((phase, raw))) as broker:
+        status, raw = post(broker, body)
+    if secret:
+        assert status == 502
+        assert not any(phase == 'response' for phase, _ in captures)
+        assert all(KEY.encode() not in raw for _, raw in captures)
+    else:
+        assert status == 200 and strict_json(raw) == value
+        assert broker.observations[0]['classification'] == 'IDENTITY_VERIFIED'
+        assert broker.observations[0]['response_max_output_tokens'] is None
+        assert broker.observations[0]['response_request_id'] == 'actual-request'
+        assert any(phase == 'response' for phase, _ in captures)
+
+
 def test_new_body_identity_is_bound_in_broker_and_native_decoder(tmp_path):
     from test_minimax_image_wire import allow_response_identity
     task, body = fixture(tmp_path)

@@ -13,6 +13,7 @@ WIRE_VERSION = "minimax-image-responses/v1"
 MAX_MINIMAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_MINIMAX_IMAGE_TOKENS = 2048
 RESPONSE_IDENTITY_SPEC_SHA = 'e1faad6a4d15bf1b52f21efe3eba85265f3fd0e3166ec15e3f2ab262d7c6df8b'
+UNSET_CAP_SPEC_SHA = '7ef141ae58c6bcf041a8b04c4aa11da27ffad9e75409be0d182288a5526ba7e7'
 _REQUEST_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,255}", re.ASCII)
 _OPAQUE_ID = re.compile(r"[!-~]{1,256}", re.ASCII)
 _REQUEST_FIELDS = {
@@ -267,7 +268,10 @@ def validate_minimax_image_response(task: dict, headers: dict, data: bytes) -> d
         _fail("IDENTITY_UNVERIFIED", "RESPONSE_INCOMPLETE")
     cap = contract["budgets"]["generation_tokens"]
     echoed_cap = response.get("max_output_tokens")
-    if "max_output_tokens" in response:
+    unset_echo = (cap is None and contract['metadata'].get('spending_policy') == 'unrestricted'
+                  and echoed_cap is None
+                  and any(ref['sha256'] == UNSET_CAP_SPEC_SHA for ref in contract['selected_refs']))
+    if "max_output_tokens" in response and not unset_echo:
         if echoed_cap is None:
             _fail("IMAGE_GENERATION_LIMIT", "CAP_ECHO_NULL")
         if type(echoed_cap) is not int or echoed_cap < 1:

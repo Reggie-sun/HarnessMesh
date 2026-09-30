@@ -1,5 +1,13 @@
 # Image API Engineering Record
 
+## Unset Cap Compatibility Candidate — 2026-10-01
+
+Generation diagnostics clean `1d9371895c592b2e68249a44a237852525df5703` 官方安装，program `3f5ea20efe3df6134e7032057afc96315854b65442a85d8baf127924ffb4e8e2`、source_dirty_at_install=false，69源码/entry/Skill一致。新probe `b4cd4d6f-f60b-4eb7-add5-4692b02950b4`、conformance `4d03ba4a-4bf1-46cc-98fb-a2bbaca5a4be`、native `2164343f-cf79-4552-9cdf-58f40b1bb2fe` 八图/14OS通过，provider0。随后一次真实qualification `6c849d7a-1a2b-4d0f-8c5a-99da9acf3ef0`、native `bb1d3b8e-09f0-4e36-90be-e43c3b3b6da0` HTTP200/2775bytes、wire/provider各1，固定标签CAP_ECHO_NULL，INCOMPLETE/输出隔离、container_removed=true、Key删除、config与16accepted refs核对未漂移。该证据确认本次null echo，不追溯改写旧未知字段。
+
+据此原wire owner实施新exact-ref+unrestricted/null cap的窄兼容；finite、旧unrestricted、错ref、非法非null回显和typed usage仍拒绝。Fresh red4FAIL→focused129PASS、offline1014PASS/35skip、明确native/fake+containment1045PASS/4skip、Ruff/diff成立；Spec/Plan及Parent一次风险判断由[原acceptance owner](architecture-spec-acceptance.md#minimax-unset-cap-compatibility--2026-10-01)记录。此处工程candidate尚不意味着真实修复或视觉资格，下一步clean官方安装、新tuple proof和一次新sealed验证。
+
+私有证据仍归response-optimization-20261001；正式0、GPT无新查询，M5-D2A INCOMPLETE、PRODUCT_DISABLED及全部产品BLOCKED。未知费用null，未要求余额或新增financial门。
+
 ## Generation Diagnostics Candidate — 2026-10-01
 
 用户继续优化后，Parent在原minimax_image_wire/broker tests增加固定cap/usage拒绝标签；原错误分类、finite/unrestricted PASS/FAIL、秘密保护与隔离不变。Red13FAIL/73PASS→focused114PASS，fresh offline999PASS/35skip、显式native/fake+containment1030PASS/4环境skip（85.78s）、Ruff/diff通过。Exact accepted Spec/Plan及一次Risk Gate由[原acceptance owner](architecture-spec-acceptance.md#minimax-generation-diagnostics--2026-10-01)绑定；只读mapper提供分支核对，不能替代Parent或真值资格。

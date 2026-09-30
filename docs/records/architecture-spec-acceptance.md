@@ -1,5 +1,15 @@
 # HarnessMesh Architecture Spec Acceptance
 
+## MiniMax Unset Cap Compatibility — 2026-10-01
+
+Generation diagnostic官方clean安装1d93718、program3f5ea20e…后，新八图/14OS及唯一真实请求将根因明确为CAP_ECHO_NULL：qualification `6c849d7a-1a2b-4d0f-8c5a-99da9acf3ef0` / native `bb1d3b8e-09f0-4e36-90be-e43c3b3b6da0`，HTTP200、2775bytes、request generation_tokens=null。失败已隔离，不改旧结果/重放。
+
+Parent按持续修复/安装授权Self-Review接受Spec `docs/superpowers/specs/2026-10-01-minimax-unset-cap-compatibility.md` SHA `7ef141ae58c6bcf041a8b04c4aa11da27ffad9e75409be0d182288a5526ba7e7`、Plan SHA `8d409f8b25d79b043b3e7e1e65b02152874d3555ddd000295a7f6b90233e3b55`。只有新exact-ref+已接受unrestricted+null请求cap允许null回显，不声称有限cap已执行；旧seal/finite/非法echo/usage及所有身份/secret/store/terminal/工具/关联门不变。
+
+Red4FAIL/125PASS→focused129PASS，offline1014PASS/35环境skip，明确native/fake+containment1045PASS/4环境skip（91.77s），Ruff/diff通过。Stable candidate按base§9为KIMI_REVIEW_NOT_REQUIRED：无用户review要求、无critical凭据/authority/持久化后果，变化只解释已被用户取消的数值费用门；旧finite/wrong-ref/invalid echo及secret capture有直接否定覆盖，复用broker/decoder重验，未留下重大未验证实施语义。历史27轮保持，不叠加reviewer或Kimi。
+
+允许clean官方安装、新tuple conformance后仅一次独立新sealed真实验证；仍未签MiniMax视觉或M5-D2A资格，GPT精确路线/formal/生产边界不改。
+
 ## MiniMax Generation Diagnostics — 2026-10-01
 
 用户“继续优化”延续当前router修复/安装授权。Parent Self-Review接受Spec `docs/superpowers/specs/2026-10-01-minimax-generation-diagnostics.md` SHA `78869cb97752497a52555f803b24c95cd63592472b3d678150612fcfa1e6b7e2`、Plan `docs/superpowers/plans/2026-10-01-minimax-generation-diagnostics.md` SHA `85c22b3c391beed927cf543ae6e7e7dfd6b0fc83cdbe40b2abad1a649ec31be9`；不称用户逐字批准SHA。唯一wire owner只增加六个static拒绝标签，原classification、finite/unrestricted条件及秘密检查/隔离保持。

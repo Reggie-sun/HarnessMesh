@@ -351,6 +351,68 @@ def allow_response_identity(task):
                                  'sha256': IDENTITY_SPEC_SHA, 'accepted': True})
 
 
+UNSET_CAP_SPEC_SHA = '7ef141ae58c6bcf041a8b04c4aa11da27ffad9e75409be0d182288a5526ba7e7'
+
+
+def allow_unset_cap(task):
+    task['selected_refs'].append({'path': '/tmp/accepted-unset-cap.md',
+                                 'sha256': UNSET_CAP_SPEC_SHA, 'accepted': True})
+
+
+def test_new_unrestricted_null_echo_is_unset_not_a_finite_cap(tmp_path):
+    from test_image_unrestricted_spending import fixture
+    task, _ = fixture(tmp_path, 'minimax')
+    allow_unset_cap(task)
+    response = _response(task)
+    response['max_output_tokens'] = None
+    response['usage']['output_tokens'] = 90000
+    result = validate_minimax_image_response(task, _headers(), canonical_bytes(response))
+    assert result['max_output_tokens'] is None
+    assert result['usage']['output_tokens'] == 90000
+
+
+@pytest.mark.parametrize('policy', ['old-unrestricted', 'wrong-ref', 'finite'])
+def test_null_echo_amendment_does_not_change_old_or_finite_contracts(tmp_path, policy):
+    from test_image_unrestricted_spending import fixture
+    task, _ = fixture(tmp_path, 'minimax') if policy != 'finite' else (
+        _task_and_request(tmp_path)[0], None)
+    if policy != 'old-unrestricted':
+        allow_unset_cap(task)
+    if policy == 'wrong-ref':
+        task['selected_refs'][-1]['sha256'] = 'b'*64
+    response = _response(task)
+    response['max_output_tokens'] = None
+    with pytest.raises(RouterError) as error:
+        validate_minimax_image_response(task, _headers(), canonical_bytes(response))
+    assert error.value.code == 'IMAGE_GENERATION_LIMIT'
+    assert error.value.detail == 'CAP_ECHO_NULL'
+
+
+@pytest.mark.parametrize('echo', [True, False, 0, -1, '2048', {}, []])
+def test_new_unset_echo_still_rejects_nonnull_invalid_values(tmp_path, echo):
+    from test_image_unrestricted_spending import fixture
+    task, _ = fixture(tmp_path, 'minimax')
+    allow_unset_cap(task)
+    response = _response(task)
+    response['max_output_tokens'] = echo
+    with pytest.raises(RouterError) as error:
+        validate_minimax_image_response(task, _headers(), canonical_bytes(response))
+    assert error.value.detail == 'CAP_ECHO_INVALID'
+
+
+@pytest.mark.parametrize('field', ['input_tokens', 'output_tokens'])
+def test_new_unset_echo_keeps_usage_validation(tmp_path, field):
+    from test_image_unrestricted_spending import fixture
+    task, _ = fixture(tmp_path, 'minimax')
+    allow_unset_cap(task)
+    response = _response(task)
+    response['max_output_tokens'] = None
+    response['usage'][field] = -1
+    with pytest.raises(RouterError) as error:
+        validate_minimax_image_response(task, _headers(), canonical_bytes(response))
+    assert error.value.detail == ('INPUT_USAGE_INVALID' if field == 'input_tokens' else 'OUTPUT_USAGE_INVALID')
+
+
 @pytest.mark.parametrize('field,value,issue', [
     ('max_output_tokens', None, 'CAP_ECHO_NULL'),
     ('max_output_tokens', True, 'CAP_ECHO_INVALID'),
