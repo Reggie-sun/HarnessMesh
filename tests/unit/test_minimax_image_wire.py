@@ -341,3 +341,48 @@ def test_missing_request_id_has_fixed_diagnostic_without_response_output(tmp_pat
                                         canonical_bytes(_response(task)))
     assert caught.value.code == "IDENTITY_UNVERIFIED"
     assert caught.value.detail == "REQUEST_ID_MISSING"
+
+
+IDENTITY_SPEC_SHA = 'e1faad6a4d15bf1b52f21efe3eba85265f3fd0e3166ec15e3f2ab262d7c6df8b'
+
+
+def allow_response_identity(task):
+    task['selected_refs'].append({'path': '/tmp/accepted-response-identity.md',
+                                 'sha256': IDENTITY_SPEC_SHA, 'accepted': True})
+
+
+def test_new_seal_binds_documented_response_id_without_claiming_header(tmp_path):
+    task, _, _ = _task_and_request(tmp_path)
+    allow_response_identity(task)
+    result = validate_minimax_image_response(task, {'content-type': 'application/json'},
+                                             canonical_bytes(_response(task)))
+    assert result['request_id'] == 'minimax.reply-18'
+    assert result['request_id_source'] == 'response-id'
+
+
+@pytest.mark.parametrize('headers', [
+    {'content-type': 'application/json', 'x-request-id': ''},
+    {'content-type': 'application/json', 'x-request-id': 'bad id'},
+    {'content-type': 'application/json', 'x-request-id': 'one', 'request-id': 'two'},
+    {'content-type': 'application/json', 'x-request-id': 'one', 'X-Request-ID': 'one'},
+])
+def test_body_identity_does_not_override_invalid_existing_headers(tmp_path, headers):
+    task, _, _ = _task_and_request(tmp_path)
+    allow_response_identity(task)
+    with pytest.raises(RouterError):
+        validate_minimax_image_response(task, headers, canonical_bytes(_response(task)))
+
+
+@pytest.mark.parametrize('field,value', [
+    ('id', None), ('id', ''), ('id', 'bad id'), ('model', 'other-model'),
+    ('store', True), ('status', 'incomplete'), ('request_id', 'wrong-request'),
+    ('request_id', None),
+])
+def test_documented_identity_preserves_body_checks(tmp_path, field, value):
+    task, _, _ = _task_and_request(tmp_path)
+    allow_response_identity(task)
+    response = _response(task)
+    response[field] = value
+    with pytest.raises(RouterError):
+        validate_minimax_image_response(task, {'content-type': 'application/json'},
+                                        canonical_bytes(response))

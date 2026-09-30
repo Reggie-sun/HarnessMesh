@@ -16,7 +16,7 @@ def parse_image_text(raw: bytes, maximum: int) -> tuple[dict, bytes]:
 
 
 def decode_image_minimax(stdout: bytes, maximum: int, *, task, observation, response_bytes) -> tuple[bytes, bytes]:
-    from .minimax_image_wire import validate_minimax_image_response
+    from .minimax_image_wire import validate_minimax_image_response, RESPONSE_IDENTITY_SPEC_SHA
     value = strict_json(stdout)
     if (not isinstance(value, dict) or set(value) != {'schema', 'status', 'request_sha256', 'response_sha256', 'response'}
             or value['schema'] != 'minimax-image-runtime/v1' or value['status'] != 'completed'):
@@ -26,8 +26,23 @@ def decode_image_minimax(stdout: bytes, maximum: int, *, task, observation, resp
             or hash_bytes(response_bytes) != observation['response_sha256']
             or canonical_bytes(value['response']) != canonical_bytes(strict_json(response_bytes))):
         raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
-    proof = validate_minimax_image_response(task, {'content-type': 'application/json',
-        'x-request-id': observation['response_request_id']}, response_bytes)
+    response_identity = any(ref['sha256'] == RESPONSE_IDENTITY_SPEC_SHA
+                            for ref in task['selected_refs'])
+    source = observation.get('response_request_id_source') if response_identity else 'header'
+    if source not in ('header', 'response-id'):
+        raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
+    if response_identity:
+        headers = observation.get('response_identity_headers')
+        if (type(headers) is not dict or not headers
+                or set(headers) - {'content-type', 'x-request-id', 'request-id'}):
+            raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
+    else:
+        headers = {'content-type': 'application/json',
+                   'x-request-id': observation['response_request_id']}
+    proof = validate_minimax_image_response(task, headers, response_bytes)
+    if (proof['request_id'] != observation['response_request_id']
+            or proof.get('request_id_source', 'header') != source):
+        raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
     raw = proof['text'].encode('utf-8')
     _, canonical = parse_image_text(raw, maximum)
     return raw, canonical

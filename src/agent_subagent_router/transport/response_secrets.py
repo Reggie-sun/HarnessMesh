@@ -1,5 +1,6 @@
 """Check decoded response fragments before protocol validation or persistence."""
 from collections import defaultdict
+from itertools import permutations
 
 from ..contracts import RouterError, canonical_bytes, strict_json
 from ..receipts import redact_known_secrets
@@ -10,6 +11,18 @@ def validate_response_secrets(headers, body, secrets):
         if redact_known_secrets(data, secrets)[1]:
             raise RouterError('UPSTREAM_SECRET_REFLECTION')
 
+    # Only these three upstream fields can enter image identity receipts. Scan
+    # their values together before validation/capture, independent of wire order.
+    header_values = [value.encode() for name, value in headers.items()
+                     if isinstance(name, str) and isinstance(value, str)
+                     and name.lower() in ('content-type', 'x-request-id', 'request-id')]
+    if len(header_values) > 3:
+        raise RouterError('UPSTREAM_PROTOCOL_ERROR')
+    for value in header_values:
+        check(value)
+    for count in range(2, len(header_values) + 1):
+        for values in permutations(header_values, count):
+            check(b''.join(values))
     check(body)
     if 'text/event-stream' in headers.get('content-type', ''):
         documents = [b'\n'.join(line[5:].lstrip() for line in block.splitlines()

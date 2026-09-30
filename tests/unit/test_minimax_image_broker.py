@@ -139,6 +139,90 @@ def test_minimax_arbitrary_exception_detail_is_not_projected(tmp_path, monkeypat
     assert all(b'private-provider-data' not in raw for _, raw in captures)
 
 
+def test_new_body_identity_is_bound_in_broker_and_native_decoder(tmp_path):
+    from test_minimax_image_wire import allow_response_identity
+    task, body = fixture(tmp_path)
+    allow_response_identity(task)
+    actual = canonical_bytes(response(task))
+    with CodexBroker(task, KEY, upstream=lambda *args: (
+            200, {'content-type': 'application/json'}, actual)) as broker:
+        status, raw = post(broker, body)
+    assert status == 200 and raw == actual
+    observation = broker.observations[0]
+    assert observation['response_request_id_source'] == 'response-id'
+    assert observation['response_request_id'] == 'mini_response_1'
+    packet = {'schema': 'minimax-image-runtime/v1', 'status': 'completed',
+              'request_sha256': hash_bytes(canonical_bytes(body)),
+              'response_sha256': hash_bytes(actual), 'response': response(task)}
+    original, canonical = decode_image_minimax(canonical_bytes(packet), 1000000,
+        task=task, observation=observation, response_bytes=actual)
+    assert original == canonical == b'{"ok":true}'
+    for field, value in [('response_request_id_source', 'caller'),
+                         ('response_request_id_source', 'header'),
+                         ('response_request_id', 'borrowed-response')]:
+        altered = {**observation, field: value}
+        with pytest.raises(RouterError):
+            decode_image_minimax(canonical_bytes(packet), 1000000, task=task,
+                                 observation=altered, response_bytes=actual)
+    for field in ['response_request_id_source', 'response_identity_headers']:
+        altered = dict(observation)
+        altered.pop(field, None)
+        altered['response_request_id'] = 'borrowed_other_run'
+        with pytest.raises(RouterError):
+            decode_image_minimax(canonical_bytes(packet), 1000000, task=task,
+                                 observation=altered, response_bytes=actual)
+
+
+def test_new_header_identity_records_actual_headers_and_explicit_source(tmp_path):
+    from test_minimax_image_wire import allow_response_identity
+    task, body = fixture(tmp_path)
+    allow_response_identity(task)
+    actual = canonical_bytes(response(task))
+    headers = {'Content-Type': 'application/json; charset=utf-8', 'Request-ID': 'actual-request'}
+    with CodexBroker(task, KEY, upstream=lambda *args: (200, headers, actual)) as broker:
+        status, _ = post(broker, body)
+    assert status == 200
+    observation = broker.observations[0]
+    assert observation['response_request_id_source'] == 'header'
+    assert observation['response_identity_headers'] == {
+        'content-type': 'application/json', 'request-id': 'actual-request'}
+    packet = {'schema': 'minimax-image-runtime/v1', 'status': 'completed',
+              'request_sha256': hash_bytes(canonical_bytes(body)),
+              'response_sha256': hash_bytes(actual), 'response': response(task)}
+    assert decode_image_minimax(canonical_bytes(packet), 1000000, task=task,
+        observation=observation, response_bytes=actual)[1] == b'{"ok":true}'
+
+
+@pytest.mark.parametrize('secret_kind', ['credential', 'capability'])
+@pytest.mark.parametrize('reverse', [False, True])
+def test_new_identity_headers_reject_split_secrets_before_any_publication(tmp_path, secret_kind, reverse):
+    from test_minimax_image_wire import allow_response_identity
+    task, body = fixture(tmp_path)
+    allow_response_identity(task)
+    persisted = []
+    captures = []
+    pieces = []
+    def upstream(*args):
+        secret = KEY if secret_kind == 'credential' else broker.capability
+        cut = len(secret)//2
+        pieces.extend([secret[:cut], secret[cut:]])
+        headers = {'content-type': 'application/json; marker='+pieces[0],
+                   'request-id': pieces[1]}
+        if reverse:
+            headers = dict(reversed(list(headers.items())))
+        return 200, headers, canonical_bytes(response(task))
+    with CodexBroker(task, KEY, upstream=upstream,
+            on_observation=lambda value: persisted.append(canonical_bytes(value)),
+            on_exchange=lambda phase, raw: captures.append((phase, raw))) as broker:
+        status, _ = post(broker, body)
+    assert status == 502
+    assert broker.observations[0]['classification'] == 'UPSTREAM_SECRET_REFLECTION'
+    assert 'response_identity_headers' not in broker.observations[0]
+    assert not any(phase == 'response' for phase, _ in captures)
+    for raw in persisted + [raw for _, raw in captures]:
+        assert all(piece.encode() not in raw for piece in pieces)
+
+
 @pytest.mark.parametrize('tamper', ['request', 'response_hash', 'response_object', 'store_type'])
 def test_minimax_native_envelope_must_match_independent_wire_bytes(tmp_path, tamper):
     task, body = fixture(tmp_path)

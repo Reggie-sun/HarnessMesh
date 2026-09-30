@@ -1,5 +1,13 @@
 # Image API Engineering Record
 
+## Documented Identity Engineering Checkpoint — 2026-10-01
+
+官方diagnostic安装source02ff2b4、program6ecf061d…的两个新probe已各完成14项OS及完整八图native/fake，container removed；一次MiniMax真实receipt587e7993/native c427c842 HTTP200、wire1、2775bytes、REQUEST_ID_MISSING，旧合同拒绝并隔离。临时Key删除，应用配置SHA前后相同；旧receipt拒绝原因不倒填。
+
+新documented identity Spec/Plan和required三轮review由[accepted owner](architecture-spec-acceptance.md#documented-minimax-identity-repair--2026-10-01)绑定，Parent确认全部三项finding修复，最终snapshot63f7f0c…fb6254/159hash一致。Fresh offline986PASS（35 skip）、明确native+containment1017PASS（4环境skip）、Ruff/diff通过。此checkpoint允许clean官方安装，actual visual仍NOT_EVALUATED，非formal owner/semantic资格；后续实际安装及一次新live结果须追加。
+
+私有证据 `/home/reggie/.local/state/jianji-source-fact-qualification/full-acceptance-20260930T192147Z` 保存red/green/full logs、三review snapshots及Parent adjudication；这些是原生工程观察，不是模型视觉receipt。预算已按原unrestricted修订解除，安全与真实资格门保持。GPT应用独立model/list authenticated=true、5models、exact6.1sol0，provider0，无刷新/自动切换；formal0、M5-D2A INCOMPLETE、全部生产BLOCKED。
+
 ## Current Explicit Model Verification
 
 2026-09-30 用户明确“验证”。[catalog-only修订](../superpowers/specs/2026-09-30-explicit-image-model-verification.md) accepted SHA `8260d928b4ba0daac524f90a62fd18a8ce01e84f40a9c2ef1f74fcf8622df0e0`，在原subscription_account/image_budget/CLI新增显式 `observe-image-subscription --verify-model`；不查额度、不重置旧quota/recovery ledger，新owned probe一次目录提交。Canonical model receipt与原account历史分开，真实/合成来源不可互换；没有改变credential/TLS/Docker/秘密保护、付费unknown不重放或产品owner。

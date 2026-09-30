@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Documented Identity Engineering Candidate — 2026-10-01
+
+已定位MiniMax真实拒绝为缺request-id header，完成新exact-ref body-ID兼容、实际headers/明确来源复核与捕获前分段secret保护。Required native rounds25/26/27三轮及Parent裁决已完成，最新159hash未漂移、无unresolved finding。Fresh offline986/native+containment1017PASS（4环境skip）、Ruff/diff通过；仅允许已授权官方clean安装及新sealed一次capability，尚未称live qualified。Exact接受绑定与证据由原architecture acceptance/image API record独占，GPT目录/formal/M5-D2A及生产仍阻断。下方diagnostic/旧状态保持历史。
+
 ## Full Acceptance Diagnostics — 2026-10-01
 
 用户继续完整验收。原MiniMax identity拒绝未保留细分原因，Parent在原validator/broker补固定标签并保持原分类/隔离；red7 FAIL→focused54 PASS，offline967 PASS，native/fake+containment997 PASS/4环境skip，Ruff/diff通过，按base Risk Gate不触发新独立review。新acceptedSpec/Plan由[architecture acceptance owner](records/architecture-spec-acceptance.md#full-acceptance-diagnostic-repair--2026-10-01)绑定。此状态仅证明diagnostic工程候选，官方安装与新真实结果须另记录；formal项目执行owner和模型视觉/真值资格仍缺，产品保持BLOCKED。历史状态保留。

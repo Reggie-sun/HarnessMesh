@@ -523,6 +523,16 @@ class CodexBroker:
                     "usage": response_proof["usage"],
                     "duration_seconds": time.monotonic() - admitted_at,
                 })
+                from ..minimax_image_wire import RESPONSE_IDENTITY_SPEC_SHA
+                if self.task['backend'] == 'minimax' and any(
+                        ref['sha256'] == RESPONSE_IDENTITY_SPEC_SHA
+                        for ref in self.task['selected_refs']):
+                    observation['response_request_id_source'] = response_proof.get('request_id_source', 'header')
+                    observation['response_identity_headers'] = {
+                        name.lower(): (value.split(';', 1)[0].strip().lower()
+                                       if name.lower() == 'content-type' else value)
+                        for name, value in response_headers.items()
+                        if name.lower() in ('content-type', 'x-request-id', 'request-id')}
             self._publish()
             return 200, {"content-type": response_headers.get("content-type", "application/json")}, response
         except RouterError as exc:

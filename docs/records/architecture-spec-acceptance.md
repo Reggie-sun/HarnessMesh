@@ -1,5 +1,15 @@
 # HarnessMesh Architecture Spec Acceptance
 
+## Documented MiniMax Identity Repair — 2026-10-01
+
+用户继续完整验收，Parent按已授权router修复/安装及任务内默认授权Self-Review接受新Spec `docs/superpowers/specs/2026-10-01-minimax-response-identity.md` SHA `e1faad6a4d15bf1b52f21efe3eba85265f3fd0e3166ec15e3f2ab262d7c6df8b` 与Plan SHA `0d2d6f912c32ee0df9dd212af812857163c08e3e13068352f39c08e18d4ad2de`；不称用户逐字批准SHA。原header-only合同及历史sealed receipts保持；新exact-ref才允许documented response body ID，在fixed TLS、actual request/response SHA、精确MiniMax-M3、storage/completion/secret/tools组合门下绑定。真实headers证据及明确来源由原broker/decoder独占，不合成来源。
+
+原diagnostic安装02ff2b4的新一次真实receipt `587e7993-23f2-4c16-92b5-27a5aa5aa19c` / native `c427c842-fd57-4938-b18b-b89868f56d27` 证明HTTP200后缺request-id header；仅2775bytes摘要保存，无视觉输出放行。旧c5ab6f78的具体原因仍UNKNOWN。按base§9身份与secret关键门触发required review；用户禁止Kimi，依原授权仅同一named read-only reviewer_max接手，identity三轮25/26/27，各wall900s，历史Kimi2/native1–24不重置。
+
+Parent确认MM-ID-01来源缺省/伪造header、MM-ID-02显式request_id=null及MM-ID-03跨headers分段secret反射。真实red分别3FAIL、4FAIL；原owner修复来源/实际headers重验、null拒绝及capture前最多三白名单headers全部排列秘密检查，content-type只保存已校验normalized MIME。最新offline986PASS/35环境skip，明确native+containment1017PASS/4环境skip，Ruff/diff通过。Round27 finding set为空，159/159前后hash一致，snapshot `63f7f0c09662d0af759ecccaab344e3cb1c88bc72811e21881fc530880fb6254`；Parent再核对candidate与snapshot及原触发拒绝后裁决无unresolved engineering finding，仅允许clean官方安装、新tuple conformance及一次新sealed capability。Reviewer不是Provider receipt或资格issuer，actual model/cost未知。
+
+这不是formal执行权或视觉qualification。正式配置、GPT精确model image目录、两路真实能力、完整A/B/joint真值及产品门独立；不自动换model、重放或循环至通过。后续安装与真实结果由原[image工程record](image-api-engineering-2026-09-29.md)记录。
+
 ## Full Acceptance Diagnostic Repair — 2026-10-01
 
 用户继续“完整验收”，按此前明确router修复/安装及任务内合同默认授权，Parent Self-Review接受新diagnostic Spec SHA `fed55c84f62d14cb4eeb4dd57f02d435b5e3d7b6711b89f17bec7cbd200b98db`（`docs/superpowers/specs/2026-10-01-image-response-diagnostics.md`）和Plan SHA `a4626b941f02f4fba6905191154ec1480df1bd9599d83740f816a1052d544d26`（同目录plans）；不声称用户逐字批准SHA。只记录固定拒绝标签，保留原identity/storage/completion/secret/qualification拒绝与隔离，不输出真实字段/正文，不新增formal执行权。

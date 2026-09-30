@@ -12,6 +12,7 @@ from .image_contract import ImageTaskContract, _validate_png_bytes
 WIRE_VERSION = "minimax-image-responses/v1"
 MAX_MINIMAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_MINIMAX_IMAGE_TOKENS = 2048
+RESPONSE_IDENTITY_SPEC_SHA = 'e1faad6a4d15bf1b52f21efe3eba85265f3fd0e3166ec15e3f2ab262d7c6df8b'
 _REQUEST_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,255}", re.ASCII)
 _OPAQUE_ID = re.compile(r"[!-~]{1,256}", re.ASCII)
 _REQUEST_FIELDS = {
@@ -142,7 +143,7 @@ def map_minimax_image_request(task: dict, body: dict) -> tuple[bytes, dict]:
     return actual, proof
 
 
-def _headers(headers):
+def _headers(headers, *, response_identity=False, response_id=None):
     if type(headers) is not dict:
         _fail("UPSTREAM_PROTOCOL_ERROR")
     lowered = {}
@@ -154,16 +155,20 @@ def _headers(headers):
             _fail("IDENTITY_UNVERIFIED", "DUPLICATE_HEADER")
         lowered[key] = value
     request_ids = [lowered[name] for name in ("x-request-id", "request-id") if name in lowered]
-    if not request_ids:
+    if not request_ids and not response_identity:
         _fail("IDENTITY_UNVERIFIED", "REQUEST_ID_MISSING")
-    if len(set(request_ids)) != 1:
+    if request_ids and len(set(request_ids)) != 1:
         _fail("IDENTITY_UNVERIFIED", "REQUEST_ID_CONFLICT")
-    if not _REQUEST_ID.fullmatch(request_ids[0]):
+    if request_ids and not _REQUEST_ID.fullmatch(request_ids[0]):
         _fail("IDENTITY_UNVERIFIED", "REQUEST_ID_INVALID")
     content_type = lowered.get("content-type", "").split(";", 1)[0].strip().lower()
     if content_type != "application/json":
         _fail("UPSTREAM_PROTOCOL_ERROR")
-    return request_ids[0]
+    if request_ids:
+        return request_ids[0], "header"
+    if not isinstance(response_id, str) or not _REQUEST_ID.fullmatch(response_id):
+        _fail("IDENTITY_UNVERIFIED", "RESPONSE_ID_INVALID")
+    return response_id, "response-id"
 
 
 def _opaque_id(value):
@@ -226,7 +231,10 @@ def validate_minimax_image_response(task: dict, headers: dict, data: bytes) -> d
         _fail("UPSTREAM_PROTOCOL_ERROR")
     if len(data) > contract["budgets"]["output_bytes"]:
         _fail("UPSTREAM_OUTPUT_LIMIT")
-    request_id = _headers(headers)
+    response_identity = any(ref['sha256'] == RESPONSE_IDENTITY_SPEC_SHA
+                            for ref in contract['selected_refs'])
+    if not response_identity:
+        request_id, request_id_source = _headers(headers)
     try:
         data.decode("utf-8", "strict")
     except UnicodeDecodeError:
@@ -234,10 +242,14 @@ def validate_minimax_image_response(task: dict, headers: dict, data: bytes) -> d
     response = strict_json(data)
     if type(response) is not dict:
         _fail("UPSTREAM_PROTOCOL_ERROR")
+    if response_identity:
+        request_id, request_id_source = _headers(headers, response_identity=True,
+                                                response_id=response.get('id'))
     response_id = response.get("id")
     if not _opaque_id(response_id):
         _fail("IDENTITY_UNVERIFIED", "RESPONSE_ID_INVALID")
-    if response.get("request_id") is not None and response["request_id"] != request_id:
+    if (("request_id" in response if response_identity else response.get("request_id") is not None)
+            and response["request_id"] != request_id):
         _fail("IDENTITY_UNVERIFIED", "REQUEST_ID_MISMATCH")
     if response.get("object") != "response":
         _fail("IDENTITY_UNVERIFIED", "RESPONSE_OBJECT_INVALID")
@@ -296,4 +308,5 @@ def validate_minimax_image_response(task: dict, headers: dict, data: bytes) -> d
         "response_id": response_id,
         "model": contract["model"],
         "max_output_tokens": echoed_cap if "max_output_tokens" in response else None,
+        **({"request_id_source": "response-id"} if request_id_source == "response-id" else {}),
     }
