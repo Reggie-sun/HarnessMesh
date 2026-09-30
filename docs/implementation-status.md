@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Full Acceptance Installed Checkpoint — 2026-10-01
+
+Documented MiniMax identity及headers秘密保护已通过required三轮原生复核、Parent裁决与fresh full native1017PASS，clean303017c经官方安装，69-source program f7773d43…核验一致。Installed新八图fake/14项OS成立；一次真实新能力请求HTTP200后仍被IMAGE_GENERATION_LIMIT拒绝，INCOMPLETE、未放行输出。没有重放或额外调用；预算已解除，拒绝具体cap/usage字段未能从metadata确定。GPT应用独立目录精确6.1sol仍0，formal owner与全真值退出证据未成立，M5-D2A INCOMPLETE、生产BLOCKED。完整receipt/安装证据由[原record](records/image-api-engineering-2026-09-29.md#full-acceptance-installed-result--2026-10-01)独占，下方candidate/pending状态是历史。
+
 ## Documented Identity Engineering Candidate — 2026-10-01
 
 已定位MiniMax真实拒绝为缺request-id header，完成新exact-ref body-ID兼容、实际headers/明确来源复核与捕获前分段secret保护。Required native rounds25/26/27三轮及Parent裁决已完成，最新159hash未漂移、无unresolved finding。Fresh offline986/native+containment1017PASS（4环境skip）、Ruff/diff通过；仅允许已授权官方clean安装及新sealed一次capability，尚未称live qualified。Exact接受绑定与证据由原architecture acceptance/image API record独占，GPT目录/formal/M5-D2A及生产仍阻断。下方diagnostic/旧状态保持历史。

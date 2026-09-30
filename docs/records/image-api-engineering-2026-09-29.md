@@ -1,5 +1,17 @@
 # Image API Engineering Record
 
+## Full Acceptance Installed Result — 2026-10-01
+
+Required三轮工程复核与Parent裁决完成后，clean `303017c380f8046e96b7d0b42411efee18b3d017` 经官方installation owner安装，source_dirty_at_install=false；program `f7773d43ed73cb6c3a7a8d6f71650c5c511a2db039c663a94b096e5b979c7b62`，69份installed源码、entry及Skill核验一致。Accepted Spec/Plan与历史review见[原绑定](architecture-spec-acceptance.md#documented-minimax-identity-repair--2026-10-01)，不手改installed源码或旧封存。
+
+Installed新MiniMax probe `2903e923-8e49-4520-b789-101961e56f9d` 的conformance `013a2f3c-b455-4a3f-9d4f-1c87d07152f9` / native `84f8db00-ccc6-4255-b677-8f40287b7ff0` 完成实际14项OS检查及完整八图fake执行，provider0、容器清理成立。随后经canonical ConnectionStore向新私有临时reference交接现有Key，配置SHA前后相同；新sealed调用仅提交一次，未重放历史probe，结束后Key已删除。
+
+真实qualification receipt `9d17dda4-948e-42bf-bc8d-c943f9f8aca7` / native `50cb4c92-c56d-4d2a-9ca6-9345e9819e3f`：wire/provider各1、固定api.minimaxi.com/v1/responses HTTP200、2773bytes，响应校验拒绝 `IMAGE_GENERATION_LIMIT`，native exit1 / 6.152746868秒，container_removed=true。分类INCOMPLETE、cause=IMAGE_NATIVE_EXECUTION_INCOMPLETE；原正文仅隔离摘要，无放行模型输出。新合同generation_tokens=null；该错误也用于非法cap echo/usage类型，现有静态metadata不足以归因具体字段，不称为费用超限或自行提高阈值。没有追加请求、换model或改旧错误为PASS。actual_cost_usd=null，视觉rubric/applicability仍未评估。
+
+当前blocker仍为MiniMax完整响应合同未通过、GPT所选6.1sol真实image目录证明缺失及formal项目execution owner/config/envelope。应用独立model/list authenticated=true、5models、exact6.1sol0；不读取全局Codex auth，不要求OpenAI Key，不自动alias/fallback。Jianji新holdout准备与真值指标由其phase owner维护；formal0、raw A/B/mapping/joint/对应及可信签发均未生成，source semantic NOT_EVALUATED、authority=none、eligible=false、PRODUCT_DISABLED及全部生产BLOCKED。
+
+证据仍在私有 `full-acceptance-20260930T192147Z`，含官方installation manifest、installed observation、conformance/live原receipts、已删除Key的handoff观察及三轮review冻结包。Native工程review和fake/HTTP成功不是视觉或语义资格。Router无AOCI受管理配置，不制造索引；专用capture skill不适用，由本record与implementation-status承接。本轮保留旧诊断和拒绝历史。
+
 ## Documented Identity Engineering Checkpoint — 2026-10-01
 
 官方diagnostic安装source02ff2b4、program6ecf061d…的两个新probe已各完成14项OS及完整八图native/fake，container removed；一次MiniMax真实receipt587e7993/native c427c842 HTTP200、wire1、2775bytes、REQUEST_ID_MISSING，旧合同拒绝并隔离。临时Key删除，应用配置SHA前后相同；旧receipt拒绝原因不倒填。
