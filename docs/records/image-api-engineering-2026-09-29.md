@@ -1,5 +1,29 @@
 # Image API Engineering Record
 
+## Current Unrestricted Image Spending
+
+2026-09-30用户明确“预算不用管,也不应该设限制”。新accepted修订SHA `f96a2fa0ed47e96810c46cda8c221694690badc64689661dbabe4826e0b345eb`已实施并官方安装：MiniMax/subscription新seal使用spending_policy=unrestricted，不需要余额、input accounting、费用证明或probe-budget receipt，不设金额、生成/观测token及任务累计调用总量上限。MiniMax不再受新请求financial拒绝门阻断；Codex quota不再参与新policy准入。旧seal、ledger、account/budget receipts与失败保持原样，不回写新政策。
+
+Single invocation仍一次wire提交；新policy只按owned probe记录no-replay，不同新probe不受旧backend总once额度限制。同probe已发送或unknown不能重放，无自动retry/refresh/fallback；原Docker/凭据/typed usage/秘密扫描/bytes/wall/idle/取消/迟到隔离不变。完整usage大于2048不再按财务理由拒绝，非法/截断/tool响应仍拒绝。Source/production qualification不继承该授权，formal入口缺owner现报IMAGE_FORMAL_EXECUTION_UNAVAILABLE，不能继续叫成未批费用。
+
+原行为red **8 FAIL/7 PASS**，增强catalog hash负例red **1 FAIL/27 PASS**；最终focused **133 PASS**，offline **938 PASS/34 deselected（14.59s）**，full native/fake+containment **968 PASS/4环境skip（72.44s）**。CLI仅help文字及Skill说明后，再跑当前program新policy三条实际Docker用例 **3 PASS（5.00s）**；其余旧native行为不变。首次全套因两个新测试basename相同collection失败，改为独立conformance basename后恢复，日志保留，不称为模型失败。Ruff/diffcheck exit0，未调用真实Provider。
+
+Parent按architecture §9三条件评估本次稳定candidate为 **KIMI_REVIEW_NOT_REQUIRED**：用户未请求review；新政策是用户已明确撤销的financial prerequisite，不改变credential loader/TLS/Docker/工具/秘密扫描/产品准入；route/ref/typed-cap/no-replay/model证据及真实native回归覆盖变化边界，无具体critical failure path或重大未覆盖实现后果。当前真实model权限不足继续明确阻断，不声称已验证live。Named read-only code_mapper只核对budget消费者，不能代替Parent裁决；未追加Kimi或native round25，Kimi2/native1–24历史不变。Snapshot/risk rationale/source hashes由private candidate-and-risk-gate.json保存。
+
+Clean code commit `458e9f25bcd50931fe6ac9d41ed1d19190a1edc4`官方安装，source_dirty_at_install=false，69-source program `550e606a49816640625aa0716697e62813bf9583e9b2e1c3749cfbb235d8aa66`；package `c5c7a12befb941ef53510639f6a126ccb5ad7df171c245b36c37570f05332b84`，manifest SHA `bd9b8cd4606b45611ec53ce95094de6150143b03f5d26ba6a148926d63212798`。Entry/Skill/全部源码与source match，config/default interpreter、旧包和receipts保留，无新Docker helper/镜像构建。
+
+| New policy route | Owned probe | OS/native conformance | Linked native invocation |
+| --- | --- | --- | --- |
+| MiniMax-M3 | `e2ced901-90b9-493a-8600-a719d10108ae` | `732527cc-bd7a-4d01-83b9-92d5a3b27a12` | `940d1dc6-8c03-4dc4-ae8c-7ad0d4721e4c` |
+| gpt-6.1-sol | `19f71664-5cdb-48bf-b0f9-4490b15d88cd` | `5607a2c7-f099-4323-90bc-b15a874479cb` | `466c4a7d-23aa-4824-bd8c-13529da13148` |
+| gpt-6-luna (optional) | `2bf6888a-5b62-40f9-84c1-018fd8103239` | `cf4e573f-15e3-4a5d-9365-a121babff6bc` | `409b257e-60e8-429d-ae5d-46bfd25c3058` |
+
+Installed三路线各14/14真实OS checks、完整八图native/fake、container_removed=true和spending_policy=unrestricted成立；原canonical read_probe/seal/runtime/conformance/ReceiptStore核验及实际wire tools=[]、无max_output_tokens成立。Installed预算准入直接核对：MiniMax不带budget receipt可通过spending门；Sol/luna仍SUBSCRIPTION_MODEL_UNVERIFIED，与财务无关，未移植或重写旧account evidence。原6.1sol认证目录image_input_supported=false依旧是未证明，不能断言远端一定不支持；luna无对应证明，不因可选项宣称权限成立。
+
+本次新account GET/真实model/formal requests全部0，actual cost/未评估语义指标null。MiniMax应用已有Key，实际credential handoff及视觉probe仍须原owner执行；本次没有把安装或去预算当作capability PASS。Jianji原engineer seam默认generationTokens/requestLimit也已改null并冻结executionLimits，仍ENGINEERING_ONLY/no authority；fresh typecheck及12 suites **265 PASS（32.71s）**。AOCI仅官方维护该模块，Verify/Check/Guide均exit0/aligned/complete，无第二索引或产品owner，混合dirty资产不提交。
+
+Private archive `/home/reggie/.local/state/agent-subagent-router/image-unrestricted-spending-20260930`保存red/fresh verification、policy snapshot/Parent Risk Gate、官方安装、三canonical states/probes/native artifacts及installed完整性观察。停止原因不再包括额度/价格/费用预算，剩余所选model图片权限、真实两视觉probe及独立正式truth/config/inputPlan/执行owner证据。M5-D2A INCOMPLETE、authority=none/eligible=false、PRODUCT_DISABLED及全部production BLOCKED，手动覆盖不变。此record为checkpoint owner，无专用capture skill或外部memory写入。
+
 ## Current Codex Subscription and GPT 6.1 Installation
 
 2026-09-30 用户选择应用独立ChatGPT登录，正式pair MiniMax + `gpt-6.1-sol`，`gpt-6-luna`独立可选；没有OpenAI Key要求、Kimi调用或自动fallback。原API/旧6sol证据和预算保持历史。New subscription-bounded profile通过canonical image contract/seal、应用credential projection、fixed ChatGPT HTTPS broker、Docker、完整有序PNG、fresh context/tools=[]、native/response绑定及原ReceiptStore执行。JWT账号关联实际先于请求验证；不读写global Codex auth，不复制token，不建立第二credential store。Token upstream hard cap=null、observed output limit2048，request_limit1/wall180/idle90；USD成本未可核验为null，不把订阅或wall限制伪装为硬token/费用保证。

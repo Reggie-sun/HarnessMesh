@@ -1,5 +1,11 @@
 # Implementation Status
 
+## Current Unrestricted Image Spending — 2026-09-30
+
+已按用户最新指令取消本任务新MiniMax/subscription image请求的余额/成本/budget receipt要求及金额/token/任务累计调用上限。Clean `458e9f2`官方安装，program `550e606a…`，三新policy路线实际八图native/fake/各14项OS及清理成立；旧seal/receipts不变，单次超时/bytes/隔离/no-replay和真实资格门保持。Fresh offline938/full native968 PASS、4环境skip、Jianji265 PASS/typecheck/AOCI对齐；Parent Risk Gate本次不触发新独立review，旧历史保持。
+
+Installed MiniMax费用准入已通过，GPT仍缺所选model实际image证明，不能因额度门移除声称live qualified。新真实视觉/正式请求0、M5-D2A INCOMPLETE、产品BLOCKED，手动覆盖保持；exact证据与remaining work见[原record](records/image-api-engineering-2026-09-29.md#current-unrestricted-image-spending)。下方financial blockers为历史，不继续向用户索要预算材料。
+
 ## Current Codex Subscription and GPT 6.1 Installation — 2026-09-30
 
 显式应用ChatGPT subscription image路线已实施，用户所选正式搭配为MiniMax + `gpt-6.1-sol`、`gpt-6-luna`单独可选。Fresh offline910 PASS、native/fake+containment937 PASS及required round24/Parent裁决成立；clean `2f1e52b`官方安装，69-source program `24e17d2d…`，source_dirty_at_install=false。Installed四路线各14项OS检查、完整八图native/fake与container cleanup成立，旧API/Kimi历史和原config保留，未追加Kimi。
