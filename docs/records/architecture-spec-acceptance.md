@@ -1,5 +1,9 @@
 # HarnessMesh Architecture Spec Acceptance
 
+## Explicit Model Verification
+
+用户本次明确“验证”，Parent任务内Self-Review接受 `docs/superpowers/specs/2026-09-30-explicit-image-model-verification.md` SHA `8260d928b4ba0daac524f90a62fd18a8ce01e84f40a9c2ef1f74fcf8622df0e0`。新增显式catalog-only canonical观察，旧quota及恢复ledger不重置，不自动追加请求；新probe/hash/ref/Docker与每probe一次GET先消费仍成立。Fresh验证及Risk Gate判断、clean官方安装后执行一次真实GET；支持所选image才发一次该probe capability。用户Kimi禁令继续适用，无正式真值或生产授权。
+
 ## User Directed Unrestricted Image Spending
 
 2026-09-30用户明确“预算不用管,也不应该设限制”，直接取代本任务新image调用的费用授权0、quota/cost/accounting prerequisite及backend累计once/token2048上限，不更改历史seal或receipt。Parent Self-Review接受 `docs/superpowers/specs/2026-09-30-image-unrestricted-spending.md` SHA `f96a2fa0ed47e96810c46cda8c221694690badc64689661dbabe4826e0b345eb`，适用MiniMax-M3和应用独立subscription 6.1sol/luna，原plan自动承接。

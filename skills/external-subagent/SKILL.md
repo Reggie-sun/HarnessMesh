@@ -81,6 +81,8 @@ Parent 用 `candidate-test --invocation <id> --argv-json <exact-argv.json>` 在�
 
 ### Isolated Image Routes
 
+用户显式“验证”时，新unrestricted subscription probe绑定accepted `2026-09-30-explicit-image-model-verification.md`后，可用 `observe-image-subscription --verify-model` 只读一次固定catalog、不查quota；canonical model receipt提供exact model/image证据，每probe不可重放。旧account/recovery ledger不恢复，不自动刷新或换模型。目录拒绝/缺image证明仍零generation；目录成功后仅显式该probe的一次真实八图capability，不能替代M5-D2A真值资格。
+
 当前M5-D2A用户明确不设费用预算。新seal只有绑定accepted `2026-09-30-image-unrestricted-spending.md`并显式`prepare-image-probe --unrestricted-spending`时采用metadata spending_policy=unrestricted，适用MiniMax-M3及Codex subscription 6.1sol/luna。不需余额、input accounting、费用预算receipt，不设金额/token/任务累计调用上限；原seal/receipt/host ledgers和下方旧预算条款保留历史。每owned probe一次提交用于no-replay，单次wall/idle、bytes、凭据、Docker、图片身份、取消/secret guards不变。Codex图片权限仍须canonical证据，去掉quota门不把无图像证明改成qualified；formal执行owner缺失与费用授权分开报告。此policy不应用Kimi project tasks，不自动retry/refresh/fallback或启用产品。
 
 独立 `image-task/v1` 不继承project task的工具、profile或额度。只有current task明确选择、exact accepted image amendments和单独image config成立时，才使用 `prepare-image-probe`、`qualify-image-route` 或 `run-images`。MiniMax tuple为 `minimax / responses-bounded / MiniMax-M3 / provider-default`，GPT API tuple保持原合同；未知backend拒绝，不将旧Kimi runtime/receipt改名复用。

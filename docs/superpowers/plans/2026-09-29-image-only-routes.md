@@ -1,5 +1,9 @@
 # Sealed Image Input Routes Implementation Plan
 
+## Explicit Model Verification
+
+按[目录验证修订](../specs/2026-09-30-explicit-image-model-verification.md)继续用户“验证”：在subscription_account/image_budget/CLI原owners增加catalog-only新receipt与每probe防重放，只作用于新unrestricted subscription seal；保留旧quota once/recovery。新增unit测试覆盖exact schema/secret/auth/receipt/source/fingerprint/typed counts及no-replay，fresh offline/native/Ruff/diff后评估Risk Gate，scoped clean commit及官方安装。新installed probe冻结accepted refs并通过实际Docker/native检查后一次catalog GET，支持所选image才发一次真实八图请求；缺条件记录真实INCOMPLETE。不使用holdout/truth，不切换模型，不询问重复许可。Self-Review已核对source owners、scope、兼容、停机条件和产品禁止。
+
 ## User Directed Unrestricted Spending
 
 按[费用修订](../specs/2026-09-30-image-unrestricted-spending.md)（accepted SHA `f96a2fa0ed47e96810c46cda8c221694690badc64689661dbabe4826e0b345eb`）继续当前任务，旧条款保留为历史。目标：新sealed MiniMax/subscription请求不需余额/成本/budget receipt，不设金额/token/任务累计调用总量上限；身份、图片权限、真实资格和产品禁止不变。

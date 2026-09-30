@@ -12,6 +12,7 @@ from .image_contract import IMAGE_PROVIDERS, unrestricted_spending, UNRESTRICTED
 from .transport.credentials import owner_home
 
 ACCOUNT_PROJECTION_SPEC_SHA = '7e96271ee259ba2f04d16d72b7d4766c8ef703f05c218fb9f6fca227b91a6d81'
+MODEL_VERIFICATION_SPEC_SHA = '8260d928b4ba0daac524f90a62fd18a8ce01e84f40a9c2ef1f74fcf8622df0e0'
 
 
 def input_digest(task):
@@ -114,18 +115,23 @@ def _require_model_image_evidence(store, identifier, task, fingerprint):
     for path in paths:
         try:
             record = store.read(path.parent.name)
-            if (record.get('kind') != 'codex-subscription-account/v1'
-                    or record.get('evidence_kind') != 'authenticated-https-account'
-                    or record.get('classification') not in ('AUTHENTICATED_ACCOUNT_READY', 'INCOMPLETE')
+            model_only = record.get('kind') == 'codex-subscription-model/v1'
+            if (record.get('kind') not in ('codex-subscription-account/v1', 'codex-subscription-model/v1')
+                    or record.get('evidence_kind') != ('authenticated-https-model' if model_only else 'authenticated-https-account')
+                    or record.get('classification') not in (('AUTHENTICATED_MODEL_READY',) if model_only else ('AUTHENTICATED_ACCOUNT_READY', 'INCOMPLETE'))
                     or record.get('model') != task['model']
                     or record.get('credential_fingerprint') != fingerprint
-                    or type(record.get('account_queries')) is not int or record['account_queries'] != 2
+                    or type(record.get('account_queries')) is not int or record['account_queries'] != (1 if model_only else 2)
                     or type(record.get('provider_requests')) is not int or record['provider_requests'] != 0):
                 continue
-            artifact = next(x for x in record['artifacts'] if x['path'] == 'account-evidence.json')
+            artifact = next(x for x in record['artifacts'] if x['path'] == ('model-evidence.json' if model_only else 'account-evidence.json'))
             facts = strict_json((path.parent/artifact['path']).read_bytes())
             age = (datetime.now(timezone.utc) - datetime.fromisoformat(facts['observed_at'])).total_seconds()
-            if (artifact['producer'] == 'subscription-account-observer'
+            if model_only and (type(facts.get('matched_model_count')) is not int
+                    or facts['matched_model_count'] != 1
+                    or not isinstance(facts.get('input_modalities'), list) or 'image' not in facts['input_modalities']):
+                continue
+            if (artifact['producer'] == ('subscription-model-observer' if model_only else 'subscription-account-observer')
                     and facts['authenticated'] is True and facts['image_input_supported'] is True
                     and facts['credential_fingerprint'] == fingerprint
                     and facts['provider'] == 'codex-subscription' and facts['model'] == task['model']
@@ -272,6 +278,21 @@ def probe_reservation_root():
     # CLI --state relocates evidence, never monetary authorization. One host
     # ledger prevents a fresh state directory from restoring consumed requests.
     return owner_home()/'.local/state/agent-subagent-router/image-probe-reservations'
+
+
+def reserve_subscription_model_observation(invocation_id, probe_id):
+    if not isinstance(probe_id, str) or not probe_id:
+        raise RouterError('IMAGE_PROBE_BINDING_MISMATCH')
+    root = probe_reservation_root()
+    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if root.is_symlink() or root.stat().st_mode & 0o077 or root.stat().st_uid != os.getuid():
+        raise RouterError('UNSAFE_STATE')
+    try:
+        atomic_json(root/(MODEL_VERIFICATION_SPEC_SHA + '-model-' + hash_bytes(probe_id.encode()) + '.json'), {
+            'spec_sha256': MODEL_VERIFICATION_SPEC_SHA, 'probe_id': probe_id,
+            'invocation_id': invocation_id, 'catalog_queries': 1, 'provider_requests': 0})
+    except FileExistsError:
+        raise RouterError('SUBSCRIPTION_MODEL_OBSERVATION_CONSUMED') from None
 
 
 def reserve_probe(store, backend, invocation_id, *, profile=None, task=None, probe_id=None):

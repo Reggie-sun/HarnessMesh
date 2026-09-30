@@ -108,6 +108,51 @@ def observe_subscription_account(store, reference, model, *, getter=None, recove
         'authority': 'none', 'eligible': False})
 
 
+def observe_subscription_model(store, reference, model, probe_id, *, getter=None):
+    """Explicit catalog-only observation; old account/recovery ledgers are untouched."""
+    run = store.create('router-image', 'subscription-model')
+    artifacts, queries, fingerprint = [], 0, None
+    classification = 'INCOMPLETE'
+    try:
+        if model not in ('gpt-6.1-sol', 'gpt-6-luna'):
+            raise RouterError('SUBSCRIPTION_MODEL_UNVERIFIED')
+        credential = load_credential('codex-subscription', reference,
+            project_root=Path(__file__).resolve().parents[2])
+        fingerprint = credential_fingerprint('codex-subscription', credential)
+        if getter is None:
+            from .image_budget import reserve_subscription_model_observation
+            reserve_subscription_model_observation(run.name, probe_id)
+        queries += 1
+        catalog, catalog_hash = (getter or _get)(MODELS_PATH, credential)
+        facts = {'provider': 'codex-subscription', 'credential_fingerprint': fingerprint,
+            'authenticated': True, 'model': model,
+            'catalog_source': 'https://chatgpt.com' + MODELS_PATH,
+            'catalog_sha256': catalog_hash, 'observed_at': datetime.now(timezone.utc).isoformat(),
+            **_model_facts(catalog, model)}
+        artifacts.append(store.artifact(run, 'model-evidence.json', canonical_bytes(facts),
+            media_type='application/json', producer='subscription-model-observer'))
+        if facts['image_input_supported']:
+            classification = 'AUTHENTICATED_MODEL_READY' if getter is None else 'ENGINEERING_MODEL_READY'
+    except (RouterError, KeyError, TypeError, ValueError, OSError) as exc:
+        classification = exc.code if isinstance(exc, RouterError) else 'SUBSCRIPTION_MODEL_UNVERIFIED'
+    return store.finalize(run, {'kind': 'codex-subscription-model/v1',
+        'classification': classification, 'credential_fingerprint': fingerprint,
+        'evidence_kind': 'authenticated-https-model' if getter is None else 'synthetic-model-fixture',
+        'probe_id': probe_id, 'account_queries': queries, 'provider_requests': 0,
+        'model': model, 'artifacts': artifacts, 'actual_cost_usd': None,
+        'source_semantic': 'NOT_EVALUATED', 'authority': 'none', 'eligible': False})
+
+
+def _model_facts(value, model):
+    models = value.get('models') if isinstance(value, dict) else None
+    matches = [m for m in models if isinstance(m, dict) and m.get('slug') == model] if isinstance(models, list) else []
+    modalities = matches[0].get('input_modalities') if len(matches) == 1 else None
+    return {'catalog_model_count': len(models) if isinstance(models, list) else None,
+        'matched_model_count': len(matches),
+        'input_modalities': [x for x in ('text', 'image') if isinstance(modalities, list) and x in modalities],
+        'image_input_supported': _model_supports_image(value, model)}
+
+
 def _quota_available(value):
     rate = value.get('rate_limit') if isinstance(value, dict) else None
     if not isinstance(rate, dict) or rate.get('allowed') is not True or rate.get('limit_reached') is not False:

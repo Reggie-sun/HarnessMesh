@@ -65,6 +65,8 @@ def main(argv=None):
     image_account.add_argument('--probe', required=True)
     image_account.add_argument('--credential-ref', type=Path, required=True)
     image_account.add_argument('--recover-account-projection', action='store_true')
+    image_account.add_argument('--verify-model', action='store_true',
+        help='Explicit catalog-only verification for a new unrestricted subscription probe')
     run = commands.add_parser('run', help='Run only a qualified sealed route')
     run.add_argument('--contract', type=Path, required=True)
     run.add_argument('--backend', required=True)
@@ -143,6 +145,18 @@ def main(argv=None):
                         or image_runtime(task, args.sandbox_config)[1] != probe['pins']):
                     raise RouterError('IMAGE_ROUTE_MISMATCH')
                 require_conformance(store, probe, task)
+                if args.verify_model:
+                    from .image_budget import MODEL_VERIFICATION_SPEC_SHA
+                    from .image_contract import unrestricted_spending
+                    from .subscription_account import observe_subscription_model
+                    if (args.recover_account_projection or not unrestricted_spending(task)
+                            or not any(ref['sha256'] == MODEL_VERIFICATION_SPEC_SHA for ref in task['selected_refs'])):
+                        raise RouterError('SUBSCRIPTION_MODEL_VERIFICATION_ACCEPTANCE_REQUIRED')
+                    output = observe_subscription_model(store,
+                        read_credential_reference('codex-subscription', args.credential_ref), task['model'], args.probe)
+                    code = 0 if output['classification'] == 'AUTHENTICATED_MODEL_READY' else 2
+                    print(json.dumps(output, ensure_ascii=False, indent=2))
+                    return code
                 if args.recover_account_projection:
                     from .image_budget import ACCOUNT_PROJECTION_SPEC_SHA
                     if not any(ref['sha256'] == ACCOUNT_PROJECTION_SPEC_SHA for ref in task['selected_refs']):
