@@ -1,5 +1,53 @@
 # HarnessMesh Architecture Spec Acceptance
 
+## Drain Recovery Association Repair
+
+Round22在178组原件/副本和program `b438007c329e11bd23fb3b4857748b90c98efb1841326738bcc953a2b2b371f5` 一致的完整必要scope上结束，486.82秒；复用同一reviewer亲自审阅且hash未变的边界。Parent独立复现NR-CODEX-SUB22-01：OBSERVATION_DRAIN_TIMEOUT恢复对象缺backend/model/profile等，qualifier抛KeyError而丢失未知结果的调用关联，三种profiles真实red均失败；CONFIRMED。真实broker/fake upstream的stall测试另确认一次wire后drain timeout及revoke成立，未发真实请求。
+
+修复仅在原image_run恢复投影中补充已封存的route/fingerprint、明确wire_requests=null、authority=none/eligible=false；原native pending receipt不finalize、不升级、不重试。原qualifier保留真实cause并签发可读取INCOMPLETE及linked native invocation ID。Late durable observation不能改变已finalized资格结果；unknown费用仍null。没有改变broker锁/清理/ReceiptStore或任何admission预算。
+
+按任务内默认授权，Parent Self-Review为这一隔离的缺字段修复增加仅一次同一read-only reviewer_max round23、wall300秒；完整scope可复用round22亲自覆盖且hash不变的文件，重点重查恢复对象→qualification→CLI/receipt与三profiles、迟到输出、未知次数/费用和no-replay。先fresh完整offline/native/OS/Ruff/diff，再exact snapshot和Parent裁决。Kimi2/native1–22消费完整保留，不重置、无自动round24。与上述任务内例外同属当前授权；若新blocker仍在，停止受影响安装并调查，不自动循环。订阅account GET及capability上限、MiniMax live0、formal0、production禁止不变。
+
+Self-Review：纯关联恢复修复，不将pending未知结果伪装为完整调用，不把未评估请求计零；同一canonical生命周期和原硬门保留。安装仍须latest有效复核及Parent确认无unresolved blocker。
+
+## User Directed GPT 6.1 and Account Association Repair
+
+2026-09-30 用户要求将正式组合中的gpt-6-sol改为gpt-6.1-sol；gpt-6-luna仍可单独选择，没有fallback。用户已重新登录，canonical loader验证应用独立auth有效；服务器认证、额度、视觉尚未评估。此前过期记录仅为历史，不再要求OpenAI API Key。
+
+Round21在222组原件/副本及程序SHA `41f60e733e12e4fc2f0c46ed5b5525ea29496d7ab07a20b241a55b590683bd48` 一致的完整scope上结束，约837秒，报告NR-CODEX-SUB21-01。Parent独立复现：JWT account claim与文件account_id不一致、为空或非string时仍可进入account查询，五项否定测试真实red；裁决CONFIRMED。原credential owner现要求access token命名空间`https://api.openai.com/auth`中的`chatgpt_account_id`与文件account_id精确一致，不符在ledger/GET前拒绝；本地解析不是JWT签名或服务器认证证明，仍须原HTTPS gate。当前真实应用token/account匹配，未输出任何凭据或账号。
+
+Parent同时用真实Docker/native请求确认gpt-6.1-sol采用0.154.0的无text、reasoning high/summary auto framing；旧allowlist拒绝且零upstream。只增加显式新模型，保留旧sol兼容，不将旧tuple资格迁移。新模型mapping/account两项red与上述五项共7 failed/58 passed，修复后65 passed。
+
+按任务内默认授权，Parent Self-Review为已调查的账号关联修复与用户明确新tuple增加仅一次read-only named reviewer_max round22 FULL、wall900秒。保留Kimi2/native1–21和全部历史消费，不把round21预算冒充未耗尽；不是机械争取共识。先fresh完整offline/native/OS/Ruff/diff和exact snapshot，再复核新auth关联及模型变更与完整critical边界，Parent裁决无unresolved blocker后clean官方安装。没有自动round23；未完成或新blocker先停止受影响安装并调查记录。真实account观察仍一次quota GET+一次catalog GET，订阅capability一次，MiniMax live0/formal0；unsupported hard cap仍null，observed2048、wall180/idle90及产品禁止不变。
+
+Self-Review：复用credential/wire/account owners，无global auth、第二owner、刷新、预算恢复或未知结果重试；旧Spec exact bytes、旧账号/模型结果不改。新正式组合MiniMax+gpt-6.1-sol仅是选择，不构成视觉或真值资格。
+
+## Subscription Review Runtime Recovery
+
+2026-09-30 用户再次要求继续。Round20已dispatch，snapshot `649052346ba245bae7cdfc9231820e8064e9fb3d794806f326a6155a18166e0d`、205 paths；仅有17:16:11初检消息，之后runtime中断。恢复时原agent已不在live列表，原900秒期限已过，无terminal full report或report artifact；记为 `INCOMPLETE_NO_TERMINAL_FULL_REPORT`，实际模型/费用/执行时长未知，不取得clearance、不返还轮次。历史Kimi2/native1–20保持。
+
+Parent直接调查另复现typed rubric比较漏洞：prompt要求integer position，Python equality却接受false/0、true/1及float/int。四项真实red均失败；在唯一image_probe owner改为canonical JSON typed比较，保留key order无关和完整有序八图要求。旧Spec bytes及旧结果不改写。
+
+按当前任务内有限预算默认授权及用户继续指令，Parent Self-Review仅新增一次read-only named native reviewer_max round21 FULL review、wall900秒，不自动追加round22。原agent已不可用，使用同profile新的独立agent；不复用旧peer findings为新审查证据。先fresh完整native/offline/OS/Ruff/diff、exact snapshot；Parent裁决没有unresolved blocker才clean官方安装。真实订阅capability仍once、MiniMax live0、formal0；不恢复账号/模型请求、不扩大生产权限。若本轮无法完成或出现新blocker，停止受影响安装并记录真实缺口。
+
+Self-Review：恢复针对真实runtime证据丢失与已复现typed gate漏洞，保留所有历史消费；一次工程复核不替代视觉或真值资格，也不改变凭据/owner/隔离/未知结果门。有限例外由本acceptance owner独占，不把原两轮上限改写成未耗尽。
+
+## Task Authorized Codex Subscription Amendment
+
+Round19 在175/175原件及副本一致的完整scope上完成801.23秒，三个finding均由Parent独立复现：可变HOME恢复once ledger、合法HTTP close响应丢失socket及撤销句柄、任意前缀同名auth冒充应用目录。Parent按已批准的同一两轮预算修复，不增加round21：canonical credential owner从OS UID账户目录定址，host ledger不依赖HOME；当前Linux应用认证仅允许该目录下`.config/jianji/codex/auth.json`，不扩展其他userData/XDG路径；未知布局拒绝而不是搜索或复制凭据。共享transport保留response-held socket用于deadline/revoke，并关闭response/connection。新Spec bytes/SHA不变，此处是现有应用目录与不可恢复预算约束的执行澄清。
+
+实际新增九个否定/兼容测试首先9 failed，修复后与credential/account/shared broker共80 PASS；涵盖API旧ledger及MiniMax/旧API合法close响应。Round20仍须fresh完整验证、exact snapshot、full critical review与Parent裁决；全部历史消费、auth过期、real account/model0、MiniMax live0/formal0及产品禁止保持。
+
+2026-09-30 当前用户明确没有 OpenAI Key、要求使用 Codex，并随后指定 `gpt-6-sol`。按当前任务内默认授权，Parent Self-Review 接受 `docs/superpowers/specs/2026-09-30-codex-subscription-image-design.md` SHA `94a290b26e496831024dd19d4fdbb1e0d29e5e23f680c26df09105c68e8b729a`，不是用户逐字审阅新 SHA 的声明。新增显式 `codex/subscription-bounded`，复用应用独立登录和受管 Docker/broker/receipt owners；旧 frozen Specs、资格、失败和预算历史不改写。
+
+仅新 profile 的 pre-request generation cap=null、postflight observed output limit=2048；订阅 capability 最多一次、wall180/idle90、8图及原bytes上限。预先真实账户/额度、模型图像权限与canonical预算条件不满足时零请求。API旧once/USD1不转移或恢复，MiniMax live0、formal0；没有global auth、refresh、额外计费、fallback或产品授权。
+
+新 credential/TLS critical 分支最多两轮同一 read-only native reviewer_max full review、各900秒，累计 round19/20；保留Kimi2/native1–18。先fresh native verification和exact snapshot，再Parent裁决及无unresolved blocker才clean官方安装；用户禁止Kimi继续生效。不能以工程完成代替真实视觉、真值资格或生产启用。
+
+Parent随后在实际Docker/fake中确认 `gpt-6-sol`/`gpt-6-luna` 的0.154.0 native framing：`text`缺省、`reasoning={effort:high,summary:auto}`；两次严格拒绝的工程运行和对应red均保留。新 profile仅对这两个明确模型接受该exact framing，proof记录native_text_verbosity=null/native_reasoning_summary=auto，不静默插入参数或改动API framing。最多一次固定quota GET加一次固定model catalog GET，共同canonical host ledger消费，单独改变state不能重获观察次数；不是新增model请求。
+
+用户已明确正式组合MiniMax+gpt-6-sol，gpt-6-luna仅可单独选择，不是失败后的fallback。应用独立登录metadata已证实local JWT expiry elapsed，canonical credential owner拒绝；server认证/额度仍NOT_EVALUATED，account/model请求为0，未刷新或改写auth。工程安装完成后真实继续点为应用自己的登录更新，不能再要求用户购买OpenAI API Key。
+
 ## Task Authorized MiniMax Image Amendment
 
 2026-09-29 当前用户明确“模型用minimax和gpt就可以,kimii不要用”，后以应用截图确认已保存MiniMax-M3/Responses连接。按其当前global Execution Mode，任务内共享合同经Parent Self-Review默认获得实施授权；绑定 `docs/superpowers/specs/2026-09-29-minimax-image-route-design.md` SHA `24bc75a73bf32bde768f6aec13d333b215785fade08cb9b3c81134c9668031ed`。不是用户逐字审阅该新SHA的声明；旧accepted bytes、Kimi/GPT证据、失败和预算历史原样保留。

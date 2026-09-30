@@ -67,6 +67,8 @@ def prepare_probe(store, *, backend, model, profile, effort, refs, sandbox_confi
                         'max_images': 8, 'max_png_bytes': 1024 * 1024,
                         'payload_bytes': 65536, 'output_bytes': 1024 * 1024,
                         'context_bytes': 1024 * 1024, 'generation_tokens': 2048}}
+    if backend == 'codex' and profile == 'subscription-bounded':
+        task['budgets'].update(generation_tokens=None, observed_output_tokens_limit=2048)
     inspected = inspect_images(task, store.root.parent/'image-contracts', sandbox_config=sandbox_config)
     path = Path(inspected['manifest'])
     artifacts.append(store.artifact(run, 'rubric.json', canonical_bytes({'images': rubric}),
@@ -90,9 +92,10 @@ def read_probe(store, identifier, manifest_path):
         raise RouterError('IMAGE_PROBE_BINDING_MISMATCH')
     sealed = verify_image_seal(path)
     task = sealed['task']
+    generation = None if task['backend'] == 'codex' and task['profile'] == 'subscription-bounded' else 2048
     if (task['system_text'] != SYSTEM or task['task_text'] != TASK
             or task['metadata'] != {'purpose': 'capability'} or len(task['images']) != 8
-            or task['budgets']['generation_tokens'] != 2048 or task['budgets']['request_limit'] != 1):
+            or task['budgets']['generation_tokens'] != generation or task['budgets']['request_limit'] != 1):
         raise RouterError('IMAGE_PROBE_BINDING_MISMATCH')
     rubric = strict_json((store.root/identifier/'rubric.json').read_bytes())
     if not isinstance(rubric, dict) or set(rubric) != {'images'} or len(rubric['images']) != 8:
@@ -112,4 +115,4 @@ def read_probe(store, identifier, manifest_path):
 
 def compare_probe(raw, rubric):
     value = strict_json(raw)
-    return value == rubric
+    return canonical_bytes(value) == canonical_bytes(rubric)

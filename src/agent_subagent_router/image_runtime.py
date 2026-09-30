@@ -7,6 +7,7 @@ from .receipts import implementation_identity
 
 PURPOSE = 'ISOLATED_IMAGE_ROUTE/v1'
 API_SPEC_SHA = '14e10cad0f3afc44f0f3796c2ae86c45e161c8a17ab2d54801c8c261a81df272'
+SUBSCRIPTION_SPEC_SHA = '94a290b26e496831024dd19d4fdbb1e0d29e5e23f680c26df09105c68e8b729a'
 MINIMAX_SPEC_SHA = '24bc75a73bf32bde768f6aec13d333b215785fade08cb9b3c81134c9668031ed'
 MINIMAX_BASE = 'sha256:90744cff8f32887f075c47d747a173ff333e9e98801667af93c357fa9f5e28ff'
 
@@ -32,8 +33,8 @@ def image_runtime(task, config_path):
         runtime_sha, version = CLAUDE_SHA256, CLAUDE_VERSION
         adapter = Path(image_claude.__file__)
     elif task['backend'] == 'codex':
-        if task['profile'] != 'api-bounded' or not any(
-                ref['sha256'] == API_SPEC_SHA for ref in task['selected_refs']):
+        spec = {'api-bounded': API_SPEC_SHA, 'subscription-bounded': SUBSCRIPTION_SPEC_SHA}.get(task['profile'])
+        if spec is None or not any(ref['sha256'] == spec for ref in task['selected_refs']):
             raise RouterError('IMAGE_API_ACCEPTANCE_REQUIRED')
         runtime_sha, version = CODEX_SHA, '0.154.0'
         adapter = Path(image_codex.__file__)

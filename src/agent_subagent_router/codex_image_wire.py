@@ -100,21 +100,28 @@ def _image_metadata(task, body):
 
 
 def _validate_native_request(task, body):
-    if type(body) is not dict or set(body) not in (_NATIVE_FIELDS, _REQUEST_FIELDS):
+    fields = (_NATIVE_FIELDS, _REQUEST_FIELDS)
+    reasoning = {"effort": task["effort"]}
+    if task['profile'] == 'subscription-bounded' and task['model'] in ('gpt-6.1-sol', 'gpt-6-sol', 'gpt-6-luna'):
+        fields = (_NATIVE_FIELDS - {'text'}, _REQUEST_FIELDS - {'text'})
+        reasoning['summary'] = 'auto'
+    if type(body) is not dict or set(body) not in fields:
         _fail()
-    if task["backend"] != "codex" or task["profile"] != "api-bounded":
+    if task["backend"] != "codex" or task["profile"] not in ("api-bounded", "subscription-bounded"):
         _fail("IMAGE_ROUTE_MISMATCH")
     if (body["model"] != task["model"] or body["instructions"] != task["system_text"]
             or body["tools"] != [] or body["tool_choice"] != "auto"
             or body["parallel_tool_calls"] is not True or body["store"] is not False
             or body["stream"] is not True
-            or body["reasoning"] != {"effort": task["effort"]}
+            or body["reasoning"] != reasoning
             or body["include"] != ["reasoning.encrypted_content"]
-            or body["text"] != {"verbosity": "low"}):
+            or ('text' in body and body["text"] != {"verbosity": "low"})):
         _fail("IMAGE_ROUTE_MISMATCH")
     cap = task["budgets"]["generation_tokens"]
-    if cap > MAX_CODEX_IMAGE_TOKENS:
+    if cap is not None and cap > MAX_CODEX_IMAGE_TOKENS:
         _fail("IMAGE_GENERATION_LIMIT")
+    if task['profile'] == 'subscription-bounded' and 'max_output_tokens' in body:
+        _fail('IMAGE_GENERATION_MISMATCH')
     if "max_output_tokens" in body and (
         type(body["max_output_tokens"]) is not int or body["max_output_tokens"] != cap
     ):
@@ -173,7 +180,8 @@ def map_codex_image_request(task: dict, body: dict) -> tuple[bytes, dict]:
     try:
         native = canonical_bytes(body)
         mapped = dict(body)
-        mapped["max_output_tokens"] = contract["budgets"]["generation_tokens"]
+        if contract['profile'] == 'api-bounded':
+            mapped["max_output_tokens"] = contract["budgets"]["generation_tokens"]
         actual = canonical_bytes(mapped)
     except (TypeError, ValueError, UnicodeError):
         _fail()
@@ -182,7 +190,7 @@ def map_codex_image_request(task: dict, body: dict) -> tuple[bytes, dict]:
     if len(actual) > contract["budgets"]["payload_bytes"]:
         _fail("IMAGE_PAYLOAD_LIMIT")
     proof = {
-        "version": WIRE_VERSION,
+        "version": 'codex-image-subscription/v1' if contract['profile'] == 'subscription-bounded' else WIRE_VERSION,
         "images": images,
         "session_id": identity["session_id"],
         "thread_id": identity["thread_id"],
@@ -196,6 +204,10 @@ def map_codex_image_request(task: dict, body: dict) -> tuple[bytes, dict]:
         "visible_text_sha256": hash_bytes(visible.encode("utf-8")),
         "generation_tokens": contract["budgets"]["generation_tokens"],
     }
+    if contract['profile'] == 'subscription-bounded':
+        proof['observed_output_tokens_limit'] = contract['budgets']['observed_output_tokens_limit']
+        proof['native_text_verbosity'] = body.get('text', {}).get('verbosity')
+        proof['native_reasoning_summary'] = body['reasoning'].get('summary')
     return actual, proof
 
 
@@ -227,16 +239,18 @@ def _validate_response_object(task, response, request_id, response_id=None):
         _fail("IDENTITY_UNVERIFIED")
     if response.get("request_id") is not None and response["request_id"] != request_id:
         _fail("IDENTITY_UNVERIFIED")
-    if (response.get("status") != "completed" or response.get("model") != task["model"]
-            or type(response.get("max_output_tokens")) is not int
-            or response["max_output_tokens"] != task["budgets"]["generation_tokens"]):
+    subscription = task['profile'] == 'subscription-bounded'
+    cap_matches = (response.get('max_output_tokens') is None if subscription else
+        type(response.get('max_output_tokens')) is int
+        and response['max_output_tokens'] == task['budgets']['generation_tokens'])
+    if (response.get("status") != "completed" or response.get("model") != task["model"] or not cap_matches):
         _fail("IDENTITY_UNVERIFIED")
     usage = response.get("usage")
     if type(usage) is not dict:
         _fail("UPSTREAM_PROTOCOL_ERROR")
     input_tokens = usage.get("input_tokens")
     output_tokens = usage.get("output_tokens")
-    cap = task["budgets"]["generation_tokens"]
+    cap = task['budgets']['observed_output_tokens_limit'] if subscription else task["budgets"]["generation_tokens"]
     if (type(input_tokens) is not int or input_tokens < 0 or type(output_tokens) is not int
             or output_tokens < 0 or output_tokens > cap):
         _fail("IMAGE_GENERATION_LIMIT")
@@ -272,7 +286,8 @@ def _validate_response_object(task, response, request_id, response_id=None):
         "request_id": request_id,
         "response_id": actual_id,
         "model": task["model"],
-        "max_output_tokens": cap,
+        "max_output_tokens": None if subscription else cap,
+        **({'observed_output_tokens_limit': cap} if subscription else {}),
     }
 
 
@@ -431,7 +446,8 @@ def _sse_response(task, data, request_id):
                 _fail("IDENTITY_UNVERIFIED")
             if kind == "response.created":
                 if (response.get("model") != task["model"]
-                        or type(response.get("max_output_tokens")) is not int
+                        or (task['profile'] != 'subscription-bounded'
+                            and type(response.get("max_output_tokens")) is not int)
                         or response.get("status") not in ("queued", "in_progress")):
                     _fail("IDENTITY_UNVERIFIED")
                 created = True
@@ -495,7 +511,7 @@ def _sse_response(task, data, request_id):
 def validate_codex_image_response(task: dict, headers: dict, data: bytes) -> dict:
     """Require a complete authenticated response bound to this sealed task."""
     contract = ImageTaskContract.from_dict(task).to_dict()
-    if contract["backend"] != "codex" or contract["profile"] != "api-bounded":
+    if contract["backend"] != "codex" or contract["profile"] not in ("api-bounded", "subscription-bounded"):
         _fail("IMAGE_ROUTE_MISMATCH")
     if not isinstance(headers, dict) or not isinstance(data, bytes):
         _fail("UPSTREAM_PROTOCOL_ERROR")

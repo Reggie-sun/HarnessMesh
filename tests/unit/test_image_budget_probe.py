@@ -30,3 +30,10 @@ def test_strict_probe_requires_all_images_and_order():
     assert not compare_probe(canonical_bytes({'images': rubric['images'][::-1]}), rubric)
     assert not compare_probe(canonical_bytes({'images': rubric['images'][:1]}), rubric)
     assert _png('circle', 'red', 0) != _png('circle', 'red', 8)
+
+
+@pytest.mark.parametrize('expected,actual', [(0, False), (1, True), (0, 0.0), (1, 1.0)])
+def test_probe_rejects_non_integer_position_even_when_python_values_compare_equal(expected, actual):
+    rubric = {'images': [{'image_id': 'a', 'shape': 'circle', 'color': 'red', 'position': expected}]}
+    response = {'images': [dict(rubric['images'][0], position=actual)]}
+    assert not compare_probe(canonical_bytes(response), rubric)

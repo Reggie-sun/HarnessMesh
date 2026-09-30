@@ -59,6 +59,9 @@ def main(argv=None):
     image_run.add_argument('--contract', type=Path, required=True)
     image_run.add_argument('--live', action='store_true', required=True)
     image_run.add_argument('--credential-ref', type=Path, required=True)
+    image_account = commands.add_parser('observe-image-subscription', help='One readonly quota/catalog observation and frozen probe budget')
+    image_account.add_argument('--probe', required=True)
+    image_account.add_argument('--credential-ref', type=Path, required=True)
     run = commands.add_parser('run', help='Run only a qualified sealed route')
     run.add_argument('--contract', type=Path, required=True)
     run.add_argument('--backend', required=True)
@@ -118,12 +121,31 @@ def main(argv=None):
             output = inspect_images(strict_json(args.task.read_bytes()), args.state/'image-contracts',
                                     sandbox_config=args.sandbox_config)
             code = 0
-        elif args.command in ('prepare-image-probe', 'qualify-image-route', 'run-images'):
+        elif args.command in ('prepare-image-probe', 'qualify-image-route', 'run-images', 'observe-image-subscription'):
             if not args.sandbox_config:
                 raise RouterError('IMAGE_RUNTIME_CONFIG_REQUIRED')
             store = ReceiptStore(args.state/'runs')
             from .transport.credentials import read_credential_reference
-            if args.command == 'prepare-image-probe':
+            if args.command == 'observe-image-subscription':
+                from .image_probe import read_probe
+                from .image_seal import verify_image_seal
+                from .image_conformance import require_conformance
+                from .image_runtime import image_runtime
+                from .subscription_account import observe_subscription_account
+                from .image_budget import authorize_subscription_probe
+                probe = store.read(args.probe)
+                read_probe(store, args.probe, probe['manifest'])
+                task = verify_image_seal(Path(probe['manifest']))['task']
+                if (task['backend'] != 'codex' or task['profile'] != 'subscription-bounded'
+                        or image_runtime(task, args.sandbox_config)[1] != probe['pins']):
+                    raise RouterError('IMAGE_ROUTE_MISMATCH')
+                require_conformance(store, probe, task)
+                output = observe_subscription_account(store,
+                    read_credential_reference('codex-subscription', args.credential_ref), task['model'])
+                if output['classification'] == 'AUTHENTICATED_ACCOUNT_READY':
+                    output = authorize_subscription_probe(store, args.probe, output['invocation_id'])
+                code = 0 if output['classification'] == 'AUTHORIZED' else 2
+            elif args.command == 'prepare-image-probe':
                 from .image_probe import prepare_probe
                 output = prepare_probe(store, backend=args.backend, model=args.model,
                     profile=args.profile, effort=args.effort,
@@ -141,8 +163,8 @@ def main(argv=None):
                     probe_task = store.read(args.probe)
                     # Probe input facts do not duplicate backend; read its sealed task.
                     from .image_seal import verify_image_seal
-                    from .image_contract import IMAGE_PROVIDERS
-                    provider = IMAGE_PROVIDERS[verify_image_seal(Path(probe_task['manifest']))['task']['backend']]
+                    from .image_contract import image_provider
+                    provider = image_provider(verify_image_seal(Path(probe_task['manifest']))['task'])
                     with _image_cancellation() as cancelled:
                         output = qualify_image_route(store, args.probe, sandbox_config=args.sandbox_config,
                             credential_ref=read_credential_reference(provider, args.credential_ref) if args.credential_ref else None,
@@ -151,8 +173,8 @@ def main(argv=None):
             else:
                 from .image_run import run_image_contract
                 from .image_seal import verify_image_seal
-                from .image_contract import IMAGE_PROVIDERS
-                provider = IMAGE_PROVIDERS[verify_image_seal(args.contract)['task']['backend']]
+                from .image_contract import image_provider
+                provider = image_provider(verify_image_seal(args.contract)['task'])
                 with _image_cancellation() as cancelled:
                     output = run_image_contract(args.contract, store, sandbox_config=args.sandbox_config,
                         credential_ref=read_credential_reference(provider, args.credential_ref), cancel=cancelled)

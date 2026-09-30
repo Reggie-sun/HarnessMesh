@@ -25,6 +25,7 @@ from ..image_contract import ImageTaskContract
 from ..receipts import redact, redact_known_secrets
 from .broker import _BoundedHandlers
 from .response_secrets import validate_response_secrets
+from .credentials import CodexSubscriptionCredential
 
 
 _ENDPOINT_PATH = "/v1/responses"
@@ -48,20 +49,24 @@ class _TCPServer(_BoundedHandlers, http.server.ThreadingHTTPServer):
 class _CodexUpstream:
     """Fixed HTTPS transport with no redirect, proxy, or retry behavior."""
 
-    def __init__(self, timeout, response_limit, *, deadline=None, on_activity=None, backend='codex'):
+    def __init__(self, timeout, response_limit, *, deadline=None, on_activity=None, backend='codex', profile='api-bounded'):
         if backend not in ('codex', 'minimax'):
             raise RouterError('IMAGE_ROUTE_MISMATCH')
         self.host = 'api.minimaxi.com' if backend == 'minimax' else _API_HOST
+        self.path = _ENDPOINT_PATH
+        if backend == 'codex' and profile == 'subscription-bounded':
+            self.host, self.path = 'chatgpt.com', '/backend-api/codex/responses'
         self.timeout = timeout
         self.response_limit = response_limit
         self.deadline = deadline
         self._connection = None
+        self._socket = None
         self._lock = threading.Lock()
         self._closed = threading.Event()
         self._on_activity = on_activity
 
     def __call__(self, path, headers, body):
-        if path != _ENDPOINT_PATH:
+        if path != self.path:
             raise RouterError("FORBIDDEN_UPSTREAM_PATH")
         try:
             timeout = self._remaining_timeout()
@@ -77,15 +82,18 @@ class _CodexUpstream:
                 raise RouterError("CAPABILITY_REVOKED")
             self._connection = connection
         phase = "CONNECT"
+        response = None
         try:
             connection.connect()
             connection.auto_open = 0
-            if self._closed.is_set():
-                raise RouterError("CAPABILITY_REVOKED")
-            connection.sock.settimeout(self._remaining_timeout())
+            with self._lock:
+                if self._closed.is_set():
+                    raise RouterError("CAPABILITY_REVOKED")
+                transport = self._socket = connection.sock
+            transport.settimeout(self._remaining_timeout())
             phase = "REQUEST_SEND"
-            connection.request("POST", _ENDPOINT_PATH, body=body, headers=headers)
-            connection.sock.settimeout(self._remaining_timeout())
+            connection.request("POST", self.path, body=body, headers=headers)
+            transport.settimeout(self._remaining_timeout())
             phase = "RESPONSE_HEADERS"
             response = connection.getresponse()
             if self._on_activity:
@@ -95,7 +103,7 @@ class _CodexUpstream:
             while True:
                 if self._closed.is_set():
                     raise RouterError("CAPABILITY_REVOKED")
-                connection.sock.settimeout(self._remaining_timeout())
+                transport.settimeout(self._remaining_timeout())
                 chunk = response.read1(min(65536, self.response_limit + 1 - len(data)))
                 if not chunk:
                     break
@@ -118,18 +126,22 @@ class _CodexUpstream:
         except Exception as exc:
             raise RouterError("OUTCOME_UNKNOWN", phase) from exc
         finally:
+            if response is not None:
+                response.close()
             connection.close()
             with self._lock:
                 self._connection = None
+                self._socket = None
 
     def close(self):
         self._closed.set()
         with self._lock:
             connection = self._connection
+            transport = self._socket or (connection.sock if connection else None)
         if connection is not None:
-            if connection.sock:
+            if transport is not None:
                 try:
-                    connection.sock.shutdown(socket.SHUT_RDWR)
+                    transport.shutdown(socket.SHUT_RDWR)
                 except OSError:
                     pass
             connection.close()
@@ -150,20 +162,35 @@ class CodexBroker:
                  before_request=None, on_observation=None, on_exchange=None):
         contract = ImageTaskContract.from_dict(task).to_dict()
         if (contract["backend"], contract["profile"]) not in (
-                ('codex', 'api-bounded'), ('minimax', 'responses-bounded')):
+                ('codex', 'api-bounded'), ('codex', 'subscription-bounded'), ('minimax', 'responses-bounded')):
             raise RouterError("IMAGE_ROUTE_MISMATCH")
         if not contract["selected_refs"]:
             raise RouterError("IMAGE_REF_REQUIRED")
+        subscription = contract['profile'] == 'subscription-bounded'
+        if subscription:
+            if not isinstance(credential, CodexSubscriptionCredential):
+                raise RouterError('UNSAFE_CREDENTIAL')
+            self._account_id = credential.account_id
+            self._credential_secrets = tuple(x.encode() for x in credential.secret_values)
+            credential = credential.access_token
+        else:
+            if isinstance(credential, CodexSubscriptionCredential):
+                raise RouterError('UNSAFE_CREDENTIAL')
+            self._account_id = None
+            self._credential_secrets = (credential.encode(),) if isinstance(credential, str) else ()
         if (not isinstance(credential, str) or not credential
-                or (contract['backend'] == 'codex' and (not credential.startswith('sk-') or len(credential) < 20))
+                or (contract['backend'] == 'codex' and not subscription and (not credential.startswith('sk-') or len(credential) < 20))
                 or any(ord(char) < 33 or ord(char) > 126 for char in credential)):
             raise RouterError("UNSAFE_CREDENTIAL", "provider-specific API key required")
         if upstream is None and before_request is None:
             raise RouterError("IMAGE_SEAL_RECHECK_REQUIRED")
         self.task = contract
         self._api_host = 'api.minimaxi.com' if contract['backend'] == 'minimax' else _API_HOST
+        self._endpoint_path = _ENDPOINT_PATH
+        if subscription:
+            self._api_host, self._endpoint_path = 'chatgpt.com', '/backend-api/codex/responses'
         budgets = contract["budgets"]
-        if budgets["generation_tokens"] > MAX_CODEX_IMAGE_TOKENS:
+        if budgets["generation_tokens"] is not None and budgets["generation_tokens"] > MAX_CODEX_IMAGE_TOKENS:
             raise RouterError("IMAGE_GENERATION_LIMIT")
         self._credential = credential
         self.capability = secrets.token_urlsafe(32)
@@ -192,6 +219,7 @@ class CodexBroker:
             budgets["output_bytes"], deadline=self._deadline,
             on_activity=self._record_activity,
             backend=contract['backend'],
+            profile=contract['profile'],
         )
         self._proof = "synthetic_upstream" if upstream is not None else "authenticated_endpoint_declaration"
 
@@ -211,6 +239,10 @@ class CodexBroker:
             kwargs={"poll_interval": 0.025},
             daemon=True,
         )
+
+    @property
+    def secret_values(self):
+        return self._credential_secrets + (self.capability.encode(),)
 
     @staticmethod
     def _validate_socket_path(path):
@@ -341,7 +373,7 @@ class CodexBroker:
                       else self._observations)
             raw, _ = redact(
                 canonical_bytes(source),
-                (self._credential.encode(), self.capability.encode()),
+                self.secret_values,
             )
             return strict_json(raw)
 
@@ -397,7 +429,7 @@ class CodexBroker:
                 "attempt_id": str(uuid.uuid4()),
                 "request_number": len(self._observations) + 1,
                 "upstream_host": self._api_host,
-                "upstream_path": _ENDPOINT_PATH,
+                "upstream_path": self._endpoint_path,
                 "model": self.task["model"],
                 "effort": self.task["effort"],
                 "generation_tokens": self.task["budgets"]["generation_tokens"],
@@ -427,12 +459,14 @@ class CodexBroker:
                 "Content-Type": "application/json",
                 "Accept": "application/json, text/event-stream",
             }
+            if self._account_id is not None:
+                upstream_headers['ChatGPT-Account-ID'] = self._account_id
             with self._lock:
                 if not self._active or time.monotonic() >= self._deadline:
                     raise RouterError("CAPABILITY_REVOKED")
                 observation["wire_started"] = True
             status, response_headers, response = self._upstream(
-                _ENDPOINT_PATH, upstream_headers, actual
+                self._endpoint_path, upstream_headers, actual
             )
             observation["http_status"] = status
             if not isinstance(response, bytes) or len(response) > self._output_limit:
@@ -443,7 +477,7 @@ class CodexBroker:
                 if status != 200:
                     code = 'CREDENTIAL_OR_ENTITLEMENT_REJECTED' if status in (401, 403) else 'UPSTREAM_HTTP_ERROR'
                     raise RouterError(code)
-                response_secrets = (self._credential.encode(), self.capability.encode())
+                response_secrets = self.secret_values
                 validate_response_secrets(response_headers, response, response_secrets)
                 if status == 200:
                     if self.task['backend'] == 'minimax':

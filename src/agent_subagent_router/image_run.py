@@ -9,13 +9,13 @@ from .adapters.image_claude import build_image_invocation, docker_projection, vi
 from .contracts import RouterError, canonical_bytes, hash_bytes, strict_json
 from .image_budget import require_probe_budget, reserve_probe
 from .image_output import decode_image_claude, decode_image_codex, decode_image_minimax
-from .image_contract import IMAGE_PROVIDERS
+from .image_contract import image_provider
 from .image_probe import read_probe
 from .image_process import ImageProcessBudgets
 from .image_runtime import image_runtime
 from .image_seal import verify_image_seal
 from .receipts import redact_known_secrets
-from .transport.credentials import credential_fingerprint, load_credential
+from .transport.credentials import credential_fingerprint, load_credential, CodexSubscriptionCredential
 
 
 def require_live_admission(store, task, manifest, probe_id, budget_id, fingerprint):
@@ -88,17 +88,26 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
         if cancel is not None and cancel.is_set():
             raise RouterError('IMAGE_CANCELLED')
         if upstream is None:
-            provider = IMAGE_PROVIDERS[task['backend']]
+            provider = image_provider(task)
             credential = load_credential(provider, credential_ref, project_root=Path(__file__).resolve().parents[2])
             fingerprint = credential_fingerprint(provider, credential)
             require_live_admission(store, task, manifest, probe_id, budget_id, fingerprint)
         else:
-            credential = 'sk-offline-image-test-only' if task['backend'] == 'codex' else 'offline-image-test-only'
+            if task['backend'] == 'codex' and task['profile'] == 'subscription-bounded':
+                credential = CodexSubscriptionCredential('offline-oauth-test-only', 'offline-account-only',
+                    ('offline-oauth-test-only', 'offline-account-only'))
+            else:
+                credential = 'sk-offline-image-test-only' if task['backend'] == 'codex' else 'offline-image-test-only'
         pngs = [Path(item['blob_path']).read_bytes() for item in sealed['images']]
         verify_image_seal(Path(manifest))
         artifacts.append(store.artifact(run, 'sealed-input.json', Path(manifest).read_bytes(),
                                         media_type='application/json'))
         budgets = ImageProcessBudgets.from_task(task)
+
+        def known_secrets():
+            if hasattr(broker, 'secret_values'):
+                return broker.secret_values
+            return (credential.encode(), broker.capability.encode())
 
         def observe(value):
             store.observe(run, {'kind': 'image-invocation/v1', 'upstream': value})
@@ -107,7 +116,7 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
             nonlocal original_response
             index = sum(x['path'].startswith('wire/'+phase+'-') for x in artifacts)
             artifacts.append(store.artifact(run, f'wire/{phase}-{index:03d}.bin', data,
-                secrets=(credential.encode(), broker.capability.encode()),
+                secrets=known_secrets(),
                 media_type='application/octet-stream', producer='image-broker'))
             if task['backend'] == 'minimax' and phase == 'response':
                 # Broker already checked this body; artifacts may apply generic redaction.
@@ -123,7 +132,7 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
                 raise RouterError('IMAGE_ROUTE_PIN_DRIFT')
             if upstream is None:
                 require_live_admission(store, task, manifest, probe_id, budget_id, fingerprint)
-                reserve_probe(store, task['backend'], run.name)
+                reserve_probe(store, task['backend'], run.name, profile=task['profile'])
 
         with tempfile.TemporaryDirectory(prefix='router-image-run-') as temporary:
             directory = Path(temporary)
@@ -158,7 +167,7 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
         wire = sum(x.get('wire_started', False) for x in observations)
         for name, data in [('native-stdout.bin', process.stdout), ('native-stderr.bin', process.stderr)]:
             artifacts.append(store.artifact(run, name, data,
-                secrets=(credential.encode(), broker.capability.encode()), producer='native-runtime'))
+                secrets=known_secrets(), producer='native-runtime'))
         if (process.reason != 'exited' or process.exit_code != 0 or process.truncated
                 or not removed or rejections or len(observations) != 1
                 or observations[0]['classification'] != 'IDENTITY_VERIFIED'):
@@ -189,7 +198,7 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
                 raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
         if hash_bytes(raw) != observations[0].get('response_output_sha256'):
             raise RouterError('IMAGE_NATIVE_ASSOCIATION_MISMATCH')
-        secrets = (credential.encode(), broker.capability.encode())
+        secrets = known_secrets()
         if any(redact_known_secrets(data, secrets)[1] for data in (raw, canonical)):
             raise RouterError('UPSTREAM_SECRET_REFLECTION')
         artifacts.append(store.artifact(run, 'model-raw.json', raw, media_type='application/json', secrets=secrets))
@@ -199,7 +208,12 @@ def run_image_contract(manifest, store, *, sandbox_config, credential_ref=None,
         classification = exc.code if isinstance(exc, RouterError) else 'IMAGE_LOCAL_INPUT_ERROR'
         if classification == 'OBSERVATION_DRAIN_TIMEOUT':
             return store.recover(run.name) | {'kind': 'image-invocation/v1',
-                'classification': 'INCOMPLETE', 'cause': classification}
+                'classification': 'INCOMPLETE', 'cause': classification,
+                'backend': task['backend'], 'model': task['model'],
+                'profile': task['profile'], 'effort': task['effort'],
+                'credential_fingerprint': fingerprint, 'wire_requests': None,
+                'actual_cost_usd': None, 'source_semantic': 'NOT_EVALUATED',
+                'authority': 'none', 'eligible': False}
         if broker is not None:
             observations, rejections = broker.observations, broker.rejections
             wire = sum(x.get('wire_started', False) for x in observations)

@@ -18,6 +18,14 @@ IMAGE_TASK_SCHEMA = 'image-task/v1'
 IMAGE_OUTPUT_PROTOCOL = 'JSON_OBJECT/v1'
 IMAGE_CONTEXT_POLICY = 'FRESH_SEALED_INPUT/v1'
 IMAGE_PROVIDERS = MappingProxyType({'kimi': 'kimi', 'codex': 'openai', 'minimax': 'minimax'})
+
+
+def image_provider(task) -> str:
+    if task['backend'] == 'codex' and task['profile'] == 'subscription-bounded':
+        return 'codex-subscription'
+    return IMAGE_PROVIDERS[task['backend']]
+
+
 MAX_IMAGES = 1024
 MAX_PNG_BYTES = 24 * 1024 * 1024
 MAX_NATIVE_PAYLOAD_BYTES = 32 * 1024 * 1024
@@ -56,7 +64,7 @@ _BUDGET_FIELDS = {
 _REF_FIELDS = {'path', 'sha256', 'accepted'}
 
 
-def _fail(code: str, detail: str):
+def _fail(code: str, detail: str = ''):
     raise RouterError(code, detail)
 
 
@@ -169,10 +177,15 @@ def _validate_refs(value: Any) -> list[dict[str, Any]]:
 
 
 def _validate_budgets(
-    value: Any, images: list[dict[str, Any]], prompt_bytes: int,
+    value: Any, images: list[dict[str, Any]], prompt_bytes: int, *, subscription: bool = False,
 ) -> dict[str, Any]:
-    if type(value) is not dict or set(value) != _BUDGET_FIELDS:
+    fields = _BUDGET_FIELDS | {'observed_output_tokens_limit'} if subscription else _BUDGET_FIELDS
+    if type(value) is not dict or set(value) != fields:
         _fail('INVALID_CONTRACT', 'image budgets have missing or unknown fields')
+    if subscription and (value['generation_tokens'] is not None
+            or type(value['observed_output_tokens_limit']) is not int
+            or value['observed_output_tokens_limit'] != 2048):
+        _fail('INVALID_CONTRACT', 'subscription hard generation cap must be null')
 
     integer_limits = {
         'max_images': (1, MAX_IMAGES),
@@ -185,6 +198,8 @@ def _validate_budgets(
     }
     budgets = dict(value)
     for name, (minimum, maximum) in integer_limits.items():
+        if subscription and name == 'generation_tokens':
+            continue
         item = budgets[name]
         if not _is_int(item) or not minimum <= item <= maximum:
             _fail('INVALID_CONTRACT', f'invalid image budget {name}')
@@ -273,7 +288,8 @@ class ImageTaskContract:
 
         refs = _validate_refs(data['selected_refs'])
         metadata = _safe_metadata(data['metadata'])
-        budgets = _validate_budgets(data['budgets'], images, prompt_bytes)
+        budgets = _validate_budgets(data['budgets'], images, prompt_bytes,
+            subscription=backend == 'codex' and profile == 'subscription-bounded')
         return cls(
             schema=IMAGE_TASK_SCHEMA,
             parent_session_id=parent_session_id,

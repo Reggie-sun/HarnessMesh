@@ -376,6 +376,9 @@ def test_default_upstream_uses_only_fixed_verified_tls_destination(monkeypatch):
         def read1(self, _size):
             return self._chunks.pop(0)
 
+        def close(self):
+            pass
+
     class FakeConnection:
         def __init__(self, host, *, timeout, context):
             seen["host"] = host
@@ -451,6 +454,9 @@ def test_default_upstream_rejects_duplicate_response_identity_headers(monkeypatc
                 return b""
             self.read = True
             return b"{}"
+
+        def close(self):
+            pass
 
     class FakeConnection:
         def __init__(self, *_args, **_kwargs):

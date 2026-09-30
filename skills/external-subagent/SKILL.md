@@ -83,6 +83,10 @@ Parent 用 `candidate-test --invocation <id> --argv-json <exact-argv.json>` 在�
 
 独立 `image-task/v1` 不继承project task的工具、profile或额度。只有current task明确选择、exact accepted image amendments和单独image config成立时，才使用 `prepare-image-probe`、`qualify-image-route` 或 `run-images`。MiniMax tuple为 `minimax / responses-bounded / MiniMax-M3 / provider-default`，GPT API tuple保持原合同；未知backend拒绝，不将旧Kimi runtime/receipt改名复用。
 
+用户明确使用Codex订阅时，独立tuple为 `codex / subscription-bounded / gpt-6.1-sol 或 gpt-6-luna / high`；当前正式组合为MiniMax+gpt-6.1-sol，gpt-6-luna可单独选择，不自动fallback；旧gpt-6-sol只保留显式兼容和历史证据。需绑定accepted subscription amendment，credential provider为 `codex-subscription`，仅canonical owner读取OS UID home下`.config/jianji/codex/auth.json`并核对access-token account claim与本文件account_id一致；无OpenAI Key前提，不读取global Codex auth、不login/refresh/复制token。其他userData布局拒绝，不搜索同名auth。Docker只收opaque capability。
+
+订阅profile的pre-request generation cap=null，observed output limit=2048不能冒充upstream hard cap。`observe-image-subscription --probe <owned-id> --credential-ref <private-reference>`按固定host的quota/catalog各一次生成canonical account/budget证据；失效登录零查询，缺真实额度/图片权限零model。真实capability仅once、wall180/idle90及原bytes上限，OS UID host ledger不随HOME/state恢复；未知token/cost保持null。工程probe、fake或订阅模型名称均不构成视觉资格，formal预算和产品授权不继承。
+
 `qualify-image-route --native-only`只生成本地fake/实际Docker conformance，不证明模型视觉能力；真实 `--live` 仍必须有独立credential reference、当前认证账号、frozen input accounting和canonical预算。MiniMax当前费用授权为0、budget gate硬拒绝，正式image请求也无费用授权；不得以prepared probe、API连通或native conformance绕过。具体image输入、固定TLS endpoint、hard cap、receipt与资格语义由accepted image Specs和source owners独占；不使用旧MiniMax runner、host CLI或global Codex OAuth回退。
 
 Kimi worker/deep 本机 live route 与两 repo holdout 已有 canonical qualification；deep 实际 1M consumption 未评估。Gemini native/fake 已通过，现有 Code Assist account 返回 `UNSUPPORTED_CLIENT`，两 repo live 仍 blocked。不能把 fake receipts、CLI init、exit 0 或模型自述当成 authenticated identity。

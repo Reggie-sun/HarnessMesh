@@ -1,5 +1,28 @@
 # Sealed Image Input Routes Implementation Plan
 
+## Drain Recovery Continuation
+
+Round22的已复现drain恢复缺字段按[有限修复记录](../../records/architecture-spec-acceptance.md#drain-recovery-association-repair)处理：原run保留native pending/unknown/no-replay，恢复投影补齐route并将未知wire次数留null；原qualifier保留cause和linked invocation签发INCOMPLETE。三profiles真实red及实际broker/fake callback stall、迟到输出否定验证后fresh全套工程检查，仅一次同一named reviewer_max round23/wall300。沿用本人已检查且hash未变的完整critical边界，不扩大live/formal/产品scope；Self-Review已核对原owners与未知结果语义，Parent裁决后继续clean官方安装。
+
+## GPT 6.1 Selection and Account Association
+
+当前正式组合按用户新指令改为MiniMax+gpt-6.1-sol，gpt-6-luna可单独选择。按[新tuple及已复现账号修复](../../records/architecture-spec-acceptance.md#user-directed-gpt-61-and-account-association-repair)继续：在原wire/account allowlist增加明确gpt-6.1-sol并跑实际native八图；credential owner在任何account请求前核对JWT account claim与应用account_id一致；fresh全部工程验证后仅一次round22/wall900完整critical复核、Parent裁决、scoped clean commit及官方安装。保留旧sol兼容和历史，旧资格不迁移、不fallback。应用登录已本地有效；真实HTTPS quota/catalog/视觉仍须canonical有限预算，工程验证不替代资格。计划Self-Review已核对原owners和产品边界；后续较早段落保留为历史。
+
+## Codex Subscription Continuation
+
+恢复时round20无terminal full report、原agent不存在，原两轮预算已耗尽。按[有界恢复记录](../../records/architecture-spec-acceptance.md#subscription-review-runtime-recovery)，直接修复integer rubric的Python equality混淆并重跑完整验证；仅一次新named native reviewer_max round21/wall900 full review，不自动round22，保留Kimi2/native1–20。完整审查与Parent裁决成立后继续clean官方安装、installed八图/OS/receipt核验；真实认证条件缺失则INCOMPLETE，不再制造“继续”许可门。
+
+Round19完整审查发现的三个已复现blocker按原第二轮额度修复：OS UID固定host ledger/application auth根、response-held socket的完整读取/deadline/revoke与cleanup。9项真实red失败后focused80 PASS；继续fresh全套offline/native/OS、round20完整复核、clean官方安装和installed实际核验。当前Linux仅支持UID home下默认Jianji userData，不接受任意同名目录；其他布局不自动寻找认证。Round19/旧1–18证据和new Spec SHA原样保留，不扩展真实请求或预算。
+
+按 [subscription amendment](../specs/2026-09-30-codex-subscription-image-design.md) 继续同一任务。当前用户没有 OpenAI Key，明确要求 Codex，随后指定模型 `gpt-6-sol`；不能继续把独立 API credential 当成前提，也不能静默沿用 `gpt-5.6-luna`。原 API/Kimi/MiniMax 历史和资格保留。
+
+1. 在原 credential、image contract/process/runtime/probe、Responses wire/broker/run/budget/CLI/qualification owners 增加显式 `codex/subscription-bounded`。应用独立 auth → host-memory OAuth/account header，Docker 仅 opaque capability；generation hard cap=null，observed output limit=2048，原 API hard cap 不变。
+2. 否定测试覆盖其他 profiles 的 null 拒绝、global/symlink/project auth、secret exposure、cap injection、typed usage、endpoint/identity/tools/PNG、一次预算 ledger 与 old API compatibility；fresh offline/native Docker/OS/containment、Ruff/diff 验证。
+3. 新 critical 分支最多两轮同一 read-only native reviewer_max full review，各900秒；累计历史从 round19 开始，不重置1–18。Parent裁决后才 clean source commit、官方 installation 与 installed pins/Skill/native/OS 验证。
+4. 使用 canonical credential/account owner 安全检查应用登录、固定订阅额度和 `gpt-6-sol` 图片权限。最多一次 quota GET 和一次 model catalog GET，由同一不可恢复 host ledger约束，无 refresh/retry；freeze actual payload/account/budget receipt 后才最多一次真实 eight-image capability。`gpt-6-luna`仅可单独选择，正式组合仍MiniMax+sol。缺真实条件保留 INCOMPLETE/零请求，formal0与产品禁止不变。
+
+Self-Review：有限订阅探针允许 unsupported hard generation cap，但明确记录 null；postflight limit 不能替代 upstream cap。没有第二 owner、OAuth→API、global登录读取、provider fallback、预算恢复或 semantic qualification 降标。当前 scope 内持续推进，plan 本身不是停止点。
+
 ## MiniMax and GPT Continuation
 
 按 [MiniMax amendment](../specs/2026-09-29-minimax-image-route-design.md) 继续同一M5-D2A，用户明确MiniMax/GPT并禁止Kimi。先复用Jianji ConnectionStore只读发现实际MiniMax-M3/Responses；不要再次假定用户未配置。GPT旧安装保持；新MiniMax显式backend/profile/runtime/tuple，不能重命名旧Kimi资格。当前任务内合同由Parent Self-Review接受，旧frozen Spec bytes/receipts/history不改。
