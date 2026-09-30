@@ -1,5 +1,17 @@
 # Image API Engineering Record
 
+## Unset Cap Installed Result — 2026-10-01
+
+Clean `4157a483636107ffe2093a589b516b677e4bebc6` 经官方installation owner安装，source_dirty_at_install=false；program `3998a1676c9f8ff378e628713696cc80c49aba1115e94b28a86584de17342317`，69源码、entry/Skill逐字节核对一致。Config仅复制原内容到新program目录，不修改镜像、应用配置或账号。新probe `5dcf462d-7485-4911-b512-b865423fef2d` 的conformance `aa21cad5-a6bf-49ed-acbe-645070d76f57` / native `bc9d9d1d-cae3-4f48-ac86-011d7c9c3446`，完整八图fake及14/14实际OS检查通过、provider0。
+
+随后只做一次新sealed真实验证。Qualification `44871911-cab4-4d5a-a349-2f732c81ad31` / native `8cba6c07-bc4a-4115-a8ce-6a07f3f9e2ac`：HTTP200/2777bytes，IDENTITY_VERIFIED，request_id_source=response-id，max_output_tokens=null，usage=input677/output305，native exit0 / 5.868618049s、IMAGE_NATIVE_COMPLETE、container_removed=true。实际八张PNG的bytes/SHA/顺序与sealed输入一致，首尾同像素不同ID保持；全部raw/wire/native/canonical artifact SHA/长度再次核对一致。临时Key删除，原ConnectionStore config和18accepted refs在receipt核验结束前未漂移。该真实结果证明CAP_ECHO_NULL协议兼容修复生效，不证明视觉答案正确。
+
+原canonical资格owner按提前冻结random-shapes-eight/v1 rubric比较，结果 **NOT_QUALIFIED / VISUAL_PROBE_MISMATCH**。Parent再核对rubric与actual canonical output：八项shape/color/ID/顺序正确，position仅ordinal6正确，ordinal0/1/2/3/4/5/7共7项错误；真实格位依次2/6/3/3/0/3/4/2，输出1/7/4/4/1/1/4/7。相同首尾像素分别答1/7而真值均2。Parent查看实际首图/第六图，明确为右上圆/左中三角，与rubric一致；不能归因于已证实的图像顺序或字节映射bug。该定位错误是本次128×128八图包络的具体能力拒绝，不泛化为所有MiniMax模型或任何现有产品效果结论。
+
+没有修改rubric、倒填旧失败、重放、换model或再调用至通过。当前router独立视觉路线在该capability门为NOT_QUALIFIED，M5-D2A正式qualification仍 **INCOMPLETE**、正式requests0；正式A/B/joint未评估全部null/NOT_EVALUATED，不能将probe位置错误伪装成正式false EMPTY。GPT精确6.1sol应用目录缺失仍是上轮证据，本轮新catalog0。Real-media/human、formal执行owner/config/全真值证据与全部production BLOCKED保持。用户已认可的覆盖样片和手动模式不受本修复改动。
+
+本轮真实请求共2：一次固定diagnostic根因、一项已证实修复的新sealed验证；旧消费全部保留，实际费用null。自然停止原因是能力门已证明错误和GPT所选账号路线条件未满足，不是预算或缺OpenAI Key。后续需要有独立证据支持的视觉质量/输入方案改进并另冻结适用capability标准，不能降低旧标准或改写NOT_QUALIFIED；随后才能继续原formal配置/隔离owner和truth-vs-review工作。证据目录 `response-optimization-20261001` 的unset-parent-visual-comparison.json保存具体差异；capture由本record承接，无专用skill，不写memory。
+
 ## Unset Cap Compatibility Candidate — 2026-10-01
 
 Generation diagnostics clean `1d9371895c592b2e68249a44a237852525df5703` 官方安装，program `3f5ea20efe3df6134e7032057afc96315854b65442a85d8baf127924ffb4e8e2`、source_dirty_at_install=false，69源码/entry/Skill一致。新probe `b4cd4d6f-f60b-4eb7-add5-4692b02950b4`、conformance `4d03ba4a-4bf1-46cc-98fb-a2bbaca5a4be`、native `2164343f-cf79-4552-9cdf-58f40b1bb2fe` 八图/14OS通过，provider0。随后一次真实qualification `6c849d7a-1a2b-4d0f-8c5a-99da9acf3ef0`、native `bb1d3b8e-09f0-4e36-90be-e43c3b3b6da0` HTTP200/2775bytes、wire/provider各1，固定标签CAP_ECHO_NULL，INCOMPLETE/输出隔离、container_removed=true、Key删除、config与16accepted refs核对未漂移。该证据确认本次null echo，不追溯改写旧未知字段。

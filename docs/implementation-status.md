@@ -1,5 +1,9 @@
 # Implementation Status
 
+## Unset Cap Installed Result — 2026-10-01
+
+Clean4157a48已官方安装，69-source program3998a167…、entry/Skill及新八图/14OS核验成立。唯一真实修复验证已IMAGE_NATIVE_COMPLETE/IDENTITY_VERIFIED，CAP_ECHO_NULL协议阻断消除；原canonical视觉比较八图7个position错误，**NOT_QUALIFIED / VISUAL_PROBE_MISMATCH**，未追加调用或修改标准。M5-D2A正式仍INCOMPLETE，GPT精确路线/全部真值证据缺失，PRODUCT_DISABLED。精确原始/映射/差异/receipt由[原record](records/image-api-engineering-2026-09-29.md#unset-cap-installed-result--2026-10-01)独占；以下candidate是历史。
+
 ## Unset Cap Compatibility Candidate — 2026-10-01
 
 Generation诊断已clean官方安装并以一次真实新请求确认CAP_ECHO_NULL，旧结果保持。新exact-ref/unrestricted/null cap兼容已red-green和fresh offline1014/native+containment1045PASS、4环境skip、Ruff/diff验证，Parent Gate未触发独立review；待clean安装/new tuple/一次真实验证。全部证据由[原record](records/image-api-engineering-2026-09-29.md#unset-cap-compatibility-candidate--2026-10-01)维护；GPT、formal及产品仍BLOCKED。
