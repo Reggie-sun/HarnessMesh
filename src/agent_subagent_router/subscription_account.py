@@ -1,6 +1,7 @@
 """Read-only ChatGPT quota/catalog evidence; no login, refresh or generation."""
 from datetime import datetime, timezone
 import http.client
+import re
 import ssl
 import time
 from pathlib import Path
@@ -11,6 +12,10 @@ from .transport.credentials import load_credential, credential_fingerprint
 
 QUOTA_PATH = '/backend-api/wham/usage'
 MODELS_PATH = '/backend-api/codex/models?client_version=0.154.0'
+_SAFE_MODEL_SLUG = re.compile(r'[a-z0-9][a-z0-9.-]*', re.ASCII)
+_GPT_MODEL_SLUG = re.compile(r'gpt-[a-z0-9][a-z0-9.-]*', re.ASCII)
+_MAX_CATALOG_MODELS = 128
+_MAX_MODEL_SLUG_LENGTH = 80
 
 
 def _get(path, credential):
@@ -108,14 +113,23 @@ def observe_subscription_account(store, reference, model, *, getter=None, recove
         'authority': 'none', 'eligible': False})
 
 
-def observe_subscription_model(store, reference, model, probe_id, *, getter=None):
+def observe_subscription_model(store, reference, model, probe_id, *, getter=None,
+        discover_models=False, task=None):
     """Explicit catalog-only observation; old account/recovery ledgers are untouched."""
     run = store.create('router-image', 'subscription-model')
     artifacts, queries, fingerprint = [], 0, None
     classification = 'INCOMPLETE'
     try:
-        if model not in ('gpt-6.1-sol', 'gpt-6-luna'):
+        if model not in ('gpt-6.1-sol', 'gpt-6-luna', 'gpt-6-astra'):
             raise RouterError('SUBSCRIPTION_MODEL_UNVERIFIED')
+        if model == 'gpt-6-astra':
+            if not isinstance(task, dict) or task.get('model') != model:
+                raise RouterError('SUBSCRIPTION_MODEL_UNVERIFIED')
+            from .image_contract import ImageTaskContract
+            try:
+                ImageTaskContract.from_dict(task)
+            except (RouterError, KeyError, TypeError, ValueError):
+                raise RouterError('SUBSCRIPTION_MODEL_UNVERIFIED') from None
         credential = load_credential('codex-subscription', reference,
             project_root=Path(__file__).resolve().parents[2])
         fingerprint = credential_fingerprint('codex-subscription', credential)
@@ -129,6 +143,8 @@ def observe_subscription_model(store, reference, model, probe_id, *, getter=None
             'catalog_source': 'https://chatgpt.com' + MODELS_PATH,
             'catalog_sha256': catalog_hash, 'observed_at': datetime.now(timezone.utc).isoformat(),
             **_model_facts(catalog, model)}
+        if discover_models:
+            facts['catalog_models'] = _project_model_catalog(catalog)
         artifacts.append(store.artifact(run, 'model-evidence.json', canonical_bytes(facts),
             media_type='application/json', producer='subscription-model-observer'))
         if facts['image_input_supported']:
@@ -141,6 +157,40 @@ def observe_subscription_model(store, reference, model, probe_id, *, getter=None
         'probe_id': probe_id, 'account_queries': queries, 'provider_requests': 0,
         'model': model, 'artifacts': artifacts, 'actual_cost_usd': None,
         'source_semantic': 'NOT_EVALUATED', 'authority': 'none', 'eligible': False})
+
+
+def _project_model_catalog(value):
+    models = value.get('models') if isinstance(value, dict) else None
+    if not isinstance(models, list) or len(models) > _MAX_CATALOG_MODELS:
+        raise RouterError('SUBSCRIPTION_MODEL_CATALOG_INVALID')
+
+    grouped = {}
+    for item in models:
+        if not isinstance(item, dict):
+            raise RouterError('SUBSCRIPTION_MODEL_CATALOG_INVALID')
+        slug = item.get('slug')
+        if (type(slug) is not str or not slug.isascii() or len(slug) > _MAX_MODEL_SLUG_LENGTH
+                or not _SAFE_MODEL_SLUG.fullmatch(slug)):
+            raise RouterError('SUBSCRIPTION_MODEL_CATALOG_INVALID')
+        if not _GPT_MODEL_SLUG.fullmatch(slug):
+            if slug.startswith('gpt-'):
+                raise RouterError('SUBSCRIPTION_MODEL_CATALOG_INVALID')
+            continue
+
+        modalities = item.get('input_modalities', [])
+        if not isinstance(modalities, list) or any(type(modality) is not str for modality in modalities):
+            raise RouterError('SUBSCRIPTION_MODEL_CATALOG_INVALID')
+        explicit_modalities = {modality for modality in modalities if modality in ('text', 'image')}
+        grouped.setdefault(slug, []).append(explicit_modalities)
+
+    projection = []
+    for slug in sorted(grouped):
+        matches = grouped[slug]
+        modalities = sorted(matches[0], key=('text', 'image').index) if len(matches) == 1 else []
+        projection.append({'slug': slug, 'matched_model_count': len(matches),
+            'input_modalities': modalities,
+            'image_input_supported': len(matches) == 1 and 'image' in modalities})
+    return projection
 
 
 def _model_facts(value, model):

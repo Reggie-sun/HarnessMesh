@@ -14,6 +14,8 @@ from .receipts import ReceiptStore
 from .runtime_config import installed_runtime, installed_sandbox, installed_backend_runtime
 from .smoke import run_smoke
 
+MODEL_CATALOG_DISCOVERY_SPEC_SHA = '590bab13743a463c12b55ac38eda0e4ba598df06c8cb55a386079c5658d70e56'
+
 
 def default_state():
     return Path.home()/'.local/state/agent-subagent-router'
@@ -67,6 +69,8 @@ def main(argv=None):
     image_account.add_argument('--recover-account-projection', action='store_true')
     image_account.add_argument('--verify-model', action='store_true',
         help='Explicit catalog-only verification for a new unrestricted subscription probe')
+    image_account.add_argument('--discover-models', action='store_true',
+        help='Project safe GPT catalog slugs under the exact accepted discovery spec')
     run = commands.add_parser('run', help='Run only a qualified sealed route')
     run.add_argument('--contract', type=Path, required=True)
     run.add_argument('--backend', required=True)
@@ -127,6 +131,9 @@ def main(argv=None):
                                     sandbox_config=args.sandbox_config)
             code = 0
         elif args.command in ('prepare-image-probe', 'qualify-image-route', 'run-images', 'observe-image-subscription'):
+            if (args.command == 'observe-image-subscription' and args.discover_models
+                    and not args.verify_model):
+                raise RouterError('SUBSCRIPTION_MODEL_DISCOVERY_REQUIRES_MODEL_VERIFICATION')
             if not args.sandbox_config:
                 raise RouterError('IMAGE_RUNTIME_CONFIG_REQUIRED')
             store = ReceiptStore(args.state/'runs')
@@ -149,11 +156,22 @@ def main(argv=None):
                     from .image_budget import MODEL_VERIFICATION_SPEC_SHA
                     from .image_contract import unrestricted_spending
                     from .subscription_account import observe_subscription_model
+                    accepted_hashes = {MODEL_VERIFICATION_SPEC_SHA}
+                    if args.discover_models:
+                        accepted_hashes.add(MODEL_CATALOG_DISCOVERY_SPEC_SHA)
+                    refs = task['selected_refs']
                     if (args.recover_account_projection or not unrestricted_spending(task)
-                            or not any(ref['sha256'] == MODEL_VERIFICATION_SPEC_SHA for ref in task['selected_refs'])):
+                            or not all(any(ref['sha256'] == expected and ref['accepted'] is True
+                                           for ref in refs) for expected in accepted_hashes)):
                         raise RouterError('SUBSCRIPTION_MODEL_VERIFICATION_ACCEPTANCE_REQUIRED')
+                    observer_options = {}
+                    if args.discover_models:
+                        observer_options['discover_models'] = True
+                    if task['model'] == 'gpt-6-astra':
+                        observer_options['task'] = task
                     output = observe_subscription_model(store,
-                        read_credential_reference('codex-subscription', args.credential_ref), task['model'], args.probe)
+                        read_credential_reference('codex-subscription', args.credential_ref), task['model'],
+                        args.probe, **observer_options)
                     code = 0 if output['classification'] == 'AUTHENTICATED_MODEL_READY' else 2
                     print(json.dumps(output, ensure_ascii=False, indent=2))
                     return code

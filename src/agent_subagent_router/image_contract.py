@@ -19,6 +19,19 @@ IMAGE_OUTPUT_PROTOCOL = 'JSON_OBJECT/v1'
 IMAGE_CONTEXT_POLICY = 'FRESH_SEALED_INPUT/v1'
 IMAGE_PROVIDERS = MappingProxyType({'kimi': 'kimi', 'codex': 'openai', 'minimax': 'minimax'})
 UNRESTRICTED_SPENDING_SPEC_SHA = 'f96a2fa0ed47e96810c46cda8c221694690badc64689661dbabe4826e0b345eb'
+SELECTED_SUBSCRIPTION_MODEL_SPEC_SHA = '622c3ea8c119276b837fbfa9d9bbdcff25f73f52c8dec50d24b7380cc7684570'
+
+
+def selected_subscription_model(task) -> bool:
+    """Only the account-verified, explicitly frozen Astra tuple; no aliases."""
+    return (isinstance(task, dict)
+        and tuple(task.get(key) for key in ('backend', 'profile', 'model', 'effort'))
+            == ('codex', 'subscription-bounded', 'gpt-6-astra', 'high')
+        and isinstance(task.get('metadata'), dict)
+        and task['metadata'].get('spending_policy') == 'unrestricted'
+        and isinstance(task.get('selected_refs'), list)
+        and any(isinstance(ref, dict) and ref.get('sha256') == SELECTED_SUBSCRIPTION_MODEL_SPEC_SHA
+            and ref.get('accepted') is True for ref in task['selected_refs']))
 
 
 def unrestricted_spending(task) -> bool:
@@ -30,7 +43,7 @@ def unrestricted_spending(task) -> bool:
     route = (task['backend'], task['profile'], task['model'], task['effort'])
     if route not in (('minimax', 'responses-bounded', 'MiniMax-M3', 'provider-default'),
             ('codex', 'subscription-bounded', 'gpt-6.1-sol', 'high'),
-            ('codex', 'subscription-bounded', 'gpt-6-luna', 'high')):
+            ('codex', 'subscription-bounded', 'gpt-6-luna', 'high')) and not selected_subscription_model(task):
         raise RouterError('IMAGE_ROUTE_MISMATCH')
     if not any(ref['sha256'] == UNRESTRICTED_SPENDING_SPEC_SHA and ref['accepted'] is True
                for ref in task['selected_refs']):
@@ -311,6 +324,8 @@ class ImageTaskContract:
 
         refs = _validate_refs(data['selected_refs'])
         metadata = _safe_metadata(data['metadata'])
+        if model == 'gpt-6-astra' and not selected_subscription_model(data | {'metadata': metadata, 'selected_refs': refs}):
+            _fail('IMAGE_ROUTE_MISMATCH')
         budgets = _validate_budgets(data['budgets'], images, prompt_bytes,
             subscription=backend == 'codex' and profile == 'subscription-bounded',
             unrestricted=unrestricted_spending(data | {'metadata': metadata, 'selected_refs': refs}))

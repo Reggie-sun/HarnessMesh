@@ -100,9 +100,11 @@ def _image_metadata(task, body):
 
 
 def _validate_native_request(task, body):
+    from .image_contract import selected_subscription_model
     fields = (_NATIVE_FIELDS, _REQUEST_FIELDS)
     reasoning = {"effort": task["effort"]}
-    if task['profile'] == 'subscription-bounded' and task['model'] in ('gpt-6.1-sol', 'gpt-6-sol', 'gpt-6-luna'):
+    if task['profile'] == 'subscription-bounded' and (task['model'] in ('gpt-6.1-sol', 'gpt-6-sol', 'gpt-6-luna')
+            or selected_subscription_model(task)):
         fields = (_NATIVE_FIELDS - {'text'}, _REQUEST_FIELDS - {'text'})
         reasoning['summary'] = 'auto'
     if type(body) is not dict or set(body) not in fields:
