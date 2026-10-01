@@ -41,6 +41,7 @@ def argv_for(task):
         'model_providers.sealed_image.request_max_retries': '0',
         'model_providers.sealed_image.stream_max_retries': '0',
         'orchestrator.skills.enabled': 'false', 'orchestrator.mcp.enabled': 'false',
+        'agents.enabled': 'false',
         'skills.include_instructions': 'false', 'include_environment_context': 'false',
         'include_permissions_instructions': 'false', 'include_apps_instructions': 'false',
         'include_collaboration_mode_instructions': 'false',

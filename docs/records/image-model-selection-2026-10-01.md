@@ -29,3 +29,13 @@ stable source candidate 绑定四个 source files 和两个新增测试的实际
 最终修订 native source candidate：wire e1cf5f04aeec9a6e079db26e6aff4b072bb8966b8f2cfd7fad3ae8658bed6382，tests ec21750942865ef0235eb9527b89c476846f5feedfc02ff630a8def4fed54fc6，完整 binding 在 router-lite-candidate-snapshot.json。worker false/true 纠正先可靠 RED（2 failed/30 passed），再 Astra 33 PASS、相关 wire 197 PASS；Parent 完整当前 offline suite **1076 passed / 35 skipped**（13.97s），完整 diff 已复查。受控投影测试使用明确 synthetic 控制字串及临时测试 hash，不代表实际 runtime 控制消息已通过；真实 native 仍须独立核验。
 
 Parent 对 material wire revision 重新评估 canonical §9：KIMI_REVIEW_NOT_REQUIRED。没有新 endpoint/credential/state/authority owner，实际 provider input 仅保留原 sealed system/user/PNG 和空 tools，未知控制 fragment 不能穿过精确 SHA、位置、shape 与 ID 门；新增工具、上下文、PNG、ref 或 legacy 漂移有负例和旧回归。尚缺 native/live 是下一步可执行资格证据，不以 review 替代；未发现 critical consequence 的新增路径或重大后果加未解决工程缺口的组合。用户计划禁止 Kimi 保持，read-only native mapper 只提供结构证据，Parent 独立裁决和验收。
+
+## Actual Nonempty Tool Boundary
+
+上述 Lite source 在 clean commit 5c8dae0e70532f030b66f7fd7ec8f0c8e42ae3eb 官方安装后，新的 probe 33e0f4cf-d07f-4d95-bef8-b785f68ce21e/native conformance 555f7756-236f-4a26-87c7-b320998efc8e 仍为 IMAGE_NATIVE_EXECUTION_INCOMPLETE；native invocation 56b0c29c-687f-4af3-ac32-cc6242a7f265 在 IMAGE_CONTEXT_MISMATCH 拒绝、wire/provider=0、container_removed=true。实际 native 并非空工具：fake-only 完整诊断 07fe73fb-7dcd-49e8-af84-1870c5d6481f 列出 exec/wait/request_user_input_async 及六个 collaboration tools。先前结构摘要从缺失的 top-level tools 推算 toolsCount=0 是不充分的推断，不能当作 input[0].tools=[] 的事实。
+
+Parent 完整审阅了两个控制 message，均只是2429/271字符的通用 runtime root/team控制文本，精确 SHA 与合同一致，未发现任务/账号秘密；但是仍不能接纳工具。真实 prefix at_/system msg_ 使用 UUIDv5（而非本修订暂定v7），control/user 为v7；当前严格拒绝保持，不凭测试 fixture 推导 native 合格。实际二进制 app-server help 与 exact argv/config features-list 均在原 Docker owner 内读取，provider0：code_mode/code_mode_host/multi_agent/multi_agent_v2=false，仍不能证明实际 tool router 为空；unified_exec=true 的 effective 差异也未解释。首个 help 的非规范 CODEX_HOME 被entry拒绝、features-list的不存在home错误保留，修正成原driver的私有规范home后得到有效只读结果。
+
+只读 Rust mapping 找到原配置遗漏：agents.enabled=false 可覆盖 catalog multi-agent version，current_time_reminder 与 code_mode_only 需独立关闭。Parent 在原 baked native driver及同源fake RPC owner 加这三个显式设置，保持模型、endpoint、credential、无工具拒绝、取消与预算；不剥除非空工具集、不修改 model metadata。后续新 snapshot/镜像/探针仅验证此受支持设置，若仍有工具则必须继续拒绝；app-server没有已经证明的全局 thread tool allowlist，不能把“禁用若干flags”称为隔离证明。
+
+该四行配置修正的 Parent fresh offline suite 为1076 PASS/35 SKIP（13.85s），最终 diff 仅三个显式禁用值及本记录；native效果仍NOT_EVALUATED。stable Risk Gate不触发：权限只收紧，原非空工具拒绝先于credential，尚无工具执行、上游请求或发布；实际隔离的缺口由下一次新image/native诊断检验，不声称已解决。Kimi禁止及全部原source/once/credential gates保持。
