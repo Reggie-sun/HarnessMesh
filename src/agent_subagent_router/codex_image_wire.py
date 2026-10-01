@@ -18,6 +18,15 @@ _NATIVE_FIELDS = {
     "client_metadata",
 }
 _REQUEST_FIELDS = _NATIVE_FIELDS | {"max_output_tokens"}
+_ASTRA_LITE_FIELDS = {
+    "model", "input", "tool_choice", "parallel_tool_calls", "reasoning", "store",
+    "stream", "include", "prompt_cache_key", "text", "client_metadata",
+}
+_ASTRA_CONTROL_MESSAGE_SHA256 = (
+    '47091490938505958b0c22ff42db6fd79b272a2af6923166f4c2cc53c4fe0df4',
+    '6ded806e3cdbb35599ecaf8742574bc5274908472b1729090010c404c2151e8e',
+)
+_ASTRA_PROJECTION_VERSION = 'codex-responses-lite-astra/v1'
 _CLIENT_METADATA_FIELDS = {
     "x-codex-turn-metadata", "x-codex-installation-id", "thread_id", "session_id",
     "x-codex-window-id", "turn_id", "root_turn_id",
@@ -30,6 +39,7 @@ _TURN_METADATA_FIELDS = {
 }
 _REQUEST_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _MESSAGE_ID = re.compile(r"^msg_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$")
+_ADDITIONAL_TOOLS_ID = re.compile(r"^at_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$")
 
 
 def _fail(code="IMAGE_PROJECTION_MISMATCH", detail=""):
@@ -99,58 +109,39 @@ def _image_metadata(task, body):
     }
 
 
-def _validate_native_request(task, body):
-    from .image_contract import selected_subscription_model
-    fields = (_NATIVE_FIELDS, _REQUEST_FIELDS)
-    reasoning = {"effort": task["effort"]}
-    if task['profile'] == 'subscription-bounded' and (task['model'] in ('gpt-6.1-sol', 'gpt-6-sol', 'gpt-6-luna')
-            or selected_subscription_model(task)):
-        fields = (_NATIVE_FIELDS - {'text'}, _REQUEST_FIELDS - {'text'})
-        reasoning['summary'] = 'auto'
-    if type(body) is not dict or set(body) not in fields:
-        _fail()
-    if task["backend"] != "codex" or task["profile"] not in ("api-bounded", "subscription-bounded"):
-        _fail("IMAGE_ROUTE_MISMATCH")
-    if (body["model"] != task["model"] or body["instructions"] != task["system_text"]
-            or body["tools"] != [] or body["tool_choice"] != "auto"
-            or body["parallel_tool_calls"] is not True or body["store"] is not False
-            or body["stream"] is not True
-            or body["reasoning"] != reasoning
-            or body["include"] != ["reasoning.encrypted_content"]
-            or ('text' in body and body["text"] != {"verbosity": "low"})):
-        _fail("IMAGE_ROUTE_MISMATCH")
-    cap = task["budgets"]["generation_tokens"]
-    if cap is not None and cap > MAX_CODEX_IMAGE_TOKENS:
-        _fail("IMAGE_GENERATION_LIMIT")
-    if task['profile'] == 'subscription-bounded' and 'max_output_tokens' in body:
-        _fail('IMAGE_GENERATION_MISMATCH')
-    if "max_output_tokens" in body and (
-        type(body["max_output_tokens"]) is not int or body["max_output_tokens"] != cap
-    ):
-        _fail("IMAGE_GENERATION_MISMATCH")
-
-    input_value = body["input"]
-    if type(input_value) is not list or len(input_value) != 1:
-        _fail("IMAGE_CONTEXT_MISMATCH")
-    message = input_value[0]
+def _message_id(message, role):
     if (type(message) is not dict or set(message) != {"type", "id", "role", "content"}
-            or message["type"] != "message" or message["role"] != "user"):
+            or message["type"] != "message" or message["role"] != role):
         _fail("IMAGE_CONTEXT_MISMATCH")
-    message_match = _MESSAGE_ID.fullmatch(message["id"]) if isinstance(message["id"], str) else None
-    if message_match is None:
+    matched = _MESSAGE_ID.fullmatch(message['id']) if isinstance(message['id'], str) else None
+    if matched is None:
         _fail("IMAGE_METADATA_MISMATCH")
-    _uuid(message_match.group(1), version=7)
+    _uuid(matched.group(1), code="IMAGE_METADATA_MISMATCH", version=7)
+    return message['id']
 
-    content = message["content"]
+
+def _single_input_text(message):
+    content = message['content']
+    if type(content) is not list or len(content) != 1:
+        _fail("IMAGE_CONTEXT_MISMATCH")
+    text = content[0]
+    if type(text) is not dict or set(text) != {"type", "text"} or text.get('type') != 'input_text':
+        _fail("IMAGE_CONTEXT_MISMATCH")
+    if not isinstance(text.get('text'), str):
+        _fail("IMAGE_CONTEXT_MISMATCH")
+    return text['text']
+
+
+def _validate_user_content(task, message, system_text):
+    content = message['content']
     if type(content) is not list or len(content) != len(task["images"]) + 1:
         _fail("IMAGE_BINDING_MISMATCH")
     expected_text = visible_text(task)
-    first = content[0]
-    if type(first) is not dict or set(first) != {"type", "text"} or first != {
+    if type(content[0]) is not dict or set(content[0]) != {"type", "text"} or content[0] != {
         "type": "input_text", "text": expected_text,
     }:
         _fail("IMAGE_CONTEXT_MISMATCH")
-    context_bytes = len(body["instructions"].encode("utf-8")) + len(expected_text.encode("utf-8"))
+    context_bytes = len(system_text.encode("utf-8")) + len(expected_text.encode("utf-8"))
     if context_bytes > task["budgets"]["context_bytes"]:
         _fail("IMAGE_CONTEXT_LIMIT")
 
@@ -170,7 +161,107 @@ def _validate_native_request(task, body):
             key: descriptor[key]
             for key in ("image_id", "byte_length", "sha256", "width", "height")
         })
-    return _image_metadata(task, body), image_proof, message["id"], expected_text
+    return image_proof, expected_text
+
+
+def _validate_astra_lite_input(task, body):
+    items = body['input']
+    if type(items) is not list or len(items) != 5:
+        _fail('IMAGE_CONTEXT_MISMATCH')
+
+    additional = items[0]
+    if (type(additional) is not dict or set(additional) != {'type', 'id', 'role', 'tools'}
+            or additional['type'] != 'additional_tools' or additional['role'] != 'developer'
+            or type(additional['tools']) is not list or additional['tools'] != []):
+        _fail('IMAGE_CONTEXT_MISMATCH')
+    additional_match = (_ADDITIONAL_TOOLS_ID.fullmatch(additional['id'])
+        if isinstance(additional['id'], str) else None)
+    if additional_match is None:
+        _fail('IMAGE_METADATA_MISMATCH')
+    _uuid(additional_match.group(1), code='IMAGE_METADATA_MISMATCH', version=7)
+
+    system = items[1]
+    system_id = _message_id(system, 'developer')
+    if _single_input_text(system) != task['system_text']:
+        _fail('IMAGE_CONTEXT_MISMATCH')
+
+    removed = []
+    for position, expected_hash, item in zip((2, 3), _ASTRA_CONTROL_MESSAGE_SHA256, items[2:4], strict=True):
+        message_id = _message_id(item, 'developer')
+        control_text = _single_input_text(item)
+        try:
+            digest = hash_bytes(control_text.encode('utf-8', 'strict'))
+        except UnicodeError:
+            _fail('IMAGE_CONTEXT_MISMATCH')
+        if digest != expected_hash:
+            _fail('IMAGE_CONTEXT_MISMATCH')
+        removed.append({'position': position, 'id': message_id, 'sha256': digest})
+
+    user = items[4]
+    user_id = _message_id(user, 'user')
+    ids = [additional['id'], system_id, *(item['id'] for item in items[2:4]), user_id]
+    if len(ids) != len(set(ids)):
+        _fail('IMAGE_METADATA_MISMATCH')
+    images, text = _validate_user_content(task, user, task['system_text'])
+    projection = {
+        'removed_positions': (2, 3),
+        'projection_version': _ASTRA_PROJECTION_VERSION,
+        'removed_control_items': removed,
+        'removed_control_item_count': len(removed),
+        'native_additional_tools_id': additional['id'],
+        'native_system_message_id': system_id,
+    }
+    return images, user_id, text, projection
+
+
+def _validate_native_request(task, body):
+    from .image_contract import selected_subscription_model
+    astra_lite = task['profile'] == 'subscription-bounded' and selected_subscription_model(task)
+    expected_parallel_tools = False if astra_lite else True
+    if astra_lite:
+        fields = (_ASTRA_LITE_FIELDS,)
+        reasoning = {'effort': task['effort'], 'context': 'all_turns'}
+    else:
+        fields = (_NATIVE_FIELDS, _REQUEST_FIELDS)
+        reasoning = {"effort": task["effort"]}
+        if task['profile'] == 'subscription-bounded' and task['model'] in (
+                'gpt-6.1-sol', 'gpt-6-sol', 'gpt-6-luna'):
+            fields = (_NATIVE_FIELDS - {'text'}, _REQUEST_FIELDS - {'text'})
+            reasoning['summary'] = 'auto'
+    if type(body) is not dict or set(body) not in fields:
+        _fail()
+    if task["backend"] != "codex" or task["profile"] not in ("api-bounded", "subscription-bounded"):
+        _fail("IMAGE_ROUTE_MISMATCH")
+    if (body["model"] != task["model"]
+            or (not astra_lite and (body["instructions"] != task["system_text"] or body["tools"] != []))
+            or body["tool_choice"] != "auto"
+            or body["parallel_tool_calls"] is not expected_parallel_tools or body["store"] is not False
+            or body["stream"] is not True
+            or body["reasoning"] != reasoning
+            or body["include"] != ["reasoning.encrypted_content"]
+            or ('text' in body and body["text"] != {"verbosity": "low"})):
+        _fail("IMAGE_ROUTE_MISMATCH")
+    cap = task["budgets"]["generation_tokens"]
+    if cap is not None and cap > MAX_CODEX_IMAGE_TOKENS:
+        _fail("IMAGE_GENERATION_LIMIT")
+    if task['profile'] == 'subscription-bounded' and 'max_output_tokens' in body:
+        _fail('IMAGE_GENERATION_MISMATCH')
+    if "max_output_tokens" in body and (
+        type(body["max_output_tokens"]) is not int or body["max_output_tokens"] != cap
+    ):
+        _fail("IMAGE_GENERATION_MISMATCH")
+
+    projection = None
+    if astra_lite:
+        image_proof, message_id, expected_text, projection = _validate_astra_lite_input(task, body)
+    else:
+        input_value = body["input"]
+        if type(input_value) is not list or len(input_value) != 1:
+            _fail("IMAGE_CONTEXT_MISMATCH")
+        message = input_value[0]
+        message_id = _message_id(message, 'user')
+        image_proof, expected_text = _validate_user_content(task, message, body['instructions'])
+    return _image_metadata(task, body), image_proof, message_id, expected_text, projection
 
 
 def map_codex_image_request(task: dict, body: dict) -> tuple[bytes, dict]:
@@ -178,10 +269,14 @@ def map_codex_image_request(task: dict, body: dict) -> tuple[bytes, dict]:
     contract = ImageTaskContract.from_dict(task).to_dict()
     if contract["output_protocol"] != "JSON_OBJECT/v1":
         _fail("IMAGE_ROUTE_MISMATCH")
-    identity, images, message_id, visible = _validate_native_request(contract, body)
+    identity, images, message_id, visible, projection = _validate_native_request(contract, body)
     try:
         native = canonical_bytes(body)
         mapped = dict(body)
+        if projection is not None:
+            removed_positions = set(projection['removed_positions'])
+            mapped['input'] = [item for index, item in enumerate(body['input'])
+                if index not in removed_positions]
         if contract['profile'] == 'api-bounded':
             mapped["max_output_tokens"] = contract["budgets"]["generation_tokens"]
         actual = canonical_bytes(mapped)
@@ -209,7 +304,14 @@ def map_codex_image_request(task: dict, body: dict) -> tuple[bytes, dict]:
     if contract['profile'] == 'subscription-bounded':
         proof['observed_output_tokens_limit'] = contract['budgets']['observed_output_tokens_limit']
         proof['native_text_verbosity'] = body.get('text', {}).get('verbosity')
-        proof['native_reasoning_summary'] = body['reasoning'].get('summary')
+        if projection is None:
+            proof['native_reasoning_summary'] = body['reasoning'].get('summary')
+        else:
+            proof['native_reasoning_context'] = body['reasoning'].get('context')
+    if projection is not None:
+        proof.update({key: projection[key] for key in (
+            'projection_version', 'removed_control_items', 'removed_control_item_count',
+            'native_additional_tools_id', 'native_system_message_id')})
     return actual, proof
 
 
