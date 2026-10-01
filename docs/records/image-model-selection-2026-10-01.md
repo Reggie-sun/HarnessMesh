@@ -1,5 +1,13 @@
 # Image Model Selection Record — 2026-10-01
 
+## Current Fixed-Model Receipt Followthrough
+
+简辑用户最新约束只允许精确 `gpt-6.1-sol` / `gpt-6-luna`，含本地fake、能力及正式请求；本文件下方Astra选择、Lite和非空工具诊断均为历史，不继续该路线。已有固定型号conformance分别 `eda8f663-8dfe-4531-967f-aa269b422254` / `11bbba2a-89d9-4eaf-a49c-1a4646df56f6` 均ENGINEERING_CONFORMANCE_COMPLETE、tools=[]、8图、14项OS检查、provider_requests=0。
+
+随后各一次认证目录receipt `7e05275d-3f3a-485a-86b7-7dc2219564cc` / `a7a518aa-5aad-49b5-8ef0-5740fa02f79d` 均INCOMPLETE：7项、精确匹配0、image未证明，两响应SHA `a6c8e85904c4816ca11c2e86e7fb8a03498322aa69dcc28ca0d58941bb7d2a02`相同。原始filtered artifact与全部列出SHA/size已重新核对，没有重发GET或读取全局登录。证据根沿用 `auto-contour-full-20261001-51kctk6d`；本次只读audit在 `auto-contour-catalog-followthrough-20261001/catalog-receipt-audit.json`。这不是远端永久不支持结论，也不是实际图片能力。
+
+Jianji bundled版本、REST client_version与User-Agent均0.154.0；应用model/list的hidden过滤不用于Router `_model_facts` 的exact slug匹配，因此不能解释这两份REST记录的零匹配。没有证实实现或目录来源缺陷，不修改matcher、model metadata、alias、credential/once/seal门。固定型号目录准入及可信正式execution仍INCOMPLETE，actual image/formal requests0，PRODUCT_DISABLED；[Jianji AI record](../../../jianji/docs/shape-matched-cover-m5d2a.md#fixed-model-catalog-followthrough--2026-10-01) 独占项目语义/材料状态。Astra旧runtime工具失败不继续充当当前固定型号的native blocker。
+
 ## Scope and Contract Acceptance
 
 简辑完整 auto-contour 任务用户明确允许核验并选择应用独立账号实际支持图片的 GPT。Parent 经原应用刷新 owner 取得候选清单，选择 `gpt-6-astra / high`，未更改应用当前 `gpt-5.6-luna` 设置、全局登录或旧 probe。
@@ -39,3 +47,17 @@ Parent 完整审阅了两个控制 message，均只是2429/271字符的通用 ru
 只读 Rust mapping 找到原配置遗漏：agents.enabled=false 可覆盖 catalog multi-agent version，current_time_reminder 与 code_mode_only 需独立关闭。Parent 在原 baked native driver及同源fake RPC owner 加这三个显式设置，保持模型、endpoint、credential、无工具拒绝、取消与预算；不剥除非空工具集、不修改 model metadata。后续新 snapshot/镜像/探针仅验证此受支持设置，若仍有工具则必须继续拒绝；app-server没有已经证明的全局 thread tool allowlist，不能把“禁用若干flags”称为隔离证明。
 
 该四行配置修正的 Parent fresh offline suite 为1076 PASS/35 SKIP（13.85s），最终 diff 仅三个显式禁用值及本记录；native效果仍NOT_EVALUATED。stable Risk Gate不触发：权限只收紧，原非空工具拒绝先于credential，尚无工具执行、上游请求或发布；实际隔离的缺口由下一次新image/native诊断检验，不声称已解决。Kimi禁止及全部原source/once/credential gates保持。
+
+## Installed Native Result and Effective Configuration
+
+配置修正已在 clean commit `d632e16703c85939f17d827d180df5f5f6bdf5d3` 官方安装，source_dirty_at_install=false，installed source hash `c13dd7daade61b16a7d70b184b1c802e2872cd252c4596625715bc3aa0081d8e`。使用同一已核对的本地 runtime（0.154.0、SHA `3188814c35471432d4123203e0eb38e5bddc60226e3d7ddf0e59e649ea140022`）重建原 Docker owner，image `1e92bf56073e25ce217ad8707c9b8fb2cb94d595fc1a089aacce8e8af0d5d745`；没有 pull、替换旧镜像配置或读取账号凭据。
+
+新 probe `5dc8ac29-637b-4345-87d7-8138b3ed56f2`、canonical native conformance `4de80ccf-cfce-49a5-8684-f0c53c31ae9b`、native invocation `f46e63e5-df1a-4a5f-9bc6-b3775d115e5a` 的结果仍为 **IMAGE_NATIVE_EXECUTION_INCOMPLETE**，14 OS checks true、container_removed=true、wire/provider requests=0。一次 fake-only 完整结构观察 `eaaa5591-e6b4-4493-b793-ee9e5efb9667` 确认 `agents.enabled=false` 实际移除了六个 collaboration tools 及两段额外控制消息；现在 input 为三项，仍暴露 `exec`、`wait`、`request_user_input_async`，prefix/system IDs 仍为 UUIDv5。原五项/v7/空工具 mapper 正确拒绝，未放宽为接受该请求。
+
+进一步仅在该镜像的原 sandbox.execute/source=None 中运行 baked fake RPC。receipt `09253a11-096e-4bac-ad7a-d628a595ac00` 的同进程 `config/read` 显示 code_mode/code_mode_only/code_mode_host/multi_agent/multi_agent_v2/current_time_reminder/unified_exec=false，agents.enabled=false，orchestrator skills/mcp=false；实际假服务仍收到请求。此前 CLI features-list 的 unified_exec=true 不能替代同进程 app-server config，也不再用于断言本请求的 effective flag。各设置已传入不等于 model tool router 为空。
+
+`--strict-config` 诊断分开保存：baked diagnostic 自带 `model_max_output_tokens` 被拒绝（receipt `46b3e933-e685-4af5-ba9f-b775c33ee207`，fake requests0），该值不在正式 native driver 中；换用正式 `image_codex.argv_for` 的精确参数、仅追加 strict-config 后，receipt `fc5227e8-ec4e-49d5-890d-ccbf678f5532` 没有 configuration/RPC error、fake requests1。不能把前者当作正式 driver 的错误，也不能把后者当作空工具或视觉资格。首个 effective-config 诊断结束后因错误使用 runs 的父目录作为 ReceiptStore 而未持久化，保留该 orchestration 失败；改用既有私有 runs 后取得上述正式诊断记录。所有这些诊断均 provider0，没有账号目录 GET、generation、auth refresh 或 quota 请求。
+
+当时只读源码mapping未找到已经证明适用于该Astra二进制路径的thread-local全工具关闭参数；model metadata tool_mode优先级只是待核对解释。Astra这项历史失败保持，不剥除工具定义、改metadata或绕过native门。**该历史checkpoint停止于Astra runtime no-tools阻断**；固定两型号之后已通过native conformance，当前目录/image和正式execution缺口见本文件首节。旧probe不重放、MiniMax NOT_QUALIFIED不重写，没有完整M1或语义资格。
+
+此补充只更新 durable record，未修改已验证的 executable source；不将1076项 offline tests重标成此次重跑或 native acceptance。原安装、source、Spec 与receipt绑定由 Parent 再核对；后续语义修复须重新验证、clean安装及新的 probe。记录保存于私有 `auto-contour-full-20261001-51kctk6d`，没有适用的额外 capture skill，也未写外部memory。
