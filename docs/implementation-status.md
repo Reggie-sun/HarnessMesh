@@ -1,5 +1,14 @@
 # Implementation Status
 
+## Kimi Body-Disconnect Investigation — 2026-10-05
+
+`6b69713` 的安全 error subtype / response-progress diagnostics 已安装，focused88/
+offline1082 通过；新的两文件 sealed Kimi 调查96.7秒、`k3/max/32000`、完整报告成立。
+该短调用不证明原长流故障已修复。`.ai` 当前透明代理路径与 `.com` DIRECT 不同，
+同域名网络隔离尚待用户决定已有 dirty rule file 的修改权限。没有重试 unknown、
+改模型/额度或迁移 endpoint；详细证据和未完成边界见
+[investigation record](records/kimi-response-body-investigation-2026-10-05.md)。
+
 ## Kimi Unknown-Outcome Replay Fence — 2026-10-05
 
 Clean `67095fe` 已由官方 installer 激活；`OUTCOME_UNKNOWN` 后本次 invocation 立即撤销，

@@ -52,9 +52,38 @@ implementation review；修改不放宽 authority、凭据、付费准入或 dur
 offline suite 覆盖，没有发现严重后果且仍存在、适合独立模型补证的重大语义缺口。
 外部研究与之前失败的 Kimi 调查均不算该 snapshot 的 independent review。
 
+## Installed Read-Only Result
+
+Code/test/initial record commit `6b697138d385e0f698341a6e63f22b1313cc6f44` 已经官方
+installer 安装；manifest source hash
+`f2c60354849e0ba374f7df9e07af740c017a9302b91673e8f2d33d256c7a0da0`，
+`source_dirty_at_install=false`，source/installed `broker.py` SHA 一致，entry/Skill SHA
+符合 manifest。安装时另外的 research Markdown 尚未跟踪，不属于安装的 package source。
+安装后的 doctor Docker/native fake containment 通过；未声称新的 provider qualification。
+
+第二次显式 Kimi attempt 将问题缩为两个 source files，保留原调查 predecessor 与最高
+finite policy；新 seal `19bf99949d4c0394fd2e0662e8cc521d78b0589b44e5d45d8721a86fb37b6f50`，
+frozen set 为 home/repository AGENTS、accepted Spec 与两个 source files，全程未修改。
+canonical invocation `4ca70ee3-dd96-49cd-957c-c93188d79a9d` 为 `PARSED`，
+96.728 秒、两次 HTTP 200、两次 authenticated identity `k3/max`、每次 cap 32,000，
+actual Read 与 report SHA
+`a900da4cf422af82e1f3db5c1783add8b50b4008273f795a7ae2e0a916206f3a` 已由 CLI 机械核验。
+没有自动 retry，没有满足连续两次运行失败条件，因此不触发 native fallback。
+
+Parent 源码裁决：确认 `KimiUpstream.timeout` 交给 HTTP socket operation，没有约 300 秒
+累计 body timer；Broker/supervisor 仍拥有 wall/idle/revoke 边界。新数字可区分静默与
+持续收包后重置，但没有改变传输，也未在本次成功调用中产生 failure timing。
+该有效小任务只完成了有界源码调查，不是 final implementation review，
+`parent_acceptance=NOT_EVALUATED`；不能将它当成原长流事故已修复的证明。
+
+官方路由/SDK/流终态研究由
+[upstream research](kimi-stream-upstream-research-2026-10-05.md) 独占；
+不采用其自动重试模式，不因地区文档或 HEAD 时延迁移 sealed endpoint。
+
 ## Remaining Work
 
-需要安装后新的有限、sealed、qualified 调查才能观察真实 subtype/timing。
-一次成功的小任务不能证明长流稳定；失败不得盲目重放。若同一有界调查第二次仍没有
-可用报告，保存两次 receipts/消费后按 canonical fallback 使用 named native profile 接手。
-待路径隔离或真实 timing evidence 后再决定修复具体 owner；现阶段不能报告断连已修好。
+原长流问题仍未解决；需在相关失败再次发生时检查新增 subtype/timing，或做已授权的
+同 host 路径隔离。网络规则文件的 same-file ownership/修改选择仍等待用户回复：
+A 允许保留原修改并只追加 `api.kimi.ai` DIRECT 验证；B 不改网络；C 先继续只读取证。
+本轮没有修改 VPN file、shared selector 或 authenticated endpoint，也没有追加第三次
+Kimi attempt。旧失败和原消费不重置。本调查仍不能报告断连已修好。
