@@ -23,7 +23,17 @@ def failure_diagnostic(phase: str, error: Exception) -> dict:
         kind = 'OS_ERROR'
     else:
         kind = 'UNEXPECTED_ERROR'
-    return {'phase': phase, 'kind': kind}
+    diagnostic = {'phase': phase, 'kind': kind}
+    for error_type, detail in (
+        (http.client.RemoteDisconnected, 'REMOTE_DISCONNECTED'),
+        (ConnectionResetError, 'CONNECTION_RESET'),
+        (ConnectionAbortedError, 'CONNECTION_ABORTED'),
+        (BrokenPipeError, 'BROKEN_PIPE'),
+    ):
+        if isinstance(error, error_type):
+            diagnostic['detail'] = detail
+            break
+    return diagnostic
 
 
 class UpstreamFailure(RouterError):

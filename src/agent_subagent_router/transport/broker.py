@@ -72,6 +72,7 @@ class KimiUpstream:
                 raise RouterError('CAPABILITY_REVOKED')
             self._connection = connection
         phase, http_status = 'CONNECT', None
+        started_at = time.monotonic()
         try:
             connection.connect()
             # Never reconnect automatically if cancellation closes the connected socket.
@@ -83,6 +84,8 @@ class KimiUpstream:
             phase = 'RESPONSE_HEADERS'
             response = connection.getresponse()
             http_status = response.status
+            headers_at = last_received_at = time.monotonic()
+            chunks_received, max_read_wait = 0, 0.0
             if self._on_activity:
                 self._on_activity(0)  # Actual response headers, not a synthetic heartbeat.
             data = bytearray()
@@ -90,9 +93,15 @@ class KimiUpstream:
             while True:
                 if self._closed.is_set():
                     raise RouterError('CAPABILITY_REVOKED')
-                chunk = response.read1(min(65536, self.response_limit+1-len(data)))
+                read_started_at = time.monotonic()
+                try:
+                    chunk = response.read1(min(65536, self.response_limit+1-len(data)))
+                finally:
+                    max_read_wait = max(max_read_wait, time.monotonic()-read_started_at)
                 if not chunk:
                     break
+                last_received_at = time.monotonic()
+                chunks_received += 1
                 if self._on_activity:
                     self._on_activity(len(chunk))
                 data.extend(chunk)
@@ -105,7 +114,16 @@ class KimiUpstream:
         except RouterError:
             raise
         except Exception as exc:
-            raise UpstreamFailure(phase, exc, http_status) from None
+            failure = UpstreamFailure(phase, exc, http_status)
+            if phase == 'RESPONSE_BODY':
+                failed_at = time.monotonic()
+                failure.diagnostic['response_progress'] = {
+                    'headers_seconds': round(headers_at-started_at, 3),
+                    'body_seconds': round(failed_at-headers_at, 3),
+                    'received_bytes': len(data), 'chunks_received': chunks_received,
+                    'last_byte_age_seconds': round(failed_at-last_received_at, 3),
+                    'max_read_wait_seconds': round(max_read_wait, 3)}
+            raise failure from None
         finally:
             connection.close()
             with self._lock:
