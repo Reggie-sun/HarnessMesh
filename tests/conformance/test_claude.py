@@ -116,3 +116,57 @@ def test_api_timeout_env_controls_pinned_runtime_deadline(tmp_path):
     assert results['short'].duration_seconds < 2.5
     assert results['long'].exit_code == 0
     assert results['long'].duration_seconds >= 3
+
+
+@pytest.mark.native
+def test_bun_body_idle_deadline_is_independent_of_api_timeout(tmp_path):
+    """Accelerate Bun's five-minute timer; no real provider or credentials."""
+    runtime = Runtime(str(NATIVE), '2.1.277', hash_bytes(NATIVE.read_bytes()))
+    route = profile('deep')
+    results = {}
+    requests = []
+    for name in ('short-bun-idle', 'sealed-wall-idle'):
+        response = fake_stream(route.wire_model)
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers['Content-Length']))
+                requests.append(name)
+                time.sleep(12)
+                try:
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'text/event-stream')
+                    self.send_header('Content-Length', str(len(response)))
+                    self.end_headers()
+                    self.wfile.write(response)
+                except (BrokenPipeError, ConnectionError, OSError):
+                    pass
+
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        server.daemon_threads = True
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            budgets = Budgets(25, 25, 1, 200000, 200000)
+            invocation = build_invocation(runtime, route, tmp_path/name,
+                f'http://127.0.0.1:{server.server_port}', 'synthetic-capability',
+                b'Return a small JSON report.', budgets)
+            env = dict(invocation.env)
+            assert env['API_TIMEOUT_MS'] == '25000'
+            if name == 'short-bun-idle':
+                env['BUN_CONFIG_HTTP_IDLE_TIMEOUT'] = '1'
+            results[name] = supervise(replace(invocation, env=env))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=1)
+    assert requests == ['short-bun-idle', 'sealed-wall-idle']  # No retries in either case.
+    assert results['short-bun-idle'].exit_code == 1
+    assert b'Request timed out' in results['short-bun-idle'].stdout
+    assert results['short-bun-idle'].duration_seconds < 12
+    assert results['sealed-wall-idle'].exit_code == 0
+    assert decode_claude(results['sealed-wall-idle'].stdout).classification == 'PARSED'
+    assert 12 <= results['sealed-wall-idle'].duration_seconds < 25

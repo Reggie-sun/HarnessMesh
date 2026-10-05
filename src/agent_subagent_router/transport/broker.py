@@ -17,7 +17,7 @@ import uuid
 from ..contracts import RouterError, canonical_bytes, strict_json
 from ..receipts import redact
 from .budget import reporting_request
-from .diagnostics import UpstreamFailure, failure_diagnostic
+from .diagnostics import UpstreamFailure, failure_diagnostic, stream_progress
 from .identity import validate_request, validate_response
 from .response_secrets import validate_response_secrets
 
@@ -123,6 +123,9 @@ class KimiUpstream:
                     'received_bytes': len(data), 'chunks_received': chunks_received,
                     'last_byte_age_seconds': round(failed_at-last_received_at, 3),
                     'max_read_wait_seconds': round(max_read_wait, 3)}
+                progress = stream_progress(data)
+                if progress is not None:
+                    failure.diagnostic['stream_progress'] = progress
             raise failure from None
         finally:
             connection.close()

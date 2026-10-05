@@ -158,3 +158,44 @@ identity、transport acceptance 或其他 Selector，直接配置与实际连接
 HarnessMesh code suite（其 code bytes 本轮未变）；诊断安装的旧 focused/offline 证据属于
 上面的既有 checkpoint。新失败不能覆盖成成功。未启动未授权 endpoint 迁移或更多调用；
 后续根因修复仍需要能区分 local TUN/ISP/remote edge 的 transport evidence。
+
+## Local Runtime Idle-Timer Repair
+
+用户要求继续排查并修复成功。本次重新核验旧 filtered stdout：两次长调用的 Claude
+terminal result 均为 `Request timed out`。因此上面的 `process.reason=exited` 只能排除
+supervisor 主动按 wall/idle 终止，不能排除 CLI 内部 timer。原“未确认本地 defect”结论
+是当时证据状态，不是当前结论。Native `code_mapper` 接手连续失败的同范围工程调查，
+确认进程退出后的 `broker.revoke → upstream.close → socket.shutdown` 可造成
+`BROKEN_PIPE`；旧 receipt 的具体竞态先后没有直接时间戳证明，不伪造远端归因。
+
+Broker 保持完整响应身份/secret 校验后交付；这使 CLI 等待本地 broker 的 socket
+无 bytes，虽然上游持续有真实接收活动。Pinned Claude `2.1.277` 使用 Bun，其 socket
+idle timer 独立于此前已设置的 SDK/Claude stream timers。官方资料及其局限由
+[upstream research](kimi-stream-upstream-research-2026-10-05.md#follow-up-claude-code-and-bun-idle-timers)
+记录。修复仅在原 adapter 将 `BUN_CONFIG_HTTP_IDLE_TIMEOUT` 按秒向上取整对齐 sealed
+`wall_seconds`；不关闭 timer，不改变总 wall/真实 upstream idle owner，不改 endpoint、
+runtime binary/image、model、effort、generation cap、重试、缓冲或 acceptance。
+
+Unit 首先因缺该环境变量 RED。Pinned runtime 的零 Provider native 因果实验保持 SDK
+`API_TIMEOUT_MS=25000`，fake server 延迟 12 秒才发送 headers/完整 SSE：Bun idle=1 秒
+提前 exit1/`Request timed out`；adapter 的 Bun idle=25 秒得到 exit0/`PARSED`，均只发
+一次 POST、无重试。这证明当前 binary 支持该变量的秒单位，以及它独立于 SDK timer；
+测试模拟 broker 完整缓冲时的首响应等待，不声称模拟收到 headers 后的 body stall。
+
+另增加 failed-body 的固定 SSE event/count/trailing-byte metadata，帮助后续区分已收
+`message_stop` 与 HTTP EOF；不持久化 raw event、payload、异常文本或身份声明，完整
+stop 后连接失败仍 `OUTCOME_UNKNOWN` 并撤销。深层/非法 JSON、重复 keys、非有限数字、
+UTF-8、未知 event 的 RED→GREEN 与 private-data assertions 均通过。此 metadata 不是
+可接受终态，也不将 partial identity/report 交给 worker。
+
+Fresh verification：`test_claude_timeouts.py + test_claude.py --native-conformance`
+为 7 passed；完整 `pytest -q --native-conformance --containment-conformance` 为
+1113 passed / 13 skipped（93.12 秒）；changed-file Ruff 与 `git diff --check` 通过。
+Skipped checks 不算通过。Parent Gate：`KIMI_REVIEW_NOT_REQUIRED`：该有限 timer
+对齐和 metadata 没有放宽 authority/security/unknown acceptance，直接 native 因果复现、
+隔离/协议负例及 full suite 已覆盖本地语义，没有适合另一模型补证的重大剩余语义缺口。
+Native mapping 不是独立 implementation review；真实长调用仍需新 installed 验证。
+
+下一步只允许一个明确新建的 post-fix sealed live validation，保留所有 predecessor
+receipts/消耗，不重跑旧 seal。它验证修复后的 route/report，不重置 review 三轮预算，
+也不是向模型反复询问原诊断。安装和 live 结果须另记，不能由本地测试提前声称长流已修好。

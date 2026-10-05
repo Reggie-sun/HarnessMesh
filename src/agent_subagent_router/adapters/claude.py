@@ -57,6 +57,9 @@ def build_invocation(runtime: Runtime, profile, directory: Path, broker_url: str
            'API_TIMEOUT_MS': wall_timeout_ms,
            'CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS': wall_timeout_ms,
            'CLAUDE_STREAM_IDLE_TIMEOUT_MS': wall_timeout_ms,
+           # Bun's socket idle clock is independent of the SDK/stream clocks.
+           # The sealed supervisor owns wall/real-upstream idle during buffering.
+           'BUN_CONFIG_HTTP_IDLE_TIMEOUT': str(max(1, math.ceil(budgets.wall_seconds))),
            'MAX_THINKING_TOKENS': '8192', 'CLAUDE_CODE_MAX_RETRIES': '0'}
     for tier in ('OPUS', 'SONNET', 'HAIKU', 'FABLE'):
         env[f'ANTHROPIC_DEFAULT_{tier}_MODEL'] = profile.client_model

@@ -16,6 +16,7 @@ def test_kimi_request_timeouts_follow_task_budgets(tmp_path, monkeypatch):
     assert invocation.env['API_TIMEOUT_MS'] == '1200000'
     assert invocation.env['CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS'] == '1200000'
     assert invocation.env['CLAUDE_STREAM_IDLE_TIMEOUT_MS'] == '1200000'
+    assert invocation.env['BUN_CONFIG_HTTP_IDLE_TIMEOUT'] == '1200'
 
     _, project_env = project_command(
         Runtime('/unused/claude', 'test', '0' * 64), profile('deep'),
@@ -24,3 +25,4 @@ def test_kimi_request_timeouts_follow_task_budgets(tmp_path, monkeypatch):
     assert project_env['API_TIMEOUT_MS'] == '1200000'
     assert project_env['CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS'] == '1200000'
     assert project_env['CLAUDE_STREAM_IDLE_TIMEOUT_MS'] == '1200000'
+    assert project_env['BUN_CONFIG_HTTP_IDLE_TIMEOUT'] == '1200'

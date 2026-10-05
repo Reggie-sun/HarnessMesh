@@ -11,7 +11,7 @@ import pytest
 from agent_subagent_router.backends.kimi import profile
 from agent_subagent_router.contracts import RouterError, canonical_bytes
 from agent_subagent_router.transport.broker import Broker, KimiUpstream
-from agent_subagent_router.transport.diagnostics import failure_diagnostic
+from agent_subagent_router.transport.diagnostics import failure_diagnostic, stream_progress
 
 
 def failing_connection(monkeypatch, operation, error, status=200):
@@ -206,3 +206,63 @@ def test_body_reset_records_received_progress_without_releasing_partial_bytes(mo
                               'received_bytes': 37, 'chunks_received': 2,
                               'last_byte_age_seconds': 300.0, 'max_read_wait_seconds': 300.0}}
     assert 'private' not in json.dumps(caught.value.diagnostic)
+
+
+def test_failed_body_records_only_complete_sse_control_events(monkeypatch):
+    body = (b'event: message_start\r\ndata: {"type":"message_start",'
+            b'"message":{"id":"private-key","model":"private-model"}}\r\n\r\n'
+            b'event: content_block_delta\ndata: {"type":"content_block_delta",'
+            b'"delta":{"type":"thinking_delta","thinking":"private-key"}}\n\n'
+            b'event: error\ndata: {"type":"error","error":{"message":"private-key"}}\n\n'
+            b'data: {"type":"message_stop"}')  # No blank-line terminator: not a complete event.
+    chunks = iter([body])
+
+    def read1(_limit):
+        try:
+            return next(chunks)
+        except StopIteration:
+            raise BrokenPipeError('private-key')
+
+    response = SimpleNamespace(status=200, read1=read1, getheaders=lambda: [])
+    connection = SimpleNamespace(connect=lambda: None, request=lambda *a, **k: None,
+                                 getresponse=lambda: response, close=lambda: None)
+    monkeypatch.setattr(http.client, 'HTTPSConnection', lambda *a, **k: connection)
+    with pytest.raises(RouterError, match='OUTCOME_UNKNOWN') as caught:
+        KimiUpstream(3600)('/v1/messages', {}, b'{}')
+    assert caught.value.diagnostic['stream_progress'] == {
+        'complete_events': 3, 'message_start_count': 1, 'message_stop_count': 0,
+        'error_count': 1, 'invalid_events': 0, 'last_event': 'error', 'trailing_bytes': 29}
+    assert 'private' not in json.dumps(caught.value.diagnostic)
+
+
+def test_partial_stream_diagnostics_do_not_make_terminal_output_acceptable(monkeypatch):
+    chunks = iter([b'data: {"type":"message_stop"}\n\n'])
+
+    def read1(_limit):
+        try:
+            return next(chunks)
+        except StopIteration:
+            raise ConnectionResetError('private-key')
+
+    response = SimpleNamespace(status=200, read1=read1, getheaders=lambda: [])
+    connection = SimpleNamespace(connect=lambda: None, request=lambda *a, **k: None,
+                                 getresponse=lambda: response, close=lambda: None)
+    monkeypatch.setattr(http.client, 'HTTPSConnection', lambda *a, **k: connection)
+    broker, replies = dispatch_without_socket(monkeypatch, KimiUpstream(5))
+    assert replies == [(502, b'{"error":"OUTCOME_UNKNOWN"}')]
+    assert broker.observations[0]['transport_error']['stream_progress']['message_stop_count'] == 1
+    assert broker._active is False
+    assert 'response_model' not in broker.observations[0]
+
+
+@pytest.mark.parametrize('payload,invalid', [
+    (b'{"type":"private-key"}', 0), (b'{"type":["private-key"]}', 0),
+    (b'{"type":"message_stop","type":"error"}', 1),
+    (b'{"type":"error","secret":NaN}', 1), (b'\xffprivate-key', 1),
+    (b'[' * 2000 + b'"private-key"' + b']' * 2000, 1),
+], ids=['unknown', 'array-type', 'duplicate-key', 'nonfinite', 'invalid-utf8', 'deep-json'])
+def test_stream_failure_diagnostics_keep_unknown_and_invalid_payloads_private(payload, invalid):
+    progress = stream_progress(b'data: ' + payload + b'\n\n')
+    assert progress == {'complete_events': 1, 'message_start_count': 0,
+                        'message_stop_count': 0, 'error_count': 0,
+                        'invalid_events': invalid, 'last_event': 'unknown', 'trailing_bytes': 0}

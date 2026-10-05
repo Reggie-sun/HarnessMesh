@@ -48,3 +48,13 @@ Parent 提供的记录包含两次 HTTP 200 后的 body 失败：约 328.5 秒�
 ## Verification
 
 已读取官方文档、本地 source、`kimi-code` #1798/#1799 与已归档 `kimi-cli` #2582。#2446 的取代关系与范围依据 #1799 中的明确交叉引用核实；直接读取 #2446 页面失败。本文件仅为文档记录；未运行代码测试或 live-provider 调用。
+
+## Follow-up: Claude Code And Bun Idle Timers
+
+Claude Code 当前[网络配置文档](https://code.claude.com/docs/en/network-config)及[环境变量参考](https://code.claude.com/docs/en/env-vars)将 body idle timeout 与 stream watchdogs 分开：前者在连续 5 分钟没有 body bytes 时触发；`API_FORCE_IDLE_TIMEOUT=0` 只关闭这个 body timer，`=1` 则对所有 provider 启用。它不会关闭独立 watchdogs；文档还列出 300 秒 event-level watchdog，以及默认 180 秒（direct Anthropic）或 300 秒（其他）的 byte-level watchdog。自定义 `ANTHROPIC_BASE_URL` 连接也在 byte watchdog 覆盖范围内（文档注明少数平台例外）。因此，设为 `0` 不等于无超时。以上是当前在线文档语义，不单独证明 pinned Claude Code `2.1.277` 的所有运行时路径完全相同。
+
+Bun 官方 [PR #6217](https://github.com/oven-sh/bun/pull/6217) 将 `fetch()` 默认 timeout 设为 5 分钟；Bun maintainer 在 PR 中说明它按“收到上一条 message 以来”的时间计算，而非总请求时长，并指出 `timeout: false` 可关闭该 fetch timeout。这是客户端 fetch 的静默期限，不是 Kimi 服务端 SLA。针对 `BUN_CONFIG_HTTP_IDLE_TIMEOUT`，本轮在 Bun 官方环境变量文档及官方仓库精确检索未找到定义；其是否受支持及单位均未能由一手来源确认，不能据名称推断为毫秒或秒。
+
+Parent 已在 pinned `2.1.277` 的 `_i` 观察到 `timeout: false` 受 `API_FORCE_IDLE_TIMEOUT=0` 控制，且失败 terminal result 为 `Request timed out`；这是本地 source/runtime 线索，不足以确定该错误由 Claude watchdog、Bun `fetch()`、broker 等哪一层产生。当前 buffered-broker 路径可能使本地等待与 upstream 流活动脱钩，但这仍是待验证假设；累计收到超过 1 MiB 也不能替代逐段到达时间证据。也需考虑 supervisor 先取消/关闭本地 pipe 后，broker 写入端才遇到 `BrokenPipe` 的竞争情形，不能把它误判为上游主动断流。
+
+安全 falsifier 是纯本地 fake：分别模拟有间隔字节与超过 5 分钟静默的 Bun fetch；在 fake supervisor 提前取消后让 broker 完成缓冲写入，记录哪个端点关闭、异常归属及 terminal result；并在 pinned Claude build 中独立观察 body timer 与 event/byte watchdog。当前资料不证明 RCA，也不支持改动主机网络或自动重试；本轮未做这些运行验证。

@@ -1,5 +1,16 @@
 # Implementation Status
 
+## Kimi Runtime Idle-Timer Candidate — 2026-10-05
+
+已定位此前未对齐的 Bun socket idle timer：上游持续收包不等于 buffered broker 向 CLI
+交付 bytes，CLI 内部超时退出可反过来触发 `BROKEN_PIPE`。原 adapter 现将此独立有限
+timer 按秒对齐 sealed wall；没有关闭保护或改 model/effort/acceptance/retry。
+Pinned runtime 的零 Provider 因果实验复现并消除该提前超时；fresh full native/containment
+1113 passed / 13 skipped、Ruff/diff 通过。Parent Gate 不触发独立 implementation review；
+尚待 clean 官方安装和新的真实长调用验证，旧 unknown 不改判。证据由
+[investigation record](records/kimi-response-body-investigation-2026-10-05.md#local-runtime-idle-timer-repair)
+独占，下方是历史 checkpoint。
+
 ## Kimi Body-Disconnect Investigation — 2026-10-05
 
 `6b69713` 的安全 error subtype / response-progress diagnostics 已安装，focused88/
