@@ -134,6 +134,7 @@ def test_broker_internal_error_is_distinct_and_never_dispatches(monkeypatch):
     broker, replies = dispatch_without_socket(monkeypatch, lambda *a: calls.append(a), publish)
     assert not calls
     assert replies == [(502, b'{"error":"OUTCOME_UNKNOWN"}')]
+    assert broker._active is False
     assert broker.observations[0]['broker_error'] == {
         'phase': 'ADMISSION_RECORD', 'kind': 'UNEXPECTED_ERROR'}
     assert 'http_status' not in broker.observations[0]

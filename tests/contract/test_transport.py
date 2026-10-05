@@ -9,6 +9,7 @@ import pytest
 from agent_subagent_router.backends.kimi import profile
 from agent_subagent_router.contracts import RouterError
 from agent_subagent_router.transport.broker import Broker
+from agent_subagent_router.transport.diagnostics import UpstreamFailure
 from agent_subagent_router.transport.identity import validate_request, validate_response
 
 
@@ -256,6 +257,22 @@ def test_atomic_budget_and_revocation_prevent_extra_requests():
             first.result()
         assert post(broker)[0] == 403
         assert len(calls) == 1
+
+
+def test_unknown_response_body_failure_prevents_implicit_replay():
+    calls = []
+
+    def disconnected(*args):
+        calls.append(1)
+        raise UpstreamFailure('RESPONSE_BODY', ConnectionResetError(), 200)
+
+    with Broker(profile('worker'), 'sentinel', request_limit=3, wall_seconds=5,
+                upstream=disconnected) as broker:
+        assert post(broker) == (502, b'{"error":"OUTCOME_UNKNOWN"}')
+        assert post(broker) == (403, b'{"error":"CAPABILITY_REVOKED"}')
+        assert len(calls) == 1
+        assert broker.observations[0]['classification'] == 'OUTCOME_UNKNOWN'
+        assert broker.observations[0]['http_status'] == 200
 
 
 @pytest.mark.parametrize('path', ['/proxy?url=https://evil.test', '//evil.test/v1/messages',

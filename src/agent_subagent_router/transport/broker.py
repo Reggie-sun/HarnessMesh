@@ -370,14 +370,14 @@ class Broker:
                         observation['transport_error'] = exc.diagnostic
                         if exc.http_status is not None:
                             observation['http_status'] = exc.http_status
-                    if exc.code in ('UPSTREAM_GENERATION_LIMIT', 'UPSTREAM_SECRET_REFLECTION') or response_validator is not None:
+                    if exc.code in ('OUTCOME_UNKNOWN', 'UPSTREAM_GENERATION_LIMIT',
+                                    'UPSTREAM_SECRET_REFLECTION') or response_validator is not None:
                         broker.revoke()
                     self.reply(502, canonical_bytes({'error': exc.code}))
                 except Exception as exc:
                     observation['classification'] = 'OUTCOME_UNKNOWN'
                     observation['broker_error'] = failure_diagnostic(phase, exc)
-                    if response_validator is not None:
-                        broker.revoke()
+                    broker.revoke()
                     self.reply(502, b'{"error":"OUTCOME_UNKNOWN"}')
                 finally:
                     with broker._lock:
