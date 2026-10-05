@@ -4,9 +4,12 @@
 
 `6b69713` 的安全 error subtype / response-progress diagnostics 已安装，focused88/
 offline1082 通过；新的两文件 sealed Kimi 调查96.7秒、`k3/max/32000`、完整报告成立。
-该短调用不证明原长流故障已修复。`.ai` 当前透明代理路径与 `.com` DIRECT 不同，
-同域名网络隔离尚待用户决定已有 dirty rule file 的修改权限。没有重试 unknown、
-改模型/额度或迁移 endpoint；详细证据和未完成边界见
+该短调用不证明原长流故障已修复。用户 A 批准后，仅追加 `api.kimi.ai` DIRECT，
+VPN commit `d830f37`、16 build tests/config lint/204 reload 通过，原 dirty edits 保留。
+新 sealed live `17cf8e33…` 实际走 DIRECT，仍在持续收包341秒/1.95MB后
+`BROKEN_PIPE / OUTCOME_UNKNOWN`，不是 idle/output timeout，无有效终态报告。
+DIRECT 生效但断连未修复；没有重试 unknown、改模型/额度或迁移 endpoint。
+详细证据和未完成边界见
 [investigation record](records/kimi-response-body-investigation-2026-10-05.md)。
 
 ## Kimi Unknown-Outcome Replay Fence — 2026-10-05

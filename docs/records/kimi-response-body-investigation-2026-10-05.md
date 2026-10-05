@@ -80,10 +80,81 @@ Parent 源码裁决：确认 `KimiUpstream.timeout` 交给 HTTP socket operation
 [upstream research](kimi-stream-upstream-research-2026-10-05.md) 独占；
 不采用其自动重试模式，不因地区文档或 HEAD 时延迁移 sealed endpoint。
 
-## Remaining Work
+## Pre-Approval Boundary
 
 原长流问题仍未解决；需在相关失败再次发生时检查新增 subtype/timing，或做已授权的
 同 host 路径隔离。网络规则文件的 same-file ownership/修改选择仍等待用户回复：
 A 允许保留原修改并只追加 `api.kimi.ai` DIRECT 验证；B 不改网络；C 先继续只读取证。
 本轮没有修改 VPN file、shared selector 或 authenticated endpoint，也没有追加第三次
 Kimi attempt。旧失败和原消费不重置。本调查仍不能报告断连已修好。
+
+## User-Authorized DIRECT Isolation
+
+用户随后明确选择 A：保留现有未提交修改，仅追加 `api.kimi.ai` DIRECT 并验证。
+Parent 在 VPN source template、当前安装的 rule enhancement 和运行配置各追加一行
+`DOMAIN,api.kimi.ai,DIRECT`；与修改前 private recovery backups 的完整 byte diff 均仅
+为该行，没有全量安装模板或重新合并 DNS/订阅配置。API host、path、TLS verification、
+Kimi model/effort/caps 和 HarnessMesh package 没有改变。
+
+`verge-mihomo -t` 成功；VPN `test_build_runtime.py` 的 16 tests 通过；controller
+`PUT /configs` hot reload 为 204，没有重启 service 或主动关闭原连接。所有 Selector 的
+name/now projection SHA reload 前后相同：
+`12cae04b912b4654e290b630cd7df6e9914fe2506908be8b501b923831235526`。
+`codex-mihomo.service` 为 active；新 HEAD 连接实际命中 `Domain/api.kimi.ai/DIRECT`，
+HTTP 404、TLS 0.783 秒、total 1.427 秒。这仅证明新 route 的 reachability。
+
+VPN commit `d830f37`（既有 `company` branch）只包含 template 的该一行；使用
+`git add -p` split 排除原有 RustDesk changes。原 template 两行、DNS 三行修改和
+`.gstack/` 保持未提交，不移到当前任务提交。Private recovery storage 位于
+`/home/reggie/.local/state/agent-subagent-router/kimi-network-20261005-0H3G1R/`，
+directory 0700/files 0600，不纳入 repo、worker projection 或 invocation artifacts。
+
+Parent 显式创建第三次、DIRECT 后的新调查，不重放旧 unknown seal。Goal 与首次失败
+调查相同，保留同五个 read paths/required evidence；source 增量为已验证诊断及 unknown
+replay fence。Seal `d0621d7cad59b5f4e0a64e9ab8537219bb07bcf9c04baa69c6c37f792c7f5045`，
+effective deep/k3/max/32,000、wall3,600/idle1,800/request64/output16MiB/context8MiB。
+Doctor 的 fake containment 通过；live invocation 连接已由 host controller 核验为 DIRECT。
+这是一次用户批准的路径隔离调查，不是 triggered final implementation review。
+历史失败、成功、消费、receipts 全保留；不能由 worker 自述断言实际网络或模型身份。
+
+## DIRECT Live Result And Parent Adjudication
+
+Canonical invocation `17cf8e33-fe27-4a6a-b204-300f5f25088a` 为 `OUTCOME_UNKNOWN`，
+process 363.440 秒、exit 1、`truncated=false`、wire requests 2、orchestration retries 0，
+没有 terminal worker report。`subagent receipt` 读取并核验 artifacts；receipt exact bytes SHA
+`d61cb353c988a19f583981adaf9eff01e9bb655a84768943a3d3ceadcbd527d9`。
+所有八个 frozen source bytes 在调用结束后仍与 manifest SHA 一致。
+
+第一请求 HTTP 200，14.073 秒，authenticated response identity `k3`、effort `max`。
+第二请求 HTTP 200 后失败，total 348.519 秒；新诊断为
+`RESPONSE_BODY / CONNECTION_ERROR / BROKEN_PIPE`，headers 7.486 秒、body 341.021 秒、
+received 1,947,076 bytes、566 chunks、last-byte age 0.006 秒、最大 read wait 4.105 秒。
+Controller 多次观察到该 authenticated invocation 连接实际为
+`Domain/api.kimi.ai/chains=[DIRECT]`，而非原 HK03 proxy chain。
+第二请求未完成 identity/terminal validation，不将第一请求的身份扩张为第二响应已验证。
+
+Parent 源码检查：body loop 的 activity callback 仅更新 lock 内的时间和 byte count，
+没有 stdout/pipe 写入；本次异常发生在 upstream response-body 路径，不是 CLI 大量日志
+或 supervisor output cap 触发。supervisor reason 为 exited，wall/idle 上限均未达到；
+连续实际 bytes 与 4.105 秒最大 read wait 排除本次为 1,800 秒 idle timeout。
+失败后的 capability revoke 保持，无第三次 wire 请求或 unknown replay。
+
+裁决：**DIRECT 已安装并实际生效，但原长流断连未修复**。移除原代理节点并不足以消除
+该故障；不能据此断言代理节点就是根因，也不能仅凭 `BROKEN_PIPE` 归因到 provider。
+DIRECT 仍经过本机 Mihomo TUN/ISP/remote edge；本次没有 packet/edge evidence 能进一步
+区分这些层。新的 subtype/timing 将后续调查从“长时间无响应”缩到“持续收包后连接失败”。
+本次没有确认一个可安全修复的本地代码 defect，不追加猜测性 retry、模型降级、endpoint
+迁移或第四次 paid investigation。历史 consumption 与 unknown 保持；本次不是独立审查通过。
+
+## Checkpoint And Remaining Boundary
+
+此 A task 的单域名规则修改、config lint、16 build tests、controller reload、实际路由与
+一次新 sealed live 验证已完成。Parent Gate：`KIMI_REVIEW_NOT_REQUIRED`；既有 accepted
+rare-review contract 下，此精确 host-routing change 不改变 authority、TLS、凭据、model
+identity、transport acceptance 或其他 Selector，直接配置与实际连接证据充分，没有另需
+独立模型补证的重大语义缺口。live investigation 不冒充 implementation reviewer。
+
+没有新 runtime implementation、Spec/Plan、refactor、push 或 release。未重新运行
+HarnessMesh code suite（其 code bytes 本轮未变）；诊断安装的旧 focused/offline 证据属于
+上面的既有 checkpoint。新失败不能覆盖成成功。未启动未授权 endpoint 迁移或更多调用；
+后续根因修复仍需要能区分 local TUN/ISP/remote edge 的 transport evidence。
