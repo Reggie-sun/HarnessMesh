@@ -1,5 +1,13 @@
 # Implementation Status
 
+## Kimi Unknown-Outcome Replay Fence — 2026-10-05
+
+Clean `67095fe` 已由官方 installer 激活；`OUTCOME_UNKNOWN` 后本次 invocation 立即撤销，
+阻止 runtime 隐式再次向 Kimi 发送请求。RED→GREEN、offline1077、native/fake1099、
+installed-package fake 请求及安装完整性已核验；Kimi 上游长响应断连本身仍可能发生，
+旧失败不改判成功。详细 receipt、Risk Gate、skip 与剩余风险见
+[repair record](records/kimi-unknown-replay-repair-2026-10-05.md)。
+
 ## Unset Cap Installed Result — 2026-10-01
 
 Clean4157a48已官方安装，69-source program3998a167…、entry/Skill及新八图/14OS核验成立。唯一真实修复验证已IMAGE_NATIVE_COMPLETE/IDENTITY_VERIFIED，CAP_ECHO_NULL协议阻断消除；原canonical视觉比较八图7个position错误，**NOT_QUALIFIED / VISUAL_PROBE_MISMATCH**，未追加调用或修改标准。M5-D2A正式仍INCOMPLETE，GPT精确路线/全部真值证据缺失，PRODUCT_DISABLED。精确原始/映射/差异/receipt由[原record](records/image-api-engineering-2026-09-29.md#unset-cap-installed-result--2026-10-01)独占；以下candidate是历史。
