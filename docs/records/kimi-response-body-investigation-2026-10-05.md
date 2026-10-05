@@ -199,3 +199,86 @@ Native mapping 不是独立 implementation review；真实长调用仍需新 ins
 下一步只允许一个明确新建的 post-fix sealed live validation，保留所有 predecessor
 receipts/消耗，不重跑旧 seal。它验证修复后的 route/report，不重置 review 三轮预算，
 也不是向模型反复询问原诊断。安装和 live 结果须另记，不能由本地测试提前声称长流已修好。
+
+## Clean Installed Validation Setup
+
+修复 checkpoint `444e1902c40ffcb3a94f53c961a48df5c6b0f805` 已经官方安装；manifest
+`source_dirty_at_install=false`、source hash
+`bc0f4113b1a7b129c53bf6597da111dd2bbf1bb22383e98df7db7e3b4706e861`。
+源码/installed adapter SHA 均为
+`5fca544e21649ad6dc15c29587bb815ef932c9ab8c259c09b6c92403e7329ba1`；entry SHA
+`d46486daa79f19bf535cd05eda856a894ba664d05b895b0291a63eac68c2596f` 与 Skill SHA
+`f32f26d9bca9cb197ad631610f4854159db23371475b59274d090bc7e33412f7` 符合 manifest。
+Installed doctor 的原 runtime/image Docker/native fake containment 全部通过；它不证明
+live identity。未修改 runtime binary/image、credential reference 或 global model config。
+
+唯一 post-fix 新 live validation 使用 seal
+`d4f18eb082fc9ba51868c8dd10050fc70f3d5ed779ba9746556b68fd75d164b7`，canonical
+invocation `e3c0a0d0-a245-42bb-9811-51a563099c3d`；十个 frozen paths 包括 home/repo
+AGENTS、accepted Spec、七个 source/test files。有效 profile 为 `deep/k3[1m]/k3/max`，
+最高 finite policy 不变；qualified route ref 保持原 matching runtime/profile/credential
+tuple `4f2d5dc8-4234-4665-b382-e82f1ad6cc00`。实际连接为 `Domain/api.kimi.ai/DIRECT`。
+本次观察的 request 身份只以该 request 的 authenticated receipt 为准，不从旧资格扩张。
+
+另以 installed package 和同一 pinned binary 并发运行零 Provider 的真实五分钟窗口
+对照：两例 SDK/stream timers 均为 480 秒，fake 延迟 380 秒才发送完整响应；baseline
+只移除新 Bun env，fixed 保留有限 480 秒。没有真实 Provider/credential，也不花 Kimi
+tokens。Script 在 ignored `private-runs/kimi-response-body-20261005/`；结果必须单独记录，
+不把启动或 pending 的 observation 算完成。
+
+## Post-Fix Live Result And Source Adjudication
+
+新 invocation `e3c0a0d0-a245-42bb-9811-51a563099c3d` 为 `PARSED`：process 236.827 秒、
+exit0、`truncated=false`、三次 wire、无 orchestration retry。三次 HTTP200 均为
+`IDENTITY_VERIFIED / authenticated_endpoint_declaration / k3 / max / cap32000`，时长
+19.140 / 39.955 / 176.573 秒；第三次完整收取 973,009 bytes。原 1M profile 不降级，
+没有证明实际消耗 1M context。`subagent receipt` 机械核验全部 artifacts，完整报告 SHA
+`66cb8f28fef146997fbdc443db5b4435284ceac57253d0a354fd19512a04a1aa`，receipt bytes SHA
+`7966b36266c329ba3e3fcfa0e0f838487a00213e20e1e1ddebb6db1638e92bf3`。
+七个授权 source/test 均有 complete/non-truncated actual Read evidence，结束后十个
+frozen sources 全部与 seal hash 一致；没有派生 worker、候选 apply 或项目 mutation。
+
+Parent 源码裁决：报告关于 adapter/Bun timer 对齐、完整 HTTP EOF 后的 identity/secret
+gate、fixed metadata 和 revoke 的结论与源码/实际测试一致；未发现要求改代码的 blocker。
+其“旧 unknown 已被解释”的表述不能升级为旧竞态已被逐事件直接证明，维持上文限制；
+报告没有执行测试，本地 PASS 由 Parent 的真实运行证明，不从报告背书推断。
+其 whole-second rounding 不延长 supervisor wall，行为保持 fail-closed；未实测部分的
+上下文不足以证明系统全面正确。此 explorer 不算独立 implementation review。
+
+本次 live 成功验证当前 installed route、scope、terminal/report 和非截断，但单请求都
+少于五分钟，不能单独证明旧长时故障窗口消除；必须结合仍在进行的真实 380 秒 fake
+对照，不为凑长响应而追加第二次付费验证。旧 unknown/报告缺失和 historical consumption
+仍然保留。Parent 尚未由 `PARSED` 自动宣布任务完成。
+
+## Long-Window Result And Completion Boundary
+
+Installed-package 对照已完成，script exit0；同一 runtime SHA、loopback fake、380 秒
+延迟、480 秒 SDK/stream/wall/idle budgets 与完整响应，仅 Bun env 有差异：
+
+| Case | Bun idle seconds | Actual duration | Process/terminal | Requests |
+| --- | --- | --- | --- | --- |
+| Previous default | 未设置 | 360.621 秒 | exit1 / `Request timed out` | 1 fake POST |
+| Sealed-wall repair | 480 | 380.304 秒 | exit0 / `PARSED` | 1 fake POST |
+
+两例均未截断、没有 retry、真实 Provider requests=0；实际 import 为 manifest 所指的
+installed adapter，而非 working-tree source。实验 script SHA
+`997bf3ae0ac245c70e8470695fb0fb6995e00597d622d60374dc3ca911755df0`，位置
+`private-runs/kimi-response-body-20261005/verify-default-bun-idle.py`。运行命令：
+
+```sh
+PYTHONPATH=/home/reggie/.local/share/agent-subagent-router/installations/bc0f4113b1a7b129c53bf6597da111dd2bbf1bb22383e98df7db7e3b4706e861/src \
+micromamba run -p /home/reggie/micromamba/envs/ai-video-p2 \
+python private-runs/kimi-response-body-20261005/verify-default-bun-idle.py
+```
+
+Parent final adjudication：已复现并修复的本地 defect 是 broker 完整缓冲期间 CLI 的
+独立默认 idle timer 提前结束请求；它不受原 SDK timeout 保护，旧 runtime 可在约六分钟
+退出，而新有限 timer 可跨过该故障窗口。真实 Kimi 新调用的完整 identity/Read/report
+证据，加上此不依赖外部网络的长窗口对照与 1113 项全套测试，满足本修复的验收。
+最终 `KIMI_REVIEW_NOT_REQUIRED` 保持；没有 unresolved implementation blocker。
+
+不保证上游 SLA、不把所有过去断连都归于一个 timer，也不声称未来不会出现真实 502、
+generation limit、网络中断或到达 sealed wall/idle。所有这类失败仍 fail-closed，无自动
+retry/fallback/unknown replay；新增 diagnostics 只帮助下一次调查，不接受 partial。
+本次不改 accepted Spec/Plan/route model，不新增 Implementation Plan、不 refactor、
+不 push/release。Code checkpoint `444e190` 已 clean 安装；其后仅追加研究/验收记录。
